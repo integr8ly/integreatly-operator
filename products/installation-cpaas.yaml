@@ -80,8 +80,3 @@ products:
     installFrom: index
     package: rhsso-operator
     index: quay.io/integreatly/rhsso-index:v7.6.3-1
-  mcg:
-    channel: stable-4.12
-    installFrom: index
-    package: mcg-operator
-    index: quay.io/integreatly/mcg-index:v4.12.3-rhodf

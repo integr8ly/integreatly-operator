@@ -37,14 +37,6 @@ func TestThreeScale_GetBackendRedisNodeSize(t1 *testing.T) {
 			},
 			want: "cache.m5.xlarge",
 		},
-		{
-			name: "test 11 is returned when active quota is 100 M and platformType GCP",
-			args: args{
-				activeQuota:  quota.OneHundredMillionQuotaName,
-				platformType: configv1.GCPPlatformType,
-			},
-			want: "11",
-		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {

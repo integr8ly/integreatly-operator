@@ -7,8 +7,6 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
-	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
@@ -68,8 +66,6 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		cloudcredentialv1.Install,
 		envoyconfigv1.AddToScheme,
 		crov1.AddToScheme,
-		noobaav1.SchemeBuilder.AddToScheme,
-		obv1.SchemeBuilder.AddToScheme,
 		storagev1.AddToScheme,
 		addonv1alpha1.AddToScheme,
 		packageOperatorv1alpha1.AddToScheme,

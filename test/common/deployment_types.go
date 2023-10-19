@@ -7,7 +7,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/utils"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	configv1 "github.com/openshift/api/config/v1"
 	"golang.org/x/net/context"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,8 +15,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,19 +115,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		},
 	}
 
-	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-		deployment["mcgOperatorDeployment"] = Namespace{
-			Name: McgOperatorNamespace,
-			Products: []Product{
-				{Name: "noobaa-endpoint", ExpectedReplicas: 1},
-				{Name: "noobaa-operator", ExpectedReplicas: 1},
-				{Name: "ocs-metrics-exporter", ExpectedReplicas: 1},
-				{Name: "ocs-operator", ExpectedReplicas: 1},
-				{Name: "rook-ceph-operator", ExpectedReplicas: 1},
-			},
-		}
-	}
-
 	return deployment[deploymentName]
 }
 
@@ -183,7 +167,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		t.Fatal("error getting isClusterStorage:", err)
 	}
 
-	// If the cluster is using in cluster storage instead of AWS or GCP resources
+	// If the cluster is using in cluster storage instead of AWS resources
 	// These deployments will also need to be checked
 	if isClusterStorage {
 		deployments = append(deployments, clusterStorageDeployments...)
@@ -382,19 +366,6 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 			},
 		}...)
 	}
-
-	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-		statefulSets = append(statefulSets, []Namespace{
-			{
-				Name: McgOperatorNamespace,
-				Products: []Product{
-					{Name: "noobaa-core", ExpectedReplicas: 1},
-					{Name: "noobaa-db-pg", ExpectedReplicas: 1},
-				},
-			},
-		}...)
-	}
-
 	for _, namespace := range statefulSets {
 		for _, product := range namespace.Products {
 			statefulSet, err := ctx.KubeClient.AppsV1().StatefulSets(namespace.Name).Get(goctx.TODO(), product.Name, metav1.GetOptions{})

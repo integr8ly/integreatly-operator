@@ -177,15 +177,6 @@ var (
 		{"C14B - Verify 3scale UIBBT alerts", TestThreeScaleUIBBTAlerts},
 	}
 
-	GCP_TESTS = []TestSuite{
-		{
-			[]TestCase{
-				{"N01 - Verify that Noobaa can be created via product CR", TestNoobaaViaCR},
-			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
-		},
-	}
-
 	AWS_SPECIFIC_TESTS = []TestSuite{
 		{
 			[]TestCase{

@@ -21,7 +21,6 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	configv1 "github.com/openshift/api/config/v1"
 	v12 "github.com/openshift/api/config/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
@@ -1004,16 +1003,6 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 					Status: corev1.PodStatus{
 						Phase: "Running",
 					},
-				},
-			},
-		},
-		&configv1.Infrastructure{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "cluster",
-			},
-			Status: configv1.InfrastructureStatus{
-				PlatformStatus: &configv1.PlatformStatus{
-					Type: configv1.AWSPlatformType,
 				},
 			},
 		},

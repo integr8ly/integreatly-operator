@@ -83,8 +83,6 @@ func GetClusterType(infra *configv1.Infrastructure) (string, error) {
 			}
 		}
 		return "", fmt.Errorf("key \"red-hat-clustertype\" not in AWS resource tags")
-	case configv1.GCPPlatformType:
-		return string(configv1.GCPPlatformType), nil
 	default:
 		return "", fmt.Errorf("no platform information found for type %s", infra.Status.PlatformStatus.Type)
 

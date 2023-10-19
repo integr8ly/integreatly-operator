@@ -6,5 +6,4 @@ const (
 	ThreeScaleSubscriptionName    = "rhmi-3scale"
 	GrafanaSubscriptionName       = "rhmi-grafana"
 	Marin3rSubscriptionName       = "rhmi-marin3r"
-	MCGSubscriptionName           = "rhmi-mcg"
 )

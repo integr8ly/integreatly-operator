@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"net"
 	"net/http"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -57,13 +57,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -85,8 +82,6 @@ const (
 	apicastHTTPsPort             = int32(8444)
 
 	s3CredentialsSecretName        = "s3-credentials"
-	s3BucketRegion                 = "global"
-	s3PathStyle                    = "true"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
@@ -203,6 +198,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	customDomainActive := customDomain.IsCustomDomain(installation)
+	platformType := configv1.AWSPlatformType
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
@@ -347,12 +343,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	platformType, err := cluster.GetPlatformType(ctx, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "failed to determine platform type", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -372,12 +362,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
 			return phase, err
 		}
-		if platformType != configv1.GCPPlatformType {
-			phase, err = r.reconcileBlobStorage(ctx, serverClient)
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
-				return phase, err
-			}
+		phase, err = r.reconcileBlobStorage(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
+			return phase, err
 		}
 	}
 
@@ -1062,8 +1050,6 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 				return nil
 			})
 		}
-	case configv1.GCPPlatformType:
-		err = r.createMCGS3Secret(ctx, serverClient, credSec)
 	default:
 		err = fmt.Errorf("unsupported cluster type: %s", platformType)
 	}
@@ -1116,52 +1102,6 @@ func (r *Reconciler) createStsS3Secret(ctx context.Context, serverClient k8sclie
 	return err
 }
 
-func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclient.Client, credSec *corev1.Secret) error {
-	mcgNamespace := r.installation.Spec.NamespacePrefix + mcg.DefaultInstallationNamespace + "-operator"
-	// Retrieve object bucket claim
-	objbc := &noobaav1.ObjectBucketClaim{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.ThreescaleBucketClaim, Namespace: mcgNamespace}, objbc)
-	if err != nil {
-		return fmt.Errorf("failed to get object bucket claim: %w", err)
-	}
-
-	//Retrieve secret with credentials
-	bucketSecret := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.ThreescaleBucketClaim, Namespace: mcgNamespace}, bucketSecret)
-	if err != nil {
-		return fmt.Errorf("failed to get bucket claim secret: %w", err)
-	}
-
-	// Retrieve s3 route
-	s3Route := &routev1.Route{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.S3RouteName, Namespace: mcgNamespace}, s3Route)
-	if err != nil {
-		return fmt.Errorf("failed to get s3 route: %w", err)
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
-		// Set required fields for MCG
-		for key := range bucketSecret.Data {
-			switch key {
-			case apps.AwsAccessKeyID:
-				credSec.Data[apps.AwsAccessKeyID] = bucketSecret.Data[apps.AwsAccessKeyID]
-			case apps.AwsSecretAccessKey:
-				credSec.Data[apps.AwsSecretAccessKey] = bucketSecret.Data[apps.AwsSecretAccessKey]
-			}
-		}
-		credSec.Data[apps.AwsBucket] = []byte(objbc.Spec.BucketName)
-		credSec.Data[apps.AwsHostname] = []byte(s3Route.Spec.Host)
-		credSec.Data[apps.AwsRegion] = []byte(s3BucketRegion)
-		credSec.Data[apps.AwsPathStyle] = []byte(s3PathStyle)
-		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to create or update mcg blob storage aws credentials secret: %w", err)
-	}
-	return nil
-}
-
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance
 // which are used when 3scale HighAvailability mode is enabled
 func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client, activeQuota string, platformType configv1.PlatformType) (integreatlyv1alpha1.StatusPhase, error) {
@@ -1175,13 +1115,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// If there is a quota change, the quota on the installation spec would not be set to the active quota yet
 	quotaChange := isQuotaChanged(r.installation.Status.Quota, activeQuota)
-
-	// if we are on GCP set snaphshot frequency and retention
-	var snapshotFrequency, snapshotRetention types.Duration
-	if platformType == configv1.GCPPlatformType {
-		snapshotFrequency = constants.GcpSnapshotFrequency
-		snapshotRetention = constants.GcpSnapshotRetention
-	}
 
 	r.log.Infof("Backend redis config", map[string]interface{}{"quotaChange": quotaChange, "activeQuota": activeQuota})
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, r.Config.GetBackendRedisNodeSize(activeQuota, platformType), quotaChange, quotaChange, func(cr metav1.Object) error {
@@ -1208,7 +1141,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a postgres instance
 	r.log.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, constants.PostgresApplyImmediately, snapshotFrequency, snapshotRetention, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, constants.PostgresApplyImmediately, "", "", func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})

@@ -10,7 +10,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
-	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/utils"
@@ -222,24 +221,6 @@ func TestNewReconciler(t *testing.T) {
 				productsInstallationLoader: productsInstallationLoader,
 			},
 			wantedReconciler: (*grafana.Reconciler)(nil),
-			wantErr:          true,
-		},
-		{
-			name: "Fail on bad ProductMCG Config",
-			args: args{
-				product: integreatlyv1alpha1.ProductMCG,
-				rc:      restConfig,
-				configManager: &config.ConfigReadWriterMock{
-					ReadMCGFunc: func() (ready *config.MCG, e error) {
-						return nil, errors.New("could not read mcg config")
-					},
-				},
-				installation:               installation,
-				mgr:                        mgr,
-				logger:                     createTestLogger(string(integreatlyv1alpha1.ProductMCG)),
-				productsInstallationLoader: productsInstallationLoader,
-			},
-			wantedReconciler: (*mcg.Reconciler)(nil),
 			wantErr:          true,
 		},
 	}

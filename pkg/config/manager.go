@@ -48,7 +48,6 @@ type ConfigReadWriter interface {
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadCloudResources() (*CloudResources, error)
 	ReadGrafana() (*Grafana, error)
-	ReadMCG() (*MCG, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -99,8 +98,6 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadMarin3r()
 	case integreatlyv1alpha1.ProductGrafana:
 		return m.ReadGrafana()
-	case integreatlyv1alpha1.ProductMCG:
-		return m.ReadMCG()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
@@ -169,14 +166,6 @@ func (m *Manager) ReadMarin3r() (*Marin3r, error) {
 		return nil, err
 	}
 	return NewMarin3r(config), nil
-}
-
-func (m *Manager) ReadMCG() (*MCG, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMCG)
-	if err != nil {
-		return nil, err
-	}
-	return NewMCG(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {

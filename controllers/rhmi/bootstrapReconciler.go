@@ -277,9 +277,6 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			case configv1.AWSPlatformType:
 				cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 				cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
-			case configv1.GCPPlatformType:
-				cloudConfig.Data["managed-api"] = `{"blobstorage":"gcp", "smtpcredentials":"gcp", "redis":"gcp", "postgres":"gcp"}`
-				cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"gcp", "smtpcredentials":"gcp", "redis":"gcp", "postgres":"gcp"}`
 			}
 		}
 		cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`

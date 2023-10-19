@@ -6,9 +6,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-	configv1 "github.com/openshift/api/config/v1"
-
 	routev1 "github.com/openshift/api/route/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -75,21 +72,6 @@ var (
 			isTLS: true,
 		},
 	}
-
-	mcgRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "noobaa-mgmt",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "s3",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "sts",
-			isTLS: true,
-		},
-	}
 )
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
@@ -135,17 +117,11 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 
 func getExpectedRoutes(installation *integreatlyv1alpha1.RHMI, ctx *TestingContext) map[string][]ExpectedRoute {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-			mtManagedApiExpectedRoutes["mcg-operator"] = mcgRoutes
-		}
 		if !resources.IsInProw(installation) {
 			mtManagedApiExpectedRoutes["customer-monitoring"] = customerGrafanaRoutes
 		}
 		return mtManagedApiExpectedRoutes
 	} else {
-		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-			managedApiExpectedRoutes["mcg-operator"] = mcgRoutes
-		}
 		if !resources.IsInProw(installation) {
 			managedApiExpectedRoutes["customer-monitoring"] = customerGrafanaRoutes
 		}

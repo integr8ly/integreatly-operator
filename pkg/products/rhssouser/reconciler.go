@@ -348,15 +348,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			return err
 		}
 
-		// if running on GCP configures the experimental spec to use private IP defined in db secret
-		experimentalSpec, err := r.ConfigureExperimentalSpec(ctx, serverClient)
-		if err != nil {
-			return err
-		}
-		if experimentalSpec != nil {
-			kc.Spec.KeycloakDeploymentSpec.Experimental = *experimentalSpec
-		}
-
 		return nil
 	})
 	if err != nil {

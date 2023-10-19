@@ -100,17 +100,8 @@ var _ = Describe("integreatly", func() {
 				Type:      "AWS Specific Tests",
 				TestCases: common.GetAWSSpecificTestCases(installType),
 			})
-		case v1.GCPPlatformType:
-			functionalTests = common.Tests{
-				Type:      fmt.Sprintf("%s Functional", installType),
-				TestCases: FUNCTIONAL_TESTS_GCP,
-			}
-			tests = append(tests, common.Tests{
-				Type:      "GCP Tests",
-				TestCases: common.GetGCPTestCases(installType),
-			})
 		}
-		// Run functional (AWS or GCP) tests only in case of cloud provider storage type installation (useClusterStorage: false)
+		// Run functional AWS tests only in case of cloud provider storage type installation (useClusterStorage: false)
 		// or if overriden by BYPASS_STORAGE_TYPE_CHECK=true env var
 		if shouldRunFunctionalTests() {
 			tests = append(tests, functionalTests)

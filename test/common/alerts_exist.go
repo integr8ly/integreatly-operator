@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	configv1 "github.com/openshift/api/config/v1"
-
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"golang.org/x/text/cases"
@@ -474,31 +472,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 	}
 }
 
-func mcgExpectedRules() []alertsTestRule {
-	return []alertsTestRule{
-		{
-			File: ObservabilityNamespacePrefix + "mcg-operator-ksm-endpoint-alerts.yaml",
-			Rules: []string{
-				"RHOAMMCGOperatorMetricsServiceEndpointDown",
-				"RHOAMMCGOperatorRhmiRegistryCsServiceEndpointDown",
-			},
-		},
-		{
-			File: ObservabilityNamespacePrefix + "mcg-ksm-endpoint-alerts.yaml",
-			Rules: []string{
-				"NooBaaCorePod",
-				"NooBaaDBPod",
-				"NooBaaDefaultBackingStorePod",
-				"NooBaaEndpointPod",
-				"NooBaaS3Endpoint",
-				"NooBaaBucketCapacityOver85Percent",
-				"NooBaaBucketCapacityOver95Percent",
-			},
-		},
-	}
-}
-
-// common AWS and GCP rules applicable to all install types
+// common AWS rules applicable to all install types
 func commonExpectedCloudPlatformRules(installationName string) []alertsTestRule {
 	titledName := caser.String(installationName)
 
@@ -895,9 +869,6 @@ func getExpectedCloudPlatformRules(ctx *TestingContext, installType, installatio
 		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
 			expectedRules = append(expectedRules, managedApiCommonExpectedRules(installationName)...)
 		}
-	}
-	if platformType == string(configv1.GCPPlatformType) {
-		expectedRules = append(expectedRules, mcgExpectedRules()...)
 	}
 	return expectedRules, nil
 }

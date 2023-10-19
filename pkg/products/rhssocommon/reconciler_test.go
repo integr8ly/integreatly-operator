@@ -117,16 +117,6 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			},
 		},
 	}
-	gcpInfrastructure := &configv1.Infrastructure{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster",
-		},
-		Status: configv1.InfrastructureStatus{
-			PlatformStatus: &configv1.PlatformStatus{
-				Type: configv1.GCPPlatformType,
-			},
-		},
-	}
 
 	tests := []struct {
 		name         string
@@ -163,14 +153,6 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
 				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret, awsInfrastructure)
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-		},
-		{
-			name:         "defined secret causes state completed on GCP",
-			installation: installation,
-			fakeClient: func() k8sclient.Client {
-				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret, gcpInfrastructure)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},

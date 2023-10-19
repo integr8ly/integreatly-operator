@@ -70,11 +70,6 @@ products:
         channel: rhmi
         installFrom: local
         manifestsDir: integreatly-marin3r
-    mcg:
-        channel: stable-4.12
-        installFrom: index
-        package: mcg-operator
-        index: quay.io/integreatly/mcg-index:v4.12.3-rhodf
     rhsso:
         channel: stable
         installFrom: index

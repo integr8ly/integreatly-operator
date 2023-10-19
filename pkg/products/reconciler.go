@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
-	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
@@ -163,8 +162,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductGrafana:
 		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log)
-	case integreatlyv1alpha1.ProductMCG:
-		reconciler, err = mcg.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

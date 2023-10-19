@@ -117,5 +117,4 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	common.Marin3rOperatorNamespace = common.NamespacePrefix + "marin3r-operator"
 	common.Marin3rProductNamespace = common.NamespacePrefix + "marin3r"
 	common.SMTPSecretName = common.NamespacePrefix + "smtp"
-	common.McgOperatorNamespace = common.NamespacePrefix + "mcg-operator"
 }
