@@ -75,6 +75,7 @@ var _ = errors.New
 var _ = strings.Replace
 var _ = context.Canceled
 var _ = internaloption.WithDefaultEndpoint
+var _ = internal.Version
 
 const apiId = "sqladmin:v1beta4"
 const apiName = "sqladmin"
@@ -310,6 +311,36 @@ type AclEntry struct {
 
 func (s *AclEntry) MarshalJSON() ([]byte, error) {
 	type NoMethod AclEntry
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// AdvancedMachineFeatures: Specifies options for controlling advanced
+// machine features.
+type AdvancedMachineFeatures struct {
+	// ThreadsPerCore: The number of threads per physical core.
+	ThreadsPerCore int64 `json:"threadsPerCore,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ThreadsPerCore") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ThreadsPerCore") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *AdvancedMachineFeatures) MarshalJSON() ([]byte, error) {
+	type NoMethod AdvancedMachineFeatures
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -809,6 +840,14 @@ type ConnectSettings struct {
 	// minor version is 31.
 	//   "MYSQL_8_0_32" - The database major version is MySQL 8.0 and the
 	// minor version is 32.
+	//   "MYSQL_8_0_33" - The database major version is MySQL 8.0 and the
+	// minor version is 33.
+	//   "MYSQL_8_0_34" - The database major version is MySQL 8.0 and the
+	// minor version is 34.
+	//   "MYSQL_8_0_35" - The database major version is MySQL 8.0 and the
+	// minor version is 35.
+	//   "MYSQL_8_0_36" - The database major version is MySQL 8.0 and the
+	// minor version is 36.
 	//   "SQLSERVER_2019_STANDARD" - The database version is SQL Server 2019
 	// Standard.
 	//   "SQLSERVER_2019_ENTERPRISE" - The database version is SQL Server
@@ -957,8 +996,8 @@ func (s *DatabaseFlags) MarshalJSON() ([]byte, error) {
 
 // DatabaseInstance: A Cloud SQL instance resource.
 type DatabaseInstance struct {
-	// AvailableMaintenanceVersions: List all maintenance versions
-	// applicable on the instance
+	// AvailableMaintenanceVersions: Output only. List all maintenance
+	// versions applicable on the instance
 	AvailableMaintenanceVersions []string `json:"availableMaintenanceVersions,omitempty"`
 
 	// BackendType: The backend type. `SECOND_GEN`: Cloud SQL database
@@ -1036,6 +1075,14 @@ type DatabaseInstance struct {
 	// minor version is 31.
 	//   "MYSQL_8_0_32" - The database major version is MySQL 8.0 and the
 	// minor version is 32.
+	//   "MYSQL_8_0_33" - The database major version is MySQL 8.0 and the
+	// minor version is 33.
+	//   "MYSQL_8_0_34" - The database major version is MySQL 8.0 and the
+	// minor version is 34.
+	//   "MYSQL_8_0_35" - The database major version is MySQL 8.0 and the
+	// minor version is 35.
+	//   "MYSQL_8_0_36" - The database major version is MySQL 8.0 and the
+	// minor version is 36.
 	//   "SQLSERVER_2019_STANDARD" - The database version is SQL Server 2019
 	// Standard.
 	//   "SQLSERVER_2019_ENTERPRISE" - The database version is SQL Server
@@ -1854,6 +1901,14 @@ type Flag struct {
 	// minor version is 31.
 	//   "MYSQL_8_0_32" - The database major version is MySQL 8.0 and the
 	// minor version is 32.
+	//   "MYSQL_8_0_33" - The database major version is MySQL 8.0 and the
+	// minor version is 33.
+	//   "MYSQL_8_0_34" - The database major version is MySQL 8.0 and the
+	// minor version is 34.
+	//   "MYSQL_8_0_35" - The database major version is MySQL 8.0 and the
+	// minor version is 35.
+	//   "MYSQL_8_0_36" - The database major version is MySQL 8.0 and the
+	// minor version is 36.
 	//   "SQLSERVER_2019_STANDARD" - The database version is SQL Server 2019
 	// Standard.
 	//   "SQLSERVER_2019_ENTERPRISE" - The database version is SQL Server
@@ -3582,6 +3637,10 @@ type Settings struct {
 	// ActiveDirectoryConfig: Active Directory configuration, relevant only
 	// for Cloud SQL for SQL Server.
 	ActiveDirectoryConfig *SqlActiveDirectoryConfig `json:"activeDirectoryConfig,omitempty"`
+
+	// AdvancedMachineFeatures: Specifies advance machine configuration for
+	// the instance relevant only for SQL Server.
+	AdvancedMachineFeatures *AdvancedMachineFeatures `json:"advancedMachineFeatures,omitempty"`
 
 	// AuthorizedGaeApplications: The App Engine app IDs that can access
 	// this instance. (Deprecated) Applied to First Generation instances

@@ -68,7 +68,7 @@ var (
 	VersionCloudResources ProductVersion = "1.1.1"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
-	VersionMarin3r        ProductVersion = "0.11.0"
+	VersionMarin3r        ProductVersion = "0.12.3"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "4.2.0"
 
@@ -81,7 +81,7 @@ var (
 	OperatorVersionRHSSOUser      OperatorVersion = "7.6.3-1"
 	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
-	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
+	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
 	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
