@@ -3940,7 +3940,7 @@ services-rhoam:master/github.com/inconshreveable/mousetrap-v1.0.0
 services-rhoam:master/github.com/inconshreveable/mousetrap-v1.0.1
 services-rhoam:master/github.com/inconshreveable/mousetrap-v1.1.0
 services-rhoam:master/github.com/integr8ly/cloud-resource-operator-v1.1.1
-services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.11
+services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.14
 services-rhoam:master/github.com/itchyny/astgen-go-v0.0.0-20200519013840-cf3ea398f645
 services-rhoam:master/github.com/itchyny/gojq-v0.11.0
 services-rhoam:master/github.com/jbenet/go-context-v0.0.0-20150711004518-d14ea06fba99
@@ -4315,6 +4315,7 @@ services-rhoam:master/github.com/stretchr/testify-v1.7.1
 services-rhoam:master/github.com/stretchr/testify-v1.8.0
 services-rhoam:master/github.com/stretchr/testify-v1.8.1
 services-rhoam:master/github.com/stretchr/testify-v1.8.2
+services-rhoam:master/github.com/stretchr/testify-v1.8.4
 services-rhoam:master/github.com/subosito/gotenv-v1.2.0
 services-rhoam:master/github.com/tidwall/pretty-v1.0.0
 services-rhoam:master/github.com/tmc/grpc-websocket-proxy-v0.0.0-20170815181823-89b8d40f7ca8
@@ -4475,6 +4476,7 @@ services-rhoam:master/golang.org/x/crypto-v0.0.0-20211108221036-ceb1ce70b4fa
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20220214200702-86341886e292
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20220315160706-3147a52a75dd
 services-rhoam:master/golang.org/x/crypto-v0.1.0
+services-rhoam:master/golang.org/x/crypto-v0.14.0
 services-rhoam:master/golang.org/x/crypto-v0.5.0
 services-rhoam:master/golang.org/x/exp-v0.0.0-20190121172915-509febef88a4
 services-rhoam:master/golang.org/x/exp-v0.0.0-20190125153040-c74c464bbbf2
@@ -4591,6 +4593,7 @@ services-rhoam:master/golang.org/x/net-v0.0.0-20220722155237-a158d28d115b
 services-rhoam:master/golang.org/x/net-v0.0.0-20221014081412-f15817d10f9b
 services-rhoam:master/golang.org/x/net-v0.1.0
 services-rhoam:master/golang.org/x/net-v0.10.0
+services-rhoam:master/golang.org/x/net-v0.17.0
 services-rhoam:master/golang.org/x/net-v0.2.0
 services-rhoam:master/golang.org/x/net-v0.3.1-0.20221206200815-1e63c2f08a10
 services-rhoam:master/golang.org/x/net-v0.4.0
@@ -4733,7 +4736,6 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20211019181941-9d821ace8654
 services-rhoam:master/golang.org/x/sys-v0.0.0-20211029165221-6e7872819dc8
 services-rhoam:master/golang.org/x/sys-v0.0.0-20211216021012-1d35b9e2eb4e
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220209214540-3681064d5158
-services-rhoam:master/golang.org/x/sys-v0.0.0-20220319134239-a9b59b0215f8
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220520151302-bc2c85ada10a
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220610221304-9f5ed59c137d
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220715151400-c0bba94af5f8
@@ -4741,13 +4743,13 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20220722155257-8c9f86f7a55f
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220728004956-3c1f35247d10
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220908164124-27713097b956
 services-rhoam:master/golang.org/x/sys-v0.1.0
+services-rhoam:master/golang.org/x/sys-v0.13.0
 services-rhoam:master/golang.org/x/sys-v0.2.0
 services-rhoam:master/golang.org/x/sys-v0.3.0
 services-rhoam:master/golang.org/x/sys-v0.4.0
 services-rhoam:master/golang.org/x/sys-v0.5.0
 services-rhoam:master/golang.org/x/sys-v0.6.0
 services-rhoam:master/golang.org/x/sys-v0.7.0
-services-rhoam:master/golang.org/x/sys-v0.8.0
 services-rhoam:master/golang.org/x/term-v0.0.0-20201117132131-f5c789dd3221
 services-rhoam:master/golang.org/x/term-v0.0.0-20201126162022-7de9c90e9dd1
 services-rhoam:master/golang.org/x/term-v0.0.0-20210220032956-6a3ed077a48d
@@ -4755,15 +4757,15 @@ services-rhoam:master/golang.org/x/term-v0.0.0-20210503060354-a79de5458b56
 services-rhoam:master/golang.org/x/term-v0.0.0-20210615171337-6886f2dfbf5b
 services-rhoam:master/golang.org/x/term-v0.0.0-20210927222741-03fcf44c2211
 services-rhoam:master/golang.org/x/term-v0.1.0
+services-rhoam:master/golang.org/x/term-v0.13.0
 services-rhoam:master/golang.org/x/term-v0.2.0
 services-rhoam:master/golang.org/x/term-v0.3.0
-services-rhoam:master/golang.org/x/term-v0.4.0
 services-rhoam:master/golang.org/x/term-v0.5.0
 services-rhoam:master/golang.org/x/term-v0.6.0
 services-rhoam:master/golang.org/x/term-v0.7.0
-services-rhoam:master/golang.org/x/term-v0.8.0
 services-rhoam:master/golang.org/x/text-v0.0.0-20160726164857-2910a502d2bf
 services-rhoam:master/golang.org/x/text-v0.0.0-20170915032832-14c0d48ead0c
+services-rhoam:master/golang.org/x/text-v0.13.0
 services-rhoam:master/golang.org/x/text-v0.3.0
 services-rhoam:master/golang.org/x/text-v0.3.1-0.20180807135948-17ff2d5776d2
 services-rhoam:master/golang.org/x/text-v0.3.2
@@ -8920,8 +8922,7 @@ services-rhoam:master/sigs.k8s.io/yaml-v1.1.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.2.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
 services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
-or:v4.2.1/cloud.google.com/go/compute-v0.1.0
-services-rhoam:master/observability-operator:v4.2.1/cloud.google.com/go/compute-v1.3.0
+erator:v4.2.1/cloud.google.com/go/compute-v1.3.0
 services-rhoam:master/observability-operator:v4.2.1/cloud.google.com/go/compute-v1.5.0
 services-rhoam:master/observability-operator:v4.2.1/cloud.google.com/go/compute-v1.6.0
 services-rhoam:master/observability-operator:v4.2.1/cloud.google.com/go/compute-v1.6.1
