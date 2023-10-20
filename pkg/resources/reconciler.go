@@ -7,7 +7,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	projectv1 "github.com/openshift/api/project/v1"
-	k8sappsv1 "k8s.io/api/apps/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -353,18 +352,4 @@ func (r *Reconciler) ReconcileCsvDeploymentsPriority(ctx context.Context, client
 		return nil
 	}
 	return k8s.PatchIfExists(ctx, client, mutateFn, csv)
-}
-
-func (r *Reconciler) ReconcileDeploymentPriority(ctx context.Context, client k8sclient.Client, deploymentName, deploymentNamespace, priorityClassName string) (integreatlyv1alpha1.StatusPhase, error) {
-	deployment := &k8sappsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploymentName,
-			Namespace: deploymentNamespace,
-		},
-	}
-	mutateFn := func() error {
-		deployment.Spec.Template.Spec.PriorityClassName = priorityClassName
-		return nil
-	}
-	return k8s.PatchIfExists(ctx, client, mutateFn, deployment)
 }
