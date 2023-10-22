@@ -95,10 +95,6 @@ func priorityDeployments() []CustomResource {
 			Namespace: NamespacePrefix + "cloud-resources-operator",
 			Name:      "cloud-resource-operator",
 		},
-		//{
-		//	Namespace: NamespacePrefix + "customer-monitoring",
-		//	Name:      "grafana-deployment",
-		//},
 		{
 			Namespace: NamespacePrefix + "marin3r",
 			Name:      "ratelimit",
