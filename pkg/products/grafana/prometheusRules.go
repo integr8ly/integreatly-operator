@@ -19,7 +19,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
-				GroupName: "grafana-operator-endpoint.rules",
+				GroupName: "grafana-endpoint.rules",
 				Namespace: namespace,
 				Rules: []monv1.Rule{
 					{

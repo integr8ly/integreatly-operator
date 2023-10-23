@@ -139,7 +139,7 @@ func getExpectedRoutes(installation *integreatlyv1alpha1.RHMI, ctx *TestingConte
 			mtManagedApiExpectedRoutes["mcg-operator"] = mcgRoutes
 		}
 		if !resources.IsInProw(installation) {
-			mtManagedApiExpectedRoutes["mcustomer-monitoring"] = customerGrafanaRoutes
+			mtManagedApiExpectedRoutes["customer-monitoring"] = customerGrafanaRoutes
 		}
 		return mtManagedApiExpectedRoutes
 	} else {
@@ -147,7 +147,7 @@ func getExpectedRoutes(installation *integreatlyv1alpha1.RHMI, ctx *TestingConte
 			managedApiExpectedRoutes["mcg-operator"] = mcgRoutes
 		}
 		if !resources.IsInProw(installation) {
-			managedApiExpectedRoutes["mcustomer-monitoring"] = customerGrafanaRoutes
+			managedApiExpectedRoutes["customer-monitoring"] = customerGrafanaRoutes
 		}
 		return managedApiExpectedRoutes
 	}
