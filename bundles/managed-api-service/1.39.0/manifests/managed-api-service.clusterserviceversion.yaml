@@ -71,7 +71,7 @@ metadata:
           "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:582fc2d21cb3654f22f3ca50c39966041846e16a1543fc35c6a83948a2fa6c40"
         },
         "marin3r.v0.11.0": {
-          "marin3r.v0.11.0": "quay.io/3scale/marin3r:v0.11.0"
+          "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
         },
         "rhsso-operator.18.0.x": {
           "rhsso-operator.7.6.3-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
@@ -83,7 +83,7 @@ metadata:
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.4-3"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.8-5"
         },
         "limitador": {
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
