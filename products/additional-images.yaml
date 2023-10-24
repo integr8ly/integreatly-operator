@@ -9,6 +9,9 @@ ratelimit:
 limitador:
   - name: marin3r-limitador
     url: "quay.io/3scale/limitador:v0.5.1"
-grafana-operator:
-  - name: observability-origin-oauth-proxy
-    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:582fc2d21cb3654f22f3ca50c39966041846e16a1543fc35c6a83948a2fa6c40"
+grafana:
+  - name: grafana
+    url: "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
+grafana-ose-oauth-proxy:
+  - name: grafana-ose-oauth-proxy
+    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:62fdde504a8e55669286c525b2d3f224740800843c0a0732d18d5b1024716551"
