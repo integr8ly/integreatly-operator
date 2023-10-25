@@ -378,3 +378,14 @@ func (r *Reconciler) checkDeploymentStatus(client k8sclient.Client) (bool, error
 	}
 	return true, nil
 }
+
+func (r *Reconciler) checkDeploymentStatus(client k8sclient.Client) (bool, error) {
+	deployment := &appsv1.Deployment{}
+	if err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: grafanaDeployment, Namespace: r.Config.GetNamespace()}, deployment); err != nil {
+		return false, err
+	}
+	if deployment.Status.AvailableReplicas == 0 || deployment.Status.ReadyReplicas < deployment.Status.Replicas {
+		return false, nil
+	}
+	return true, nil
+}
