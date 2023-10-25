@@ -53,7 +53,7 @@ oc get ns | grep rhoam
 redhat-rhoam-3scale                                Active   1h
 redhat-rhoam-3scale-operator                       Active   1h
 redhat-rhoam-cloud-resources-operator              Active   1h
-redhat-rhoam-customer-monitoring-operator          Active   1h
+redhat-rhoam-customer-monitoring                   Active   1h
 redhat-rhoam-marin3r                               Active   1h
 redhat-rhoam-marin3r-operator                      Active   1h
 redhat-rhoam-operator                              Active   5d13h

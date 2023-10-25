@@ -66,10 +66,6 @@ metadata:
         "cloud-resource-operator.v1.1.1": {
           "cloud-resources.v1.1.0": "quay.io/integreatly/cloud-resource-operator:v1.1.0"
         },
-        "grafana-operator.v4.2.0": {
-          "grafana-operator.v4.2.0": "quay.io/grafana-operator/grafana-operator:v4.2.0",
-          "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:582fc2d21cb3654f22f3ca50c39966041846e16a1543fc35c6a83948a2fa6c40"
-        },
         "marin3r.v0.11.0": {
           "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
         },
@@ -89,7 +85,6 @@ metadata:
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
         }
       }
-    serviceAffecting: "true"
   name: managed-api-service.v1.39.0
   namespace: placeholder
 spec:
@@ -190,6 +185,7 @@ spec:
               resources:
                 - namespaces
               verbs:
+                - delete
                 - get
                 - list
                 - update
@@ -443,6 +439,7 @@ spec:
             - apiGroups:
                 - monitoring.rhobs
               resources:
+                - monitoringstacks
                 - podmonitors
                 - probes
                 - prometheusrules

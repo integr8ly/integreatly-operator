@@ -9,7 +9,16 @@ import (
 )
 
 func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
-	grafanaRouteHostname, err := getGrafanaRoute(ctx.Client, CustomerGrafanaNamespace)
+	isInProw, err := isInProw(ctx)
+	if err != nil {
+		t.Logf("error getting in_prow annotation: %s", err)
+	}
+	if isInProw {
+		t.Skip("Skipping due to Package Operator is missing in Prow")
+		return
+	}
+
+	grafanaRouteHostname, err := GetGrafanaRouteHostname(ctx.Client, CustomerGrafanaNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
@@ -41,7 +50,7 @@ func testRoute(t TestingTB, ctx *TestingContext, grafanaRouteHostname string) {
 	}
 }
 
-func getGrafanaRoute(c client.Client, namespace string) (string, error) {
+func GetGrafanaRouteHostname(c client.Client, namespace string) (string, error) {
 	const (
 		routeGrafanaName = "grafana-route"
 	)

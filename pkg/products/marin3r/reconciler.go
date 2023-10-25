@@ -263,36 +263,37 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	if !resources.IsInProw(installation) {
+		grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
+		if err != nil {
+			if installStage, ok := installation.Status.Stages[integreatlyv1alpha1.InstallStage]; ok {
+				if installStage.Products != nil {
+					grafanaProduct, grafanaProductExists := installStage.Products[integreatlyv1alpha1.ProductGrafana]
+					// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
+					if !grafanaProductExists ||
+						(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&
+							(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
 
-	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
-	if err != nil {
-		if installStage, ok := installation.Status.Stages[integreatlyv1alpha1.InstallStage]; ok {
-			if installStage.Products != nil {
-				grafanaProduct, grafanaProductExists := installStage.Products[integreatlyv1alpha1.ProductGrafana]
-				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
-				if !grafanaProductExists ||
-					(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&
-						(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
-
-					r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
-					return integreatlyv1alpha1.PhaseInProgress, nil
+						r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
+						return integreatlyv1alpha1.PhaseInProgress, nil
+					}
 				}
 			}
+			r.log.Error("failed to get Grafana console URL", err)
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		r.log.Error("failed to get Grafana console URL", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
 
-	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", grafanaConsoleURL)
-	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL, namespace)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
+		grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", grafanaConsoleURL)
+		alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL, namespace)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 
-	phase, err := alertReconciler.ReconcileAlerts(ctx, client)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
-		return phase, err
+		phase, err := alertReconciler.ReconcileAlerts(ctx, client)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+			return phase, err
+		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

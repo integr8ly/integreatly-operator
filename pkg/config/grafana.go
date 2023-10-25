@@ -1,13 +1,8 @@
 package config
 
 import (
-	"errors"
-
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Grafana struct {
@@ -18,14 +13,7 @@ func NewGrafana(config ProductConfig) *Grafana {
 	return &Grafana{config: config}
 }
 func (s *Grafana) GetWatchableCRDs() []runtime.Object {
-	return []runtime.Object{
-		&grafanav1alpha1.Grafana{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Grafana",
-				APIVersion: grafanav1alpha1.GroupVersion.String(),
-			},
-		},
-	}
+	return nil
 }
 
 func (s *Grafana) GetNamespace() string {
@@ -34,14 +22,6 @@ func (s *Grafana) GetNamespace() string {
 
 func (s *Grafana) SetNamespace(newNamespace string) {
 	s.config["NAMESPACE"] = newNamespace
-}
-
-func (s *Grafana) GetOperatorNamespace() string {
-	return s.config["OPERATOR_NAMESPACE"]
-}
-
-func (s *Grafana) SetOperatorNamespace(newNamespace string) {
-	s.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (s *Grafana) Read() ProductConfig {
@@ -68,20 +48,13 @@ func (s *Grafana) GetProductVersion() integreatlyv1alpha1.ProductVersion {
 	return integreatlyv1alpha1.ProductVersion(s.config["VERSION"])
 }
 
-func (s *Grafana) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
-	return integreatlyv1alpha1.OperatorVersionGrafana
-}
-
 func (s *Grafana) SetProductVersion(newVersion string) {
 	s.config["VERSION"] = newVersion
 }
 
-func (s *Grafana) Validate() error {
-	if s.GetNamespace() == "" {
-		return errors.New("config namespace is not defined")
-	}
-	if s.GetProductName() == "" {
-		return errors.New("config product name is not defined")
-	}
-	return nil
+func (s *Grafana) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	// it's a stub, not in use. Present just to avoid error in reconciler:
+	//Cannot use 'productConfig' (type *Grafana) as the type ConfigReadableType does not implement 'ConfigReadable'
+	//as some methods are missing:GetOperatorVersion() integreatlyv1alpha1.OperatorVersion
+	return "123stub"
 }

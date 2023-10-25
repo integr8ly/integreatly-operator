@@ -162,7 +162,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 	case integreatlyv1alpha1.ProductMarin3r:
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductGrafana:
-		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
+		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductMCG:
 		reconciler, err = mcg.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:

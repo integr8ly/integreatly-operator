@@ -16,7 +16,6 @@ func mangedApiTargets() map[string][]string {
 			"/integreatly-3scale-admin-ui",
 			"/integreatly-3scale-system-developer",
 			"/integreatly-3scale-system-master",
-			"/integreatly-grafana",
 			"/integreatly-rhsso",
 			"/integreatly-rhssouser",
 		},
@@ -51,7 +50,7 @@ func mtMangedApiTargets() map[string][]string {
 			"/integreatly-3scale-admin-ui",
 			"/integreatly-3scale-system-developer",
 			"/integreatly-3scale-system-master",
-			"/integreatly-grafana",
+			//"/integreatly-grafana",
 			"/integreatly-rhsso",
 		},
 		"serviceMonitor/" + ObservabilityProductNamespace: {
