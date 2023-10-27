@@ -333,10 +333,6 @@ create/3scale/index:
 create/rhsso/index:
 	PRODUCT=rhsso ./scripts/create-product-index.sh
 
-.PHONY: create/mcg/index
-create/mcg/index:
-	PRODUCT=mcg ./scripts/create-product-index.sh
-
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@ - oc new-project $(NAMESPACE_PREFIX)cloud-resources-operator

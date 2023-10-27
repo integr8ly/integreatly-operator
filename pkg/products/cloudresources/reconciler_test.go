@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
-	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"github.com/integr8ly/integreatly-operator/utils"
 
@@ -317,34 +316,6 @@ func TestReconciler_setPlatformStrategyName(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "successfully set strategy name for gcp infrastructure",
-			fields: fields{
-				Config: config.NewCloudResources(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				ConfigManager: nil,
-				installation:  nil,
-				mpm:           nil,
-				log:           logger.Logger{},
-				Reconciler:    nil,
-				recorder:      nil,
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cluster",
-					},
-					Status: configv1.InfrastructureStatus{
-						PlatformStatus: &configv1.PlatformStatus{
-							Type: configv1.GCPPlatformType,
-						},
-					},
-				}),
-			},
-			want:    croGCP.DefaultConfigMapName,
-			wantErr: false,
-		},
-		{
 			name: "error determining platform type",
 			fields: fields{
 				Config: config.NewCloudResources(config.ProductConfig{
@@ -476,49 +447,6 @@ func TestReconciler_reconcileCIDRValue(t *testing.T) {
 						},
 						Data: map[string]string{
 							"_network": `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "","createStrategy": {}, "deleteStrategy": {} }}`,
-						},
-					},
-				),
-			},
-			wantErr: false,
-		},
-		{
-			name: "success reconciling cidr value - gcp",
-			fields: fields{
-				Config: config.NewCloudResources(config.ProductConfig{
-					"STRATEGIES_CONFIG_MAP_NAME": croGCP.DefaultConfigMapName,
-				}),
-				ConfigManager: nil,
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "test",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: "managed-api",
-					},
-				},
-				mpm:        nil,
-				log:        logger.Logger{},
-				Reconciler: nil,
-				recorder:   nil,
-			},
-			args: args{
-				ctx: context.TODO(),
-				client: moqclient.NewSigsClientMoqWithScheme(scheme,
-					clusterInfrastructure(configv1.GCPPlatformType),
-					addonParamsSecret("test",
-						map[string][]byte{
-							cidrRangeKeyGcp: []byte("10.1.0.0/22"),
-						},
-					),
-					&corev1.ConfigMap{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      croGCP.DefaultConfigMapName,
-							Namespace: "test",
-						},
-						Data: map[string]string{
-							"_network": `{"development": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }}`,
 						},
 					},
 				),
@@ -713,61 +641,6 @@ func TestReconciler_reconcileCloudResourceStrategies(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "success when params are entered in UI",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return testNamespace
-					},
-				},
-				log: getLogger(),
-				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
-					WithProductDeclaration(marketplace.ProductDeclaration{}),
-				recorder: nil,
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme,
-					clusterInfrastructure(configv1.GCPPlatformType),
-					addonParamsSecret(testNamespace,
-						map[string][]byte{
-							MaintenanceDay:  []byte("2"),
-							MaintenanceHour: []byte("5"),
-						},
-					),
-				),
-				ctx: context.TODO(),
-			},
-			want:    integreatlyv1alpha1.PhaseCompleted,
-			wantErr: false,
-		},
-		{
-			name: "success when params are not entered in UI, use defaults",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return testNamespace
-					},
-				},
-				log: getLogger(),
-				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
-					WithProductDeclaration(marketplace.ProductDeclaration{}),
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme,
-					clusterInfrastructure(configv1.GCPPlatformType),
-					addonParamsSecret(testNamespace,
-						map[string][]byte{
-							MaintenanceDay:  []byte(""),
-							MaintenanceHour: []byte(""),
-						},
-					),
-				),
-				ctx: context.TODO(),
-			},
-			want:    integreatlyv1alpha1.PhaseCompleted,
-			wantErr: false,
-		},
-		{
 			name: "success when params are not in addon params secret (aws), use defaults",
 			fields: fields{
 				ConfigManager: &config.ConfigReadWriterMock{
@@ -790,60 +663,6 @@ func TestReconciler_reconcileCloudResourceStrategies(t *testing.T) {
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
-		},
-		{
-			name: "error when incorrect values entered for maintenanceDay",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return testNamespace
-					},
-				},
-				log: getLogger(),
-				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
-					WithProductDeclaration(marketplace.ProductDeclaration{}),
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme,
-					clusterInfrastructure(configv1.GCPPlatformType),
-					addonParamsSecret(testNamespace,
-						map[string][]byte{
-							MaintenanceDay:  []byte("Monday"),
-							MaintenanceHour: []byte("2"),
-						},
-					),
-				),
-				ctx: context.TODO(),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "error when incorrect values entered for maintenanceHour",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return testNamespace
-					},
-				},
-				log: getLogger(),
-				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
-					WithProductDeclaration(marketplace.ProductDeclaration{}),
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme,
-					clusterInfrastructure(configv1.GCPPlatformType),
-					addonParamsSecret(testNamespace,
-						map[string][]byte{
-							MaintenanceDay:  []byte("4"),
-							MaintenanceHour: []byte("Two"),
-						},
-					),
-				),
-				ctx: context.TODO(),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
 		},
 		{
 			name: "failure reconciling strategy map",

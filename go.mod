@@ -16,8 +16,6 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/integr8ly/cloud-resource-operator v1.1.1
 	github.com/integr8ly/keycloak-client v0.1.14
-	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
-	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	github.com/openshift/addon-operator v1.12.0
@@ -44,7 +42,6 @@ require (
 	k8s.io/apimachinery v0.26.5
 	k8s.io/client-go v0.26.3
 	k8s.io/metrics v0.26.3
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	package-operator.run/apis v1.7.0
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/yaml v1.3.0
@@ -107,7 +104,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
-	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
@@ -139,6 +135,7 @@ require (
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kube-aggregator v0.25.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

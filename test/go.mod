@@ -3,9 +3,6 @@ module github.com/integr8ly/integreatly-operator/test
 go 1.19
 
 require (
-	cloud.google.com/go/compute v1.19.0
-	cloud.google.com/go/redis v1.11.0
-	cloud.google.com/go/storage v1.30.1
 	github.com/3scale-ops/marin3r v0.12.3
 	github.com/3scale/3scale-operator v0.10.1-0.20230901071118-2447e55d3259
 	github.com/3scale/3scale-porta-go-client v0.9.0
@@ -19,7 +16,6 @@ require (
 	github.com/integr8ly/cloud-resource-operator v1.1.1
 	github.com/integr8ly/integreatly-operator v1.19.1-0.20230418125645-5aec6c015174
 	github.com/integr8ly/keycloak-client v0.1.14
-	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	github.com/openshift-online/ocm-sdk-go v0.1.344
@@ -34,7 +30,6 @@ require (
 	golang.org/x/net v0.17.0
 	golang.org/x/term v0.13.0
 	golang.org/x/text v0.13.0
-	google.golang.org/api v0.121.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3
@@ -47,10 +42,13 @@ require (
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
+	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/monitoring v1.13.0 // indirect
+	cloud.google.com/go/redis v1.11.0 // indirect
+	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/3scale-ops/basereconciler v0.3.4 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/RHsyseng/operator-utils v1.4.9 // indirect
@@ -102,7 +100,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
@@ -115,7 +112,6 @@ require (
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6 // indirect
-	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
@@ -137,6 +133,7 @@ require (
 	golang.org/x/tools v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	google.golang.org/api v0.121.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect

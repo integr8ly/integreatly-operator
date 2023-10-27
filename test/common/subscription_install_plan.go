@@ -4,9 +4,7 @@ import (
 	"context"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	configv1 "github.com/openshift/api/config/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -93,12 +91,6 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 
 func getSubscriptionsToCheck(installType string, ctx *TestingContext) []SubscriptionCheck {
 	commonSubscriptionsToCheck := commonSubscriptionsToCheck()
-	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-		commonSubscriptionsToCheck = append(commonSubscriptionsToCheck, SubscriptionCheck{
-			Name:      constants.MCGSubscriptionName,
-			Namespace: McgOperatorNamespace,
-		})
-	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonSubscriptionsToCheck
 	} else {

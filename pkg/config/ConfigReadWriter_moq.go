@@ -36,9 +36,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //			ReadGrafanaFunc: func() (*Grafana, error) {
 //				panic("mock out the ReadGrafana method")
 //			},
-//			ReadMCGFunc: func() (*MCG, error) {
-//				panic("mock out the ReadMCG method")
-//			},
 //			ReadMarin3rFunc: func() (*Marin3r, error) {
 //				panic("mock out the ReadMarin3r method")
 //			},
@@ -85,9 +82,6 @@ type ConfigReadWriterMock struct {
 	// ReadGrafanaFunc mocks the ReadGrafana method.
 	ReadGrafanaFunc func() (*Grafana, error)
 
-	// ReadMCGFunc mocks the ReadMCG method.
-	ReadMCGFunc func() (*MCG, error)
-
 	// ReadMarin3rFunc mocks the ReadMarin3r method.
 	ReadMarin3rFunc func() (*Marin3r, error)
 
@@ -129,9 +123,6 @@ type ConfigReadWriterMock struct {
 		// ReadGrafana holds details about calls to the ReadGrafana method.
 		ReadGrafana []struct {
 		}
-		// ReadMCG holds details about calls to the ReadMCG method.
-		ReadMCG []struct {
-		}
 		// ReadMarin3r holds details about calls to the ReadMarin3r method.
 		ReadMarin3r []struct {
 		}
@@ -166,7 +157,6 @@ type ConfigReadWriterMock struct {
 	lockGetOperatorNamespace        sync.RWMutex
 	lockReadCloudResources          sync.RWMutex
 	lockReadGrafana                 sync.RWMutex
-	lockReadMCG                     sync.RWMutex
 	lockReadMarin3r                 sync.RWMutex
 	lockReadProduct                 sync.RWMutex
 	lockReadRHSSO                   sync.RWMutex
@@ -335,33 +325,6 @@ func (mock *ConfigReadWriterMock) ReadGrafanaCalls() []struct {
 	mock.lockReadGrafana.RLock()
 	calls = mock.calls.ReadGrafana
 	mock.lockReadGrafana.RUnlock()
-	return calls
-}
-
-// ReadMCG calls ReadMCGFunc.
-func (mock *ConfigReadWriterMock) ReadMCG() (*MCG, error) {
-	if mock.ReadMCGFunc == nil {
-		panic("ConfigReadWriterMock.ReadMCGFunc: method is nil but ConfigReadWriter.ReadMCG was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadMCG.Lock()
-	mock.calls.ReadMCG = append(mock.calls.ReadMCG, callInfo)
-	mock.lockReadMCG.Unlock()
-	return mock.ReadMCGFunc()
-}
-
-// ReadMCGCalls gets all the calls that were made to ReadMCG.
-// Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMCGCalls())
-func (mock *ConfigReadWriterMock) ReadMCGCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadMCG.RLock()
-	calls = mock.calls.ReadMCG
-	mock.lockReadMCG.RUnlock()
 	return calls
 }
 

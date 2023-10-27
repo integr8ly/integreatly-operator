@@ -36,7 +36,6 @@ var (
 	Marin3rProductNamespace        = NamespacePrefix + "marin3r"
 	CustomerGrafanaNamespace       = NamespacePrefix + "customer-monitoring"
 	CustomerGrafanaNamespacePrefix = CustomerGrafanaNamespace + "-"
-	McgOperatorNamespace           = NamespacePrefix + "mcg-operator"
 )
 
 type TestingContext struct {

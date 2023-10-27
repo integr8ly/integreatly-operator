@@ -6,9 +6,7 @@ import (
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -316,19 +314,6 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 }
 
 func getStagesForInstallType(ctx *TestingContext, installType string) []StageDeletion {
-	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-		managedApiStages = append(managedApiStages, []StageDeletion{
-			{
-				productStageName: integreatlyv1alpha1.ProductsStage,
-				namespaces: []string{
-					McgOperatorNamespace,
-				},
-				removeFinalizers: func(ctx *TestingContext) error {
-					return nil
-				},
-			},
-		}...)
-	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return mtManagedApiStages
 	} else {

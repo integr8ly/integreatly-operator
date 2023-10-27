@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -19,11 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/foxcpp/go-mockdns"
-	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
-	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,7 +39,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -398,73 +395,6 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
-		},
-		{
-			name: "Test unsuccessful installation, unable to determine platform type",
-			fields: fields{
-				sigsClient: moqclient.NewSigsClientMoqWithScheme(scheme, func() []runtime.Object {
-					// remove infrastructure CR from objects list
-					output := objects
-					pos := -1
-				loop:
-					for i, obj := range output {
-						switch obj.(type) {
-						case *configv1.Infrastructure:
-							pos = i
-							break loop
-						}
-					}
-					if pos != -1 {
-						output[pos] = output[len(output)-1]
-						output = output[:len(output)-1]
-					}
-					return output
-				}()...),
-				mpm: &marketplace.MarketplaceInterfaceMock{
-					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-
-						return nil
-					},
-					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-						return &operatorsv1alpha1.InstallPlan{
-								ObjectMeta: metav1.ObjectMeta{
-									Name: "3scale-install-plan",
-								},
-								Status: operatorsv1alpha1.InstallPlanStatus{
-									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-								},
-							}, &operatorsv1alpha1.Subscription{
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      "rhmi-3scale",
-									Namespace: "3scale",
-								},
-								Status: operatorsv1alpha1.SubscriptionStatus{
-									Install: &operatorsv1alpha1.InstallPlanReference{
-										Name: "3scale-install-plan",
-									},
-								},
-							}, nil
-					},
-				},
-				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
-				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-				recorder:         setupRecorder(),
-				threeScaleClient: getThreeScaleClient(),
-				fakeConfig:       getBasicConfigMoc(),
-			},
-			args: args{
-				installation:  getValidInstallation(integreatlyv1alpha1.InstallationTypeManagedApi),
-				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
-				productConfig: &quota.ProductConfigMock{
-					ConfigureFunc: func(obj metav1.Object) error {
-						return nil
-					},
-				},
-				uninstall: false,
-			},
-			want:        integreatlyv1alpha1.PhaseFailed,
-			wantErr:     true,
-			mockNetwork: true,
 		},
 	}
 	for _, tt := range tests {
@@ -833,77 +763,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
-		},
-		{
-			name: "test successful reconcile of s3 blob storage, GCP",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return "redhat-rhoam-operator"
-					},
-				},
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				installation:  getTestInstallation("managed"),
-				productConfig: productConfigMock(),
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test",
-						},
-						Data: map[string][]byte{
-							"credentialKeyID":     []byte("test"),
-							"credentialSecretKey": []byte("test"),
-							"bucketName":          []byte("test"),
-							"bucketRegion":        []byte("test"),
-							"minio":               []byte("test"),
-						},
-					},
-					&threescalev1.APIManager{
-						TypeMeta: metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3scale",
-							Namespace: "test",
-						},
-						Spec:   threescalev1.APIManagerSpec{},
-						Status: threescalev1.APIManagerStatus{},
-					},
-					&cloudcredentialv1.CloudCredential{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: sts.ClusterCloudCredentialName,
-						},
-						Spec: cloudcredentialv1.CloudCredentialSpec{
-							CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
-						},
-					},
-					&noobaav1.ObjectBucketClaim{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      mcg.ThreescaleBucketClaim,
-							Namespace: mcg.DefaultInstallationNamespace + "-operator",
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      mcg.ThreescaleBucketClaim,
-							Namespace: mcg.DefaultInstallationNamespace + "-operator",
-						},
-						Data: map[string][]byte{},
-					},
-					&routev1.Route{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      mcg.S3RouteName,
-							Namespace: mcg.DefaultInstallationNamespace + "-operator",
-						},
-					}),
-				platformType: configv1.GCPPlatformType,
-			},
-			want:    integreatlyv1alpha1.PhaseInProgress,
-			wantErr: false,
 		},
 		{
 			name: "test unsuccessful reconcile of components, unsupported platform type",
@@ -2425,29 +2284,6 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			verificationFunction: verifyMessageBusDoesNotExist,
 		},
 		{
-			name: "test initial install no MESSAGE_BUS keys on GCP",
-			fields: fields{
-				ConfigManager: nil,
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
-			},
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec),
-				platformType: configv1.GCPPlatformType,
-			},
-			want:                 integreatlyv1alpha1.PhaseCompleted,
-			wantErr:              false,
-			verificationFunction: verifyMessageBusDoesNotExist,
-		},
-		{
 			name: "test existing install no MESSAGE_BUS keys",
 			fields: fields{
 				ConfigManager: nil,
@@ -3644,148 +3480,6 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 			}
 			if err := r.createStsS3Secret(tt.args.ctx, tt.args.serverClient, tt.args.credSec, tt.args.blobStorageSec); (err != nil) != tt.wantErr {
 				t.Errorf("createStsS3Secret() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestReconciler_createMCGS3Secret(t *testing.T) {
-	scheme, err := utils.NewTestScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	obc := &noobaav1.ObjectBucketClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mcg.ThreescaleBucketClaim,
-			Namespace: mcg.DefaultInstallationNamespace + "-operator",
-		},
-		Spec: obv1.ObjectBucketClaimSpec{
-			BucketName: mcg.ThreescaleBucketClaim,
-		},
-		Status: obv1.ObjectBucketClaimStatus{
-			Phase: obv1.ObjectBucketClaimStatusPhaseBound,
-		},
-	}
-
-	bucketSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mcg.ThreescaleBucketClaim,
-			Namespace: mcg.DefaultInstallationNamespace + "-operator",
-		},
-		Data: map[string][]byte{
-			apps.AwsAccessKeyID:     []byte("id"),
-			apps.AwsSecretAccessKey: []byte("key"),
-		},
-	}
-
-	s3Route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mcg.S3RouteName,
-			Namespace: mcg.DefaultInstallationNamespace + "-operator",
-		},
-	}
-
-	type fields struct {
-		ConfigManager config.ConfigReadWriter
-		Config        *config.ThreeScale
-		mpm           marketplace.MarketplaceInterface
-		installation  *integreatlyv1alpha1.RHMI
-		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
-		oauthv1Client oauthClient.OauthV1Interface
-		Reconciler    *resources.Reconciler
-		extraParams   map[string]string
-		recorder      record.EventRecorder
-		log           l.Logger
-	}
-	type args struct {
-		ctx          context.Context
-		serverClient k8sclient.Client
-		credSec      *corev1.Secret
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test unable to get object bucket claim",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme),
-				credSec:      &corev1.Secret{},
-			},
-			fields: fields{
-				Config:       config.NewThreeScale(config.ProductConfig{}),
-				installation: &integreatlyv1alpha1.RHMI{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "test unable to get secret",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, obc),
-				credSec:      &corev1.Secret{},
-			},
-			fields: fields{
-				Config:       config.NewThreeScale(config.ProductConfig{}),
-				installation: &integreatlyv1alpha1.RHMI{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "test unable to get route",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, obc, bucketSecret),
-				credSec:      &corev1.Secret{},
-			},
-			fields: fields{
-				Config:       config.NewThreeScale(config.ProductConfig{}),
-				installation: &integreatlyv1alpha1.RHMI{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "test successfully create s3 credentials for mcg",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, obc, bucketSecret, s3Route),
-				credSec: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      s3CredentialsSecretName,
-						Namespace: defaultInstallationNamespace,
-					},
-					Data: map[string][]byte{},
-				},
-			},
-			fields: fields{
-				Config:       config.NewThreeScale(config.ProductConfig{}),
-				installation: &integreatlyv1alpha1.RHMI{},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				ConfigManager: tt.fields.ConfigManager,
-				Config:        tt.fields.Config,
-				mpm:           tt.fields.mpm,
-				installation:  tt.fields.installation,
-				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
-				oauthv1Client: tt.fields.oauthv1Client,
-				Reconciler:    tt.fields.Reconciler,
-				extraParams:   tt.fields.extraParams,
-				recorder:      tt.fields.recorder,
-				log:           tt.fields.log,
-			}
-			if err := r.createMCGS3Secret(tt.args.ctx, tt.args.serverClient, tt.args.credSec); (err != nil) != tt.wantErr {
-				t.Errorf("createMCGS3Secret() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

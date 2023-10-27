@@ -59,7 +59,6 @@ var (
 	ProductCloudResources ProductName = "cloud-resources"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
-	ProductMCG            ProductName = "mcg"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
@@ -69,7 +68,6 @@ var (
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMarin3r        ProductVersion = "0.12.3"
-	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "9.0.9"
 
 	PreflightInProgress PreflightStatus = ""
@@ -82,7 +80,6 @@ var (
 	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
-	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       = "ProcessingError"

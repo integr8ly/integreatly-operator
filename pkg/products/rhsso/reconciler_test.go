@@ -246,17 +246,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
-	infrastructureGcp := &configv1.Infrastructure{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster",
-		},
-		Status: configv1.InfrastructureStatus{
-			PlatformStatus: &configv1.PlatformStatus{
-				Type: configv1.GCPPlatformType,
-			},
-		},
-	}
-
 	//secret created by the cloud resource operator postgres reconciler
 	croPostgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -295,18 +284,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		{
 			Name:                  "Test reconcile custom resource returns completed when successful created",
 			FakeClient:            utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &installation,
-			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductDeclaration:    localProductDeclaration,
-		},
-		{
-			Name:                  "Test reconcile custom resource returns completed when successful created on gcp",
-			FakeClient:            utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureGcp),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -518,20 +495,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Installation:          &installation,
 			ExpectError:           true,
 			ExpectedError:         "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
-			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductDeclaration:    localProductDeclaration,
-		},
-		{
-			Name:                  "Test unsuccessful determining platform type",
-			FakeClient:            utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &installation,
-			ExpectError:           true,
-			ExpectedError:         `failed to create/update keycloak custom resource: failed to retrieve cluster infrastructure: infrastructures.config.openshift.io "cluster" not found`,
 			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",

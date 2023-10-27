@@ -35,7 +35,6 @@ import (
 	croStrat "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
-	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -56,7 +55,6 @@ const (
 	DefaultMaintenanceDay        = time.Thursday
 	DefaultMaintenanceHour       = 2
 	cidrRangeKeyAws              = "cidr-range"
-	cidrRangeKeyGcp              = "cidr-range-gcp"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001", "elasticache-redis-6-2-update"}
@@ -598,8 +596,6 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	switch platformType {
 	case configv1.AWSPlatformType:
 		cidrValueID = cidrRangeKeyAws
-	case configv1.GCPPlatformType:
-		cidrValueID = cidrRangeKeyGcp
 	default:
 		return fmt.Errorf("unsupported platform type %s", platformType)
 	}
@@ -734,8 +730,6 @@ func (r *Reconciler) setPlatformStrategyName(ctx context.Context, client k8sclie
 	switch platformType {
 	case configv1.AWSPlatformType:
 		r.Config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
-	case configv1.GCPPlatformType:
-		r.Config.SetStrategiesConfigMapName(croGCP.DefaultConfigMapName)
 	default:
 		return fmt.Errorf("unsupported platform type %s", platformType)
 	}

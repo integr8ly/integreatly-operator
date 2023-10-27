@@ -837,40 +837,6 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "successfully check gcp cloud resources config",
-			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "rhoam",
-						Namespace: rhoamOperatorNs,
-					},
-				},
-			},
-			args: args{
-				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme,
-					&corev1.ConfigMap{
-						ObjectMeta: v1.ObjectMeta{
-							Name:       DefaultCloudResourceConfigName,
-							Namespace:  rhoamOperatorNs,
-							Finalizers: []string{previousDeletionFinalizer},
-						},
-					},
-					&configv1.Infrastructure{
-						ObjectMeta: v1.ObjectMeta{
-							Name: "cluster",
-						},
-						Status: configv1.InfrastructureStatus{
-							PlatformStatus: &configv1.PlatformStatus{
-								Type: configv1.GCPPlatformType,
-							},
-						},
-					},
-				),
-			},
-			want:    integreatlyv1alpha1.PhaseCompleted,
-			wantErr: false,
-		},
-		{
 			name: "successfully check cloud resources config with enabled useClusterStorage",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{

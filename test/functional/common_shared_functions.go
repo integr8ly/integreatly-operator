@@ -56,7 +56,7 @@ func getExpectedRedis(installType string, installationName string) []string {
 /*
 Each resource provisioned contains an annotation with the resource ID
 This function iterates over a list of expected resource CR's
-Returns a list of resource ID's, these ID's can be used when testing AWS or GCP resources
+Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
 func GetRedisInstanceData(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) (map[string]string, []error) {
 	var foundErrors []error
@@ -201,7 +201,7 @@ func getExpectedThreeScaleBucketResourceName(installationName string) string {
 	return fmt.Sprintf("threescale-blobstorage-%s", installationName)
 }
 
-// Shared functions for AWS s3 and GCP cloud storage
+// Shared functions for AWS s3 cloud storage
 
 func getExpectedBlobStorage(installType string, installationName string) []string {
 
@@ -214,7 +214,7 @@ func getExpectedBlobStorage(installType string, installationName string) []strin
 }
 
 // GetCloudObjectStorageBlobStorageResourceIDs - used to get Blob Storage Resource IDs (buckets)
-// for cloud object storages: AWS S3 or GCP Cloud Storage
+// for cloud object storages: AWS S3 Cloud Storage
 func GetCloudObjectStorageBlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string

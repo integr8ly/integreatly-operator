@@ -330,32 +330,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 		},
-		{
-			Name:            "Test reconcile custom resource unsuccessful determining platform type",
-			FakeClient:      utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation: &integreatlyv1alpha1.RHMI{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "RHMI",
-					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-				},
-				ObjectMeta: controllerruntime.ObjectMeta{
-					Namespace: defaultOperatorNamespace,
-				},
-			},
-			ExpectError:           true,
-			ExpectedError:         `failed to create/update keycloak custom resource: failed to retrieve cluster infrastructure: infrastructures.config.openshift.io "cluster" not found`,
-			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &quota.ProductConfigMock{
-				ConfigureFunc: func(obj metav1.Object) error {
-					return nil
-				},
-			},
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {

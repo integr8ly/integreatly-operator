@@ -3,17 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"strings"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	noobaaDefaultBackingStorePvc = "noobaa-default-backing-store-noobaa-pvc"
-	dbNoobaaDbPgPvc              = "db-noobaa-db-pg-0"
 )
 
 // common to all installTypes including managed-api
@@ -27,17 +18,6 @@ func commonPvcNamespaces(ctx *TestingContext) []PersistentVolumeClaim {
 		},
 	}
 
-	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
-		pvc = append(pvc, []PersistentVolumeClaim{
-			{
-				Namespace: McgOperatorNamespace,
-				PersistentVolumeClaimNames: []string{
-					dbNoobaaDbPgPvc,
-					noobaaDefaultBackingStorePvc,
-				},
-			},
-		}...)
-	}
 	return pvc
 }
 
@@ -81,9 +61,6 @@ func checkForClaim(claim string, pvcs *corev1.PersistentVolumeClaimList) error {
 	//Check claim exists and is bound.
 	for _, pvc := range pvcs.Items {
 		pvcName := pvc.Name
-		if strings.HasPrefix(pvcName, noobaaDefaultBackingStorePvc) {
-			pvcName = noobaaDefaultBackingStorePvc
-		}
 		if claim == pvcName {
 			if pvc.Status.Phase == "Bound" {
 				return nil

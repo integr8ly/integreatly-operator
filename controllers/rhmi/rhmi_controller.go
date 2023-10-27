@@ -241,10 +241,6 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
-// +kubebuilder:rbac:groups=noobaa.io,resources=noobaas;backingstores;bucketclasses,verbs=get;create;update;list
-// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbucketclaims,verbs=get;create;update;list;watch
-// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbuckets,verbs=list
-
 func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
@@ -324,7 +320,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		}
 	}
 
-	installType, err := TypeFactory(ctx, installation.Spec.Type, r.Client)
+	installType, err := TypeFactory(installation.Spec.Type)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

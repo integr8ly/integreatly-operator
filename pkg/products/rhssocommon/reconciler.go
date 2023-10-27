@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -18,7 +17,6 @@ import (
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	appsv1 "github.com/openshift/api/apps/v1"
-	configv1 "github.com/openshift/api/config/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -415,16 +413,7 @@ func ContainsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 func (r *Reconciler) ReconcileCloudResources(dbPRefix string, defaultNamespace string, ssoType string, config *config.RHSSOCommon, ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Log.Info("Reconciling Keycloak external database instance")
 	postgresName := fmt.Sprintf("%s%s", dbPRefix, installation.Name)
-	// if we are on GCP set snaphshot frequency and retention
-	platformType, err := cluster.GetPlatformType(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to determine platform type: %w", err)
-	}
 	var snapshotFrequency, snapshotRetention croType.Duration
-	if platformType == configv1.GCPPlatformType {
-		snapshotFrequency = constants.GcpSnapshotFrequency
-		snapshotRetention = constants.GcpSnapshotRetention
-	}
 	postgres, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, config.GetNamespace(), defaultNamespace, snapshotFrequency, snapshotRetention)
 
 	if err != nil {
@@ -771,37 +760,4 @@ func (r *Reconciler) ReconcilePodDisruptionBudget(ctx context.Context, apiClient
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// create experimental keycloak spec for GCP
-func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient k8sclient.Client) (*keycloak.ExperimentalSpec, error) {
-	platformType, err := cluster.GetPlatformType(ctx, serverClient)
-	if err != nil {
-		return nil, err
-	}
-	if platformType == configv1.GCPPlatformType {
-		pgresSelector := &corev1.SecretKeySelector{
-			Key: resources.RHSSODatabaseSecretKeyExtHost,
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: resources.RHSSODatabaseSecretName,
-			},
-		}
-		return &keycloak.ExperimentalSpec{
-			Env: []corev1.EnvVar{
-				{
-					Name: resources.RHSSODatabaseAddressKey,
-					ValueFrom: &corev1.EnvVarSource{
-						SecretKeyRef: pgresSelector,
-					},
-				},
-				{
-					Name: resources.RHSSOPostgresServiceHost,
-					ValueFrom: &corev1.EnvVarSource{
-						SecretKeyRef: pgresSelector,
-					},
-				},
-			},
-		}, nil
-	}
-	return nil, nil
 }

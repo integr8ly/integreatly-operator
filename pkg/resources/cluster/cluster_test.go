@@ -2,10 +2,8 @@ package cluster
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -280,57 +278,6 @@ func TestGetClusterType(t *testing.T) {
 	}
 }
 
-func TestGetPlatformType(t *testing.T) {
-	scheme, err := utils.NewTestScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	type args struct {
-		client k8sclient.Client
-	}
-	tests := []struct {
-		name  string
-		args  args
-		want  configv1.PlatformType
-		Error error
-	}{
-		{
-			name: "retrieve AWS platform type",
-			args: args{
-				client: utils.NewTestClient(scheme, buildTestInfra(configv1.AWSPlatformType)),
-			},
-			want: configv1.AWSPlatformType,
-		},
-		{
-			name: "retrieve GCP platform type",
-			args: args{
-				client: utils.NewTestClient(scheme, buildTestInfra(configv1.GCPPlatformType)),
-			},
-			want: configv1.GCPPlatformType,
-		},
-		{
-			name: "error retrieving platform type",
-			args: args{
-				client: utils.NewTestClient(scheme),
-			},
-			want:  "",
-			Error: errors.New("failed to retrieve cluster infrastructure:"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPlatformType(context.TODO(), tt.args.client)
-			if err != nil && tt.Error != nil && !strings.Contains(err.Error(), tt.Error.Error()) {
-				t.Errorf("GetPlatformType() error = %v, Error %v", err, tt.Error)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPlatformType() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestGetClusterVersionCR(t *testing.T) {
 	type args struct {
 		ctx          context.Context
@@ -513,19 +460,6 @@ func TestGetClusterVersion(t *testing.T) {
 				t.Errorf("GetClusterVersion() got = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func buildTestInfra(platformType configv1.PlatformType) *configv1.Infrastructure {
-	return &configv1.Infrastructure{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster",
-		},
-		Status: configv1.InfrastructureStatus{
-			PlatformStatus: &configv1.PlatformStatus{
-				Type: platformType,
-			},
-		},
 	}
 }
 

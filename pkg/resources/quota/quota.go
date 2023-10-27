@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-	configv1 "github.com/openshift/api/config/v1"
-
 	"context"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -32,7 +29,6 @@ const (
 	ApicastStagingName          = "apicast_staging"
 	KeycloakName                = "rhssouser"
 	GrafanaName                 = "grafana"
-	NoobaaCoreName              = "noobaa-core"
 	OneHundredThousandQuotaName = "100K"
 	OneMillionQuotaName         = "1 Million"
 	FiveMillionQuotaName        = "5 Million"
@@ -133,20 +129,6 @@ func GetQuota(ctx context.Context, c client.Client, quotaParam string, QuotaConf
 			pc.resourceConfigs[ddcssName] = quotaReceiver.Resources[ddcssName]
 		}
 		retQuota.productConfigs[product] = pc
-	}
-
-	platform, err := cluster.GetPlatformType(ctx, c)
-	if err != nil {
-		return fmt.Errorf("failed to determine platform type: %v", err)
-	}
-	if platform == configv1.GCPPlatformType {
-		mcgpc := QuotaProductConfig{
-			quota:           retQuota,
-			productName:     v1alpha1.ProductMCG,
-			resourceConfigs: map[string]ResourceConfig{},
-		}
-		mcgpc.resourceConfigs[NoobaaCoreName] = quotaReceiver.Resources[NoobaaCoreName]
-		retQuota.productConfigs[v1alpha1.ProductMCG] = mcgpc
 	}
 
 	//populate rate limit configuration
