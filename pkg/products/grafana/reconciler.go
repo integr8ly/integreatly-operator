@@ -140,6 +140,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
+	err = r.removeInstallationRules(r.installation.Spec.Type, ctx, client)
+	if err != nil {
+		r.log.Error("Error removing Prometheus Rule for obsolete Grafana Operator alerts", err)
+	}
 	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, productNamespace)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana alerts", err)
@@ -366,17 +370,6 @@ func generateRandomBytes(n int) []byte {
 func RandStringRunes(s int) string {
 	b := generateRandomBytes(s)
 	return base64.URLEncoding.EncodeToString(b)
-}
-
-func (r *Reconciler) checkDeploymentStatus(client k8sclient.Client) (bool, error) {
-	deployment := &appsv1.Deployment{}
-	if err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: grafanaDeployment, Namespace: r.Config.GetNamespace()}, deployment); err != nil {
-		return false, err
-	}
-	if deployment.Status.AvailableReplicas == 0 || deployment.Status.ReadyReplicas < deployment.Status.Replicas {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (r *Reconciler) checkDeploymentStatus(client k8sclient.Client) (bool, error) {

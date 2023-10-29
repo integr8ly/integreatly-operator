@@ -1,16 +1,20 @@
 package grafana
 
 import (
+	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, namespace string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
-	alertNamePrefix := "customer-monitoring-"
+	alertNamePrefix := "customer-monitoring-po-"
 
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
@@ -36,7 +40,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 			},
 			{
 				AlertName: alertNamePrefix + "ksm-grafana-alerts",
-				GroupName: "general.rules",
+				GroupName: "grafana-general.rules",
 				Namespace: namespace,
 				Rules: []monv1.Rule{
 					{
@@ -53,4 +57,39 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 			},
 		},
 	}
+}
+
+func (r *Reconciler) removeInstallationRules(installType string, ctx context.Context, apiClient k8sclient.Client) (err error) {
+	installationName := resources.InstallationNames[installType]
+	prometheusRule := &monv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "customer-monitoring-ksm-grafana-alerts",
+			Namespace: fmt.Sprintf("%s-rhoam-operator-observability", installationName),
+		},
+		Spec: monv1.PrometheusRuleSpec{
+			Groups: []monv1.RuleGroup{
+				{Name: "general.rules"},
+			},
+		},
+	}
+	err = apiClient.Delete(ctx, prometheusRule)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+	prometheusRule = &monv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "customer-monitoring-ksm-endpoint-alerts",
+			Namespace: fmt.Sprintf("%s-rhoam-operator-observability", installationName),
+		},
+		Spec: monv1.PrometheusRuleSpec{
+			Groups: []monv1.RuleGroup{
+				{Name: "grafana-operator-endpoint.rules"},
+			},
+		},
+	}
+	err = apiClient.Delete(ctx, prometheusRule)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+	return nil
 }
