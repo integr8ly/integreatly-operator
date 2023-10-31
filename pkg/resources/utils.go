@@ -12,3 +12,12 @@ func IsInProw(inst *integreatlyv1alpha1.RHMI) bool {
 	}
 	return false
 }
+
+func IsSkipFinalDBSnapshots(inst *integreatlyv1alpha1.RHMI) bool {
+	annotationMap := inst.GetObjectMeta().GetAnnotations()
+	skipFinalDBSnapshots, ok := annotationMap["skip_final_db_snapshots"]
+	if ok && skipFinalDBSnapshots == "true" {
+		return true
+	}
+	return false
+}

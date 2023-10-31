@@ -15,6 +15,7 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 CREDENTIALS_MODE=$(shell oc get cloudcredential cluster -o json | jq -r ".spec.credentialsMode")
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
+SKIP_FINAL_DB_SNAPSHOTS ?= "true"
 # DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
 # acceptable values are
 # if 10 then 1M
@@ -478,10 +479,13 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > config/samples/integreatly-rhmi-cr.yml
-	# Annotation is used to allow for installation on small Prow cluster and might be used to skip tests failing in Prow
+	# in_prow annotation is used to allow for installation on small Prow cluster and might be used to skip tests failing in Prow
 	yq e -i '.metadata.annotations.in_prow="IN_PROW"' config/samples/integreatly-rhmi-cr.yml
-
 	$(SED_INLINE) "s/IN_PROW/'$(IN_PROW)'/g" config/samples/integreatly-rhmi-cr.yml
+	# skip_final_db_snapshots annotation specifies if CRO should skip creating final AWS snapshots of the postgres and redis DBs before deleting them during RHOAM uninstallation
+	yq e -i '.metadata.annotations.skip_final_db_snapshots="SKIP_FINAL_DB_SNAPSHOTS"' config/samples/integreatly-rhmi-cr.yml
+	$(SED_INLINE) "s/SKIP_FINAL_DB_SNAPSHOTS/'$(SKIP_FINAL_DB_SNAPSHOTS)'/g" config/samples/integreatly-rhmi-cr.yml
+
 	@-oc create -f config/samples/integreatly-rhmi-cr.yml
 
 .PHONY: prepare-patch-release

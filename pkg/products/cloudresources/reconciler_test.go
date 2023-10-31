@@ -731,3 +731,165 @@ func addonParamsSecret(namespace string, data map[string][]byte) *corev1.Secret 
 		Data: data,
 	}
 }
+
+func TestReconciler_createDeletionStrategy(t *testing.T) {
+	const testNamespace = "test-namespace"
+
+	strategyCM := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      croAWS.DefaultConfigMapName,
+			Namespace: testNamespace,
+		},
+		Data: map[string]string{
+			"network":     `{"development":{"createStrategy":{"CidrBlock":"10.1.0.0/26"}},"production":{"createStrategy":{"CidrBlock":"10.1.0.0/26"}}}`,
+			"blobstorage": `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }}`,
+			"postgres":    `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }}`,
+			"redis":       `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }}`,
+		},
+	}
+
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx          context.Context
+		installation *integreatlyv1alpha1.RHMI
+		serverClient client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Pass when useClusterStorage is true",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: testNamespace,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						UseClusterStorage: "true",
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Fail if strategies ConfigMap doesn't exist",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: testNamespace,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						UseClusterStorage: "false",
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{}),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Pass if strategies ConfigMap exists",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: testNamespace,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						UseClusterStorage: "false",
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{}, &strategyCM),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Pass if skip_final_db_snapshots is true",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: testNamespace,
+						Annotations: map[string]string{
+							"skip_final_db_snapshots": "true",
+						},
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						UseClusterStorage: "false",
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{}, &strategyCM),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.createDeletionStrategy(tt.args.ctx, tt.args.installation, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createDeletionStrategy() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("createDeletionStrategy() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
