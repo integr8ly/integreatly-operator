@@ -140,6 +140,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
+	err = r.removeGrafanaOperatorAlerts(r.installation.Spec.Type, ctx, client)
+	if err != nil {
+		r.log.Error("Error removing obsolete Grafana Operator alerts: ", err)
+	}
 	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, productNamespace)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana alerts", err)
