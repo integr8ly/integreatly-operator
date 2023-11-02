@@ -39,7 +39,7 @@ func GetOboClusterPackageLabel(client k8sclient.Client) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("package-operator.run/package=%s", clusterPackageName), nil
+	return fmt.Sprintf("package-operator.run/instance=%s", clusterPackageName), nil
 }
 
 func getClusterPackageName() (string, error) {
