@@ -123,13 +123,13 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-ksm-endpoint-alerts.yaml",
+			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-po-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"GrafanaServiceEndpointDown",
 			},
 		},
 		{
-			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-ksm-grafana-alerts.yaml",
+			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-po-ksm-grafana-alerts.yaml",
 			Rules: []string{
 				"GrafanaServicePod",
 			},
@@ -218,13 +218,13 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 			},
 		},
 		{
-			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-ksm-endpoint-alerts.yaml",
+			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-po-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"GrafanaServiceEndpointDown",
 			},
 		},
 		{
-			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-ksm-grafana-alerts.yaml",
+			File: CustomerGrafanaNamespacePrefix + "customer-monitoring-po-ksm-grafana-alerts.yaml",
 			Rules: []string{
 				"GrafanaServicePod",
 			},
