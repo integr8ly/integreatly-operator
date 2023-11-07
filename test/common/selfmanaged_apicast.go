@@ -981,7 +981,7 @@ func customerLogin(t TestingTB, ctx *TestingContext, installation *integreatlyv1
 	}
 	err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
 		err = resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", installation.Spec.MasterURL),
-			customerAdminUsername, DefaultPassword, httpClient, TestingIDPRealm, t)
+			customerAdminUsername, TestingIdpPassword, httpClient, TestingIDPRealm, t)
 		if err != nil {
 			return false, nil
 		}

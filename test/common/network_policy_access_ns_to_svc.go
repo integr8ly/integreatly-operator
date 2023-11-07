@@ -42,7 +42,7 @@ func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 	masterURL := rhmi.Spec.MasterURL
 
 	// get dedicated admin token
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), dedicatedAdminUsername, TestingIdpPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 

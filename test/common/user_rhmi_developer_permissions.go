@@ -50,7 +50,7 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 	t.Log("retrieved openshift-Oauth route")
 
 	// get rhmi developer user tokens
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), testUser, DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), testUser, TestingIdpPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 	t.Log("retrieved rhmi developer user tokens")

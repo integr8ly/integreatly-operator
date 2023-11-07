@@ -480,7 +480,7 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectURL, ctx.HttpClient, ctx.Client, t)
 
 	// Login to 3Scale
-	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
+	err = loginToThreeScale(t, host, threescaleLoginUser, TestingIdpPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}

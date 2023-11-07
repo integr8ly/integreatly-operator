@@ -71,7 +71,7 @@ func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string
 		chromedp.WaitVisible(`html[data-test-id="login"]`), // Wait to allow page to redirect to oauth page
 		chromedp.Click(`a[title="Log in with testing-idp"]`),
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
-		chromedp.SendKeys(`//input[@name="password"]`, DefaultPassword),
+		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
 		chromedp.WaitVisible(`div[data-ng-controller="RealmTabCtrl"]`),
 		chromedp.Click(`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > h2:nth-child(1) > i`),

@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	v12 "github.com/openshift/api/authorization/v1"
 	configv1 "github.com/openshift/api/config/v1"
@@ -30,7 +31,7 @@ const (
 	defaultNumberOfDedicatedAdmins = 2
 	defaultSecret                  = "rhmiForeva"
 	DefaultTestUserName            = "test-user"
-	DefaultPassword                = "Password1"
+	defaultPassword                = "Password1"
 	clusterOauthName               = "cluster"
 )
 
@@ -39,6 +40,7 @@ var (
 	keycloakClientNamespace      = RHSSOProductNamespace
 	clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
 	idpCAName                    = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+	TestingIdpPassword           = utils.GetIdpPassword(defaultPassword)
 )
 
 type TestUser struct {
@@ -132,7 +134,7 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		}
 
 		dedicatedAdminUsername := fmt.Sprintf("%s%02d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins)
-		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
+		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, TestingIdpPassword, tempHTTPClient, TestingIDPRealm, t)
 		if authErr != nil {
 			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
 			return false, nil
@@ -405,7 +407,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 					Credentials: []v1alpha1.KeycloakCredential{
 						{
 							Type:  "password",
-							Value: DefaultPassword,
+							Value: TestingIdpPassword,
 						},
 					},
 				},

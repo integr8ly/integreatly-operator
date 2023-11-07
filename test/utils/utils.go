@@ -24,3 +24,12 @@ func SpecDescription(spec string) string {
 	}
 	return spec
 }
+
+// GetIdpPassword Allow specifying Testing IDP password via env var.
+func GetIdpPassword(defaultPassword string) string {
+	idpPassword := os.Getenv("TESTING_IDP_PASSWORD")
+	if len(idpPassword) > 0 {
+		return idpPassword
+	}
+	return defaultPassword
+}

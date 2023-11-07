@@ -132,7 +132,7 @@ func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userNam
 			return false, nil
 		}
 
-		if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), userName, DefaultPassword, tempHttpClient, TestingIDPRealm, t); err != nil {
+		if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), userName, TestingIdpPassword, tempHttpClient, TestingIDPRealm, t); err != nil {
 			t.Logf("Error trying to sign in as %s to openshift : %v", userName, err)
 			return false, nil
 		}
