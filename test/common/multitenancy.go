@@ -245,7 +245,7 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 
 			// login tenant to 3scale
 			if !isThreeScaleLoggedIn {
-				err := loginToThreeScale(t, host, testUser, DefaultPassword, TestingIDPRealm, tenantClient)
+				err := loginToThreeScale(t, host, testUser, TestingIdpPassword, TestingIDPRealm, tenantClient)
 				if err != nil {
 					t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
 					return false, nil
@@ -967,7 +967,7 @@ func validateTestUser(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI, usern
 }
 
 func loginToCluster(t TestingTB, tenantClient *http.Client, masterURL, testUser string) error {
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), testUser, DefaultPassword, tenantClient, TestingIDPRealm, t); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), testUser, TestingIdpPassword, tenantClient, TestingIDPRealm, t); err != nil {
 		return err
 	}
 	return nil

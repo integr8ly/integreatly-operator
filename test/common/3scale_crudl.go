@@ -54,7 +54,7 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 
 	// Login to 3Scale
 	By("Login to 3Scale and become admin")
-	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
+	err = loginToThreeScale(t, host, threescaleLoginUser, TestingIdpPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}

@@ -201,7 +201,7 @@ func loginToRHSSOActions(t TestingTB, rhssoConsoleUrl string, userName string) [
 		chromedp.Navigate(rhssoConsoleUrl),
 		chromedp.WaitVisible(`#kc-page-title`), // Wait for redirect to kc login page
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
-		chromedp.SendKeys(`//input[@name="password"]`, DefaultPassword),
+		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
 		chromedp.WaitVisible(`#input-error`), // Wait to expect login error
 		chromedp.ActionFunc(func(ctx context.Context) error {
@@ -234,7 +234,7 @@ func chromeDPLoginIDPActions(userName string) []chromedp.Action {
 		chromedp.WaitVisible(`html[data-test-id="login"]`), // Wait to allow page to redirect to oauth page
 		chromedp.Click(`a[title="Log in with testing-idp"]`),
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
-		chromedp.SendKeys(`//input[@name="password"]`, DefaultPassword),
+		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
 	}
 }

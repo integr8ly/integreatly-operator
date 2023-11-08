@@ -64,7 +64,7 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 		t.Fatal(err)
 	}
 
-	err = loginToThreeScale(t, host, dedicatedAdminUser, DefaultPassword, TestingIDPRealm, httpClient)
+	err = loginToThreeScale(t, host, dedicatedAdminUser, TestingIdpPassword, TestingIDPRealm, httpClient)
 	if err != nil {
 		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
@@ -121,7 +121,7 @@ func loginTo3ScaleAsDeveloper(t TestingTB, user string, host string, ctx *Testin
 		t.Fatal(err)
 	}
 
-	err = loginToThreeScale(t, host, user, DefaultPassword, TestingIDPRealm, httpClient)
+	err = loginToThreeScale(t, host, user, TestingIdpPassword, TestingIDPRealm, httpClient)
 	if err != nil {
 		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}

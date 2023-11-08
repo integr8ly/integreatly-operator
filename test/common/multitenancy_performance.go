@@ -65,7 +65,7 @@ func loginUsersToCluster(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1al
 			// login to cluster
 			if !isClusterLoggedIn {
 				err = resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", rhmi.Spec.MasterURL),
-					testUser, DefaultPassword, tenantClient, TestingIDPRealm, t)
+					testUser, TestingIdpPassword, tenantClient, TestingIDPRealm, t)
 				if err != nil {
 					return false, nil
 				} else {

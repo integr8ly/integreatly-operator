@@ -495,7 +495,7 @@ func customerLogin(interactiveMode bool) error {
 		command = "oc login --token=" + token
 	} else {
 		customerAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
-		command = "oc login -u " + customerAdminUsername + " -p " + testcommon.DefaultPassword
+		command = "oc login -u " + customerAdminUsername + " -p " + testcommon.TestingIdpPassword
 	}
 	err = runShellCommand(command)
 	if err != nil {
