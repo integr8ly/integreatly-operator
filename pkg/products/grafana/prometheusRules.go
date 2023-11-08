@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -60,30 +59,21 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 	}
 }
 
-func (r *Reconciler) removeGrafanaOperatorAlerts(installType string, ctx context.Context, apiClient k8sclient.Client) error {
-	installationName := resources.InstallationNames[installType]
-	watchNS, err := k8s.GetWatchNamespace()
-	if err != nil {
-		return err
-	}
-	if watchNS == "redhat-rhoami-operator" {
-		installationName += "i"
-	}
-	oboNamespace := "redhat-" + installationName + "-operator-observability"
+func (r *Reconciler) removeGrafanaOperatorAlerts(nsPrefix string, ctx context.Context, apiClient k8sclient.Client) error {
 	prometheusRule := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-monitoring-ksm-grafana-alerts",
-			Namespace: oboNamespace,
+			Namespace: nsPrefix + "operator-observability",
 		},
 	}
-	err = apiClient.Delete(ctx, prometheusRule)
+	err := apiClient.Delete(ctx, prometheusRule)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return err
 	}
 	prometheusRule = &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-monitoring-ksm-endpoint-alerts",
-			Namespace: oboNamespace,
+			Namespace: nsPrefix + "operator-observability",
 		},
 	}
 	err = apiClient.Delete(ctx, prometheusRule)

@@ -140,7 +140,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	err = r.removeGrafanaOperatorAlerts(r.installation.Spec.Type, ctx, client)
+	err = r.removeGrafanaOperatorAlerts(r.installation.Spec.NamespacePrefix, ctx, client)
 	if err != nil {
 		r.log.Error("Error removing obsolete Grafana Operator alerts: ", err)
 	}
