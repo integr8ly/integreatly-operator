@@ -59,12 +59,11 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 	}
 }
 
-func (r *Reconciler) removeGrafanaOperatorAlerts(installType string, ctx context.Context, apiClient k8sclient.Client) error {
-	oboNamespace := "redhat-" + resources.InstallationNames[installType] + "-operator-observability"
+func (r *Reconciler) removeGrafanaOperatorAlerts(nsPrefix string, ctx context.Context, apiClient k8sclient.Client) error {
 	prometheusRule := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-monitoring-ksm-grafana-alerts",
-			Namespace: oboNamespace,
+			Namespace: nsPrefix + "operator-observability",
 		},
 	}
 	err := apiClient.Delete(ctx, prometheusRule)
@@ -74,7 +73,7 @@ func (r *Reconciler) removeGrafanaOperatorAlerts(installType string, ctx context
 	prometheusRule = &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-monitoring-ksm-endpoint-alerts",
-			Namespace: oboNamespace,
+			Namespace: nsPrefix + "operator-observability",
 		},
 	}
 	err = apiClient.Delete(ctx, prometheusRule)
