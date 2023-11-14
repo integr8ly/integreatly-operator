@@ -75,8 +75,8 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionRHSSO          OperatorVersion = "7.6.3-1"
-	OperatorVersionRHSSOUser      OperatorVersion = "7.6.3-1"
+	OperatorVersionRHSSO          OperatorVersion = "7.6.5-8"
+	OperatorVersionRHSSOUser      OperatorVersion = "7.6.5-8"
 	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
