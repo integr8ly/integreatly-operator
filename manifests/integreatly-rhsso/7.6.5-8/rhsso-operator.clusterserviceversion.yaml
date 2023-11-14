@@ -373,7 +373,7 @@ spec:
   provider:
     name: Red Hat
   version: 7.6.5-opr-004
-  replaces: rhsso-operator.7.6.5-opr-003
+  replaces: rhsso-operator.7.6.3-opr-001
   skips:
   - rhsso-operator.7.6.0-opr-001
   relatedImages:
