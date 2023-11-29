@@ -522,7 +522,7 @@ type redisCounter struct {
 func (r *redisCounter) GetCount() (int, error) {
 	keys, err := testcommon.ExecToPodArgs(r.client, r.config,
 		[]string{
-			"/opt/rh/rh-redis32/root/usr/bin/redis-cli",
+			"/opt/rh/rh-redis6/root/usr/bin/redis-cli",
 			"-c",
 			"-h",
 			r.RedisHost,
@@ -555,7 +555,7 @@ func (r *redisCounter) GetCount() (int, error) {
 
 		count, err := testcommon.ExecToPodArgs(r.client, r.config,
 			[]string{
-				"/opt/rh/rh-redis32/root/usr/bin/redis-cli",
+				"/opt/rh/rh-redis6/root/usr/bin/redis-cli",
 				"-c",
 				"-h",
 				r.RedisHost,
@@ -590,7 +590,7 @@ func (r *redisCounter) GetCount() (int, error) {
 func (r *redisCounter) keyIsString(key string) (bool, error) {
 	keyType, err := testcommon.ExecToPodArgs(r.client, r.config,
 		[]string{
-			"/opt/rh/rh-redis32/root/usr/bin/redis-cli",
+			"/opt/rh/rh-redis6/root/usr/bin/redis-cli",
 			"-c",
 			"-h",
 			r.RedisHost,
