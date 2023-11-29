@@ -70,19 +70,25 @@ metadata:
           "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.3-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
-          "sso7-rhel8-operator-bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:156114b236f527f2bc58abbe06d0beb1f5cc5447cf4c030199b67aabcd0d0218",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:156114b236f527f2bc58abbe06d0beb1f5cc5447cf4c030199b67aabcd0d0218",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1"
+          "rhsso-operator.7.6.5-opr-004": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
+          "sso7-rhel8-operator-d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81db8f40d7c4c66ae15af014c8d45708c7750b53f074fa9f1cf464ca2bf5160c",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81db8f40d7c4c66ae15af014c8d45708c7750b53f074fa9f1cf464ca2bf5160c"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.8-5"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.9-2"
         },
         "limitador": {
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
+        },
+        "grafana": {
+          "grafana": "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
+        },
+        "grafana-ose-oauth-proxy": {
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:62fdde504a8e55669286c525b2d3f224740800843c0a0732d18d5b1024716551"
         }
       }
   name: managed-api-service.v1.39.0
@@ -452,17 +458,6 @@ spec:
                 - update
                 - watch
             - apiGroups:
-                - noobaa.io
-              resources:
-                - backingstores
-                - bucketclasses
-                - noobaas
-              verbs:
-                - create
-                - get
-                - list
-                - update
-            - apiGroups:
                 - oauth.openshift.io
               resources:
                 - oauthclients
@@ -471,22 +466,6 @@ spec:
                 - delete
                 - get
                 - update
-            - apiGroups:
-                - objectbucket.io
-              resources:
-                - objectbucketclaims
-              verbs:
-                - create
-                - get
-                - list
-                - update
-                - watch
-            - apiGroups:
-                - objectbucket.io
-              resources:
-                - objectbuckets
-              verbs:
-                - list
             - apiGroups:
                 - operator.marin3r.3scale.net
               resources:
