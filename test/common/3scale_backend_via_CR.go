@@ -53,6 +53,9 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      backendName,
 			Namespace: projectNamespace,
+			Annotations: map[string]string{
+				"insecure_skip_verify": "true",
+			},
 		},
 		Spec: threescaleBv1.BackendSpec{
 			Name:           backendName,
