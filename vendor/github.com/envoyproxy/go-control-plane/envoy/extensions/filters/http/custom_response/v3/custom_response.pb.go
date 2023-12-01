@@ -25,7 +25,8 @@ const (
 
 // The filter configuration is a collection of custom response
 // policies in a matcher tree. The configuration can be defined at the filter,
-// virtual host or route level. The most specific configuration will apply.
+// virtual host or route level. The response will be matched against the most
+// specific to the least specific config, till a match is found.
 type CustomResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -55,7 +56,7 @@ type CustomResponse struct {
 	//         action:
 	//           name: action
 	//           typed_config:
-	//             "@type": type.googleapis.com/envoy.extensions.filters.http.custom_response.v3.LocalResponsePolicy
+	//             "@type": type.googleapis.com/envoy.extensions.http.custom_response.local_response_policy.v3.LocalResponsePolicy
 	//             status_code: 499
 	//             body:
 	//               inline_string: "not allowed"
@@ -96,7 +97,7 @@ type CustomResponse struct {
 	//         action:
 	//           name: action
 	//           typed_config:
-	//             "@type": type.googleapis.com/envoy.extensions.filters.http.custom_response.v3.RedirectPolicy
+	//             "@type": type.googleapis.com/envoy.extensions.http.custom_response.redirect_policy.v3.RedirectPolicy
 	//             status_code: 299
 	//             uri: "https://foo.example/gateway_error"
 	//             response_headers_to_add:
