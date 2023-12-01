@@ -66,6 +66,9 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      projectName,
 			Namespace: projectNamespace,
+			Annotations: map[string]string{
+				"insecure_skip_verify": "true",
+			},
 		},
 		Spec: threescaleBv1.ProductSpec{
 			Name: productName,

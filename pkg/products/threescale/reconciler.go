@@ -520,13 +520,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)
-	r.log.Infof("reconcileDeploymentConfigs", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
-		return phase, err
-	}
-
 	phase, err = r.syncInvitationEmail(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -724,6 +717,31 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
 		// Check nested "optional" fields
 		*apim = prepareNestedOptionalFields(*apim)
+		topologySpreadConstraints := []corev1.TopologySpreadConstraint{
+			{
+				MaxSkew:           1,
+				TopologyKey:       resources.ZoneLabel,
+				WhenUnsatisfiable: corev1.ScheduleAnyway,
+				LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "3scale-api-management",
+					},
+				},
+			},
+		}
+		// Set TopologySpreadConstraints in APIManager for deploymentConfigs
+		apim.Spec.Apicast.StagingSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Apicast.ProductionSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Backend.CronSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Backend.ListenerSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Backend.WorkerSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.System.AppSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.System.MemcachedTopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.System.SearchdSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.System.SidekiqSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Zync.AppSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Zync.QueSpec.TopologySpreadConstraints = topologySpreadConstraints
+		apim.Spec.Zync.DatabaseTopologySpreadConstraints = topologySpreadConstraints
 
 		// General config
 		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
@@ -2812,33 +2830,6 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error removing 3Scale console link, %s", err)
 	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-
-	for _, name := range threeScaleDeploymentConfigs {
-		deploymentConfig := &appsv1.DeploymentConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: productNamespace,
-			},
-		}
-
-		phase, err := resources.UpdatePodTemplateIfExists(
-			ctx,
-			serverClient,
-			resources.SelectFromDeploymentConfig,
-			resources.AllMutationsOf(
-				resources.MutateZoneTopologySpreadConstraints("app"),
-			),
-			deploymentConfig,
-		)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

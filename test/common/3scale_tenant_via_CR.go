@@ -73,6 +73,9 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tenantCrName,
 			Namespace: tenantCrNamespace,
+			Annotations: map[string]string{
+				"insecure_skip_verify": "true",
+			},
 		},
 		Spec: threescalev1.TenantSpec{
 			Email: tenantEmail,
