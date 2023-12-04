@@ -3179,6 +3179,7 @@ services-rhoam:master/cloud.google.com/go/compute-v1.12.1
 services-rhoam:master/cloud.google.com/go/compute-v1.14.0
 services-rhoam:master/cloud.google.com/go/compute-v1.18.0
 services-rhoam:master/cloud.google.com/go/compute-v1.19.0
+services-rhoam:master/cloud.google.com/go/compute-v1.19.1
 services-rhoam:master/cloud.google.com/go/compute-v1.7.0
 services-rhoam:master/cloud.google.com/go/compute/metadata-v0.2.0
 services-rhoam:master/cloud.google.com/go/compute/metadata-v0.2.1
@@ -3443,6 +3444,7 @@ services-rhoam:master/github.com/cncf/xds/go-v0.0.0-20210922020428-25de7278fc84
 services-rhoam:master/github.com/cncf/xds/go-v0.0.0-20211011173535-cb28da3451f1
 services-rhoam:master/github.com/cncf/xds/go-v0.0.0-20220314180256-7f1daf1720fc
 services-rhoam:master/github.com/cncf/xds/go-v0.0.0-20230310173818-32f1caf87195
+services-rhoam:master/github.com/cncf/xds/go-v0.0.0-20230607035331-e9ce68804cb4
 services-rhoam:master/github.com/cockroachdb/datadriven-v0.0.0-20190809214429-80d97fb3cbaa
 services-rhoam:master/github.com/cockroachdb/datadriven-v0.0.0-20200714090401-bf6692d28da5
 services-rhoam:master/github.com/cockroachdb/errors-v1.2.4
@@ -3518,6 +3520,7 @@ services-rhoam:master/github.com/emicklei/go-restful/v3-v3.10.2
 services-rhoam:master/github.com/emicklei/go-restful/v3-v3.8.0
 services-rhoam:master/github.com/emicklei/go-restful/v3-v3.9.0
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.11.0
+services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.11.1-0.20230524094728-9239064ad72f
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.0
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.1-0.20191026205805-5f8ba28d4473
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.10-0.20210907150352-cf90f659a021
@@ -3528,6 +3531,7 @@ services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.9-0.2021021703
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.9-0.20210512163311-63b5d3c536b0
 services-rhoam:master/github.com/envoyproxy/protoc-gen-validate-v0.1.0
 services-rhoam:master/github.com/envoyproxy/protoc-gen-validate-v0.10.0
+services-rhoam:master/github.com/envoyproxy/protoc-gen-validate-v0.10.1
 services-rhoam:master/github.com/envoyproxy/protoc-gen-validate-v0.9.1
 services-rhoam:master/github.com/evanphx/json-patch-v0.5.2
 services-rhoam:master/github.com/evanphx/json-patch-v4.11.0+incompatible
@@ -4272,6 +4276,7 @@ services-rhoam:master/github.com/stretchr/testify-v1.7.1
 services-rhoam:master/github.com/stretchr/testify-v1.8.0
 services-rhoam:master/github.com/stretchr/testify-v1.8.1
 services-rhoam:master/github.com/stretchr/testify-v1.8.2
+services-rhoam:master/github.com/stretchr/testify-v1.8.3
 services-rhoam:master/github.com/stretchr/testify-v1.8.4
 services-rhoam:master/github.com/subosito/gotenv-v1.2.0
 services-rhoam:master/github.com/tektoncd/pipeline-v0.49.0
@@ -4950,8 +4955,8 @@ services-rhoam:master/google.golang.org/genproto-v0.0.0-20221201164419-0e50fba7f
 services-rhoam:master/google.golang.org/genproto-v0.0.0-20230209215440-0dfe4f8abfcc
 services-rhoam:master/google.golang.org/genproto-v0.0.0-20230222225845-10f96fb3dbec
 services-rhoam:master/google.golang.org/genproto-v0.0.0-20230303212802-e74f57abe488
-services-rhoam:master/google.golang.org/genproto-v0.0.0-20230306155012-7f2fa6fef1f4
 services-rhoam:master/google.golang.org/genproto-v0.0.0-20230320184635-7606e756e683
+services-rhoam:master/google.golang.org/genproto-v0.0.0-20230323212658-478b75c54725
 services-rhoam:master/google.golang.org/genproto-v0.0.0-20230410155749-daa745c078e1
 services-rhoam:master/google.golang.org/grpc-v1.19.0
 services-rhoam:master/google.golang.org/grpc-v1.20.1
@@ -4986,9 +4991,11 @@ services-rhoam:master/google.golang.org/grpc-v1.47.0
 services-rhoam:master/google.golang.org/grpc-v1.49.0
 services-rhoam:master/google.golang.org/grpc-v1.51.0
 services-rhoam:master/google.golang.org/grpc-v1.52.0
+services-rhoam:master/google.golang.org/grpc-v1.52.3
 services-rhoam:master/google.golang.org/grpc-v1.53.0
 services-rhoam:master/google.golang.org/grpc-v1.54.0
 services-rhoam:master/google.golang.org/grpc-v1.55.0
+services-rhoam:master/google.golang.org/grpc-v1.56.3
 services-rhoam:master/google.golang.org/grpc/cmd/protoc-gen-go-grpc-v0.0.0-20200709232328-d8193ee9cc3e
 services-rhoam:master/google.golang.org/grpc/cmd/protoc-gen-go-grpc-v1.1.0
 services-rhoam:master/google.golang.org/protobuf-v0.0.0-20200109180630-ec00e32a8dfd
@@ -8034,13 +8041,7 @@ services-rhoam:master/sigs.k8s.io/yaml-v1.1.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.2.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
 services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
-1.0/github.com/go-openapi/validate-v0.18.0
-services-rhoam:master/marin3r:v0.11.0/github.com/go-openapi/validate-v0.19.2
-services-rhoam:master/marin3r:v0.11.0/github.com/go-openapi/validate-v0.19.5
-services-rhoam:master/marin3r:v0.11.0/github.com/go-stack/stack-v1.8.0
-services-rhoam:master/marin3r:v0.11.0/github.com/go-task/slim-sprig-v0.0.0-20210107165309-348f09dbbbc0
-services-rhoam:master/marin3r:v0.11.0/github.com/go-test/deep-v1.0.8
-services-rhoam:master/marin3r:v0.11.0/github.com/godbus/dbus/v5-v5.0.4
+.11.0/github.com/godbus/dbus/v5-v5.0.4
 services-rhoam:master/marin3r:v0.11.0/github.com/gogo/protobuf-v1.1.1
 services-rhoam:master/marin3r:v0.11.0/github.com/gogo/protobuf-v1.2.1
 services-rhoam:master/marin3r:v0.11.0/github.com/gogo/protobuf-v1.3.1
