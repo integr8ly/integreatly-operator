@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"os"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -18,9 +20,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
-	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -124,6 +127,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcileGrafanaDeployment(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana Deployment", err)
+		return phase, err
+	}
+
 	deploymentDone, err := r.checkDeploymentStatus(client)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to check Grafana Deployment status", err)
@@ -187,6 +196,297 @@ func (r *Reconciler) ReconcileGrafanaRateLimitDashboardConfigMap(ctx context.Con
 		}
 		ratelimitJsonStr := getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota)
 		rateLimitConfigMap.Data[ratelimitCMDataKey] = ratelimitJsonStr
+
+		return nil
+
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	log := l.NewLogger()
+	log.Info("reconciling Grafana Deployment")
+
+	grafanaDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grafana-deployment",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, grafanaDeployment, func() error {
+		if grafanaDeployment.Labels == nil {
+			grafanaDeployment.Labels = map[string]string{}
+		}
+		grafanaDeployment.Labels["app"] = "grafana"
+		grafanaDeployment.Spec.Selector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"app": "grafana",
+			},
+		}
+
+		grafanaDeployment.Spec.Replicas = func(i int32) *int32 { return &i }(1)
+
+		grafanaDeployment.Spec.Template.ObjectMeta = metav1.ObjectMeta{
+			Labels: map[string]string{
+				"app": "grafana",
+			},
+			Annotations: map[string]string{
+				"prometheus.io/port":   "3000",
+				"prometheus.io/scrape": "true",
+			},
+		}
+
+		grafanaDeployment.Spec.Template.Spec.PriorityClassName = r.installation.Spec.PriorityClassName
+		if grafanaDeployment.Spec.Template.Spec.Containers == nil {
+			grafanaDeployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
+		}
+
+		grafanaDeployment.Spec.Template.Spec.ServiceAccountName = "grafana-serviceaccount"
+
+		grafanaDeployment.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "grafana-provision-plugins",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+			{
+				Name: "grafana-provision-config",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "grafana-provision-config",
+						},
+					},
+				},
+			},
+			{
+				Name: "grafana-provision-notifiers",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+			{
+				Name: "grafana-config",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "grafana-config",
+						},
+					},
+				},
+			},
+			{
+				Name: "grafana-logs",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+			{
+				Name: "grafana-data",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+			{
+				Name: "grafana-plugins",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+			{
+				Name: "grafana-datasources",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "grafana-datasources",
+						},
+					},
+				},
+			},
+			{
+				Name: "ratelimit-grafana-dashboard",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "ratelimit-grafana-dashboard",
+						},
+					},
+				},
+			},
+			{
+				Name: "secret-grafana-k8s-tls",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "grafana-k8s-tls",
+						Optional:   func(b bool) *bool { return &b }(true),
+					},
+				},
+			},
+			{
+				Name: "secret-grafana-k8s-proxy",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "grafana-k8s-proxy",
+						Optional:   func(b bool) *bool { return &b }(true),
+					},
+				},
+			},
+		}
+
+		// Container #1
+		grafanaDeployment.Spec.Template.Spec.Containers[0].TerminationMessagePath = "/dev/termination-log"
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Name = "grafana"
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Image = "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
+		grafanaDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				MountPath: "/etc/grafana/",
+				Name:      "grafana-config",
+			},
+			{
+				MountPath: "/var/lib/grafana",
+				Name:      "grafana-data",
+			},
+			{
+				MountPath: "/var/lib/grafana/plugins",
+				Name:      "grafana-plugins",
+			},
+			{
+				MountPath: "/etc/grafana/provisioning/plugins",
+				Name:      "grafana-provision-plugins",
+			},
+			{
+				MountPath: "/etc/grafana/provisioning/dashboards",
+				Name:      "grafana-provision-config",
+			},
+			{
+				MountPath: "/etc/grafana/provisioning/notifiers",
+				Name:      "grafana-provision-notifiers",
+			},
+			{
+				MountPath: "/var/log/grafana",
+				Name:      "grafana-logs",
+			},
+			{
+				MountPath: "/etc/grafana/provisioning/datasources",
+				Name:      "grafana-datasources",
+			},
+			{
+				MountPath: "/var/lib/grafana/dashboards",
+				Name:      "ratelimit-grafana-dashboard",
+			},
+			{
+				MountPath: "/etc/grafana-secrets/grafana-k8s-tls",
+				Name:      "secret-grafana-k8s-tls",
+			},
+			{
+				MountPath: "/etc/grafana-secrets/grafana-k8s-proxy",
+				Name:      "secret-grafana-k8s-proxy",
+			},
+		}
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Ports = []corev1.ContainerPort{
+			{
+				Name:          "grafana-http",
+				ContainerPort: 3000,
+			},
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Args = []string{"-config=/etc/grafana/grafana.ini"}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{
+			{
+				Name: "LAST_CONFIG",
+			},
+			{
+				Name: "LAST_DATASOURCES",
+			},
+			{
+				Name: "GF_SECURITY_ADMIN_USER",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "grafana-admin-credentials",
+						},
+						Key: "GF_SECURITY_ADMIN_USER",
+					},
+				},
+			},
+			{
+				Name: "GF_SECURITY_ADMIN_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "grafana-admin-credentials",
+						},
+						Key: "GF_SECURITY_ADMIN_PASSWORD",
+					},
+				},
+			},
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path:   "/api/health",
+					Port:   intstr.FromString("3000"),
+					Scheme: "HTTP",
+				},
+			},
+			InitialDelaySeconds: 60,
+			TimeoutSeconds:      30,
+			FailureThreshold:    10,
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path:   "/api/health",
+					Port:   intstr.FromString("3000"),
+					Scheme: "HTTP",
+				},
+			},
+			InitialDelaySeconds: 5,
+			TimeoutSeconds:      3,
+			FailureThreshold:    1,
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Resources.Limits = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("500m"),
+			corev1.ResourceMemory: resource.MustParse("1Gi"),
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Resources.Requests = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("100m"),
+			corev1.ResourceMemory: resource.MustParse("256Mi"),
+		}
+
+		// container #2
+		grafanaDeployment.Spec.Template.Spec.Containers[1].TerminationMessagePath = "/dev/termination-log"
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Name = "grafana-proxy"
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Image = "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:219bf2d14157acd90298df58bfe77c2e3ed51ce0c743c2e51b3ed54b73dafc14"
+		grafanaDeployment.Spec.Template.Spec.Containers[1].VolumeMounts = []corev1.VolumeMount{
+			{
+				MountPath: "/etc/tls/private",
+				Name:      "secret-grafana-k8s-tls",
+			},
+			{
+				MountPath: "/etc/proxy/secrets",
+				Name:      "secret-grafana-k8s-proxy",
+			},
+		}
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Ports = []corev1.ContainerPort{
+			{
+				Name:          "grafana-proxy",
+				ContainerPort: 9091,
+			},
+		}
+
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Args = []string{"-provider=openshift", "-pass-basic-auth=false", "-https-address=:9091", "-http-address=", "-email-domain=*", "-upstream=http://localhost:3000", "-openshift-sar={'resource':'namespaces','verb':'get'}", "-openshift-delegate-urls={'/'':{'resource':'namespaces','verb':'get'}}", "-tls-cert=/etc/tls/private/tls.crt", "-tls-key=/etc/tls/private/tls.key", "-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token", "-cookie-secret-file=/etc/proxy/secrets/session_secret", "-openshift-service-account=grafana-serviceaccount", "-openshift-ca=/etc/pki/tls/cert.pem", "-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", "-skip-auth-regex=^/metrics"}
 
 		return nil
 
