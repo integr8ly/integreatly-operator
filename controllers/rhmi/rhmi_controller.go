@@ -221,7 +221,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;create,namespace=integreatly-operator
 
-// +kubebuilder:rbac:groups=apps,resources=deployments;replicasets;statefulsets,verbs=update;get;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments;replicasets;statefulsets,verbs=update;get;patch;create
 
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;create;update;delete;watch,namespace=integreatly-operator
 

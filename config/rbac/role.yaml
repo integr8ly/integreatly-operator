@@ -129,6 +129,7 @@ rules:
   - replicasets
   - statefulsets
   verbs:
+  - create
   - get
   - patch
   - update
