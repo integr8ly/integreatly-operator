@@ -222,6 +222,11 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 		if grafanaDeployment.Labels == nil {
 			grafanaDeployment.Labels = map[string]string{}
 		}
+
+		if grafanaDeployment.Annotations == nil {
+			grafanaDeployment.Annotations = map[string]string{}
+		}
+
 		grafanaDeployment.Labels["app"] = "grafana"
 		grafanaDeployment.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -243,7 +248,7 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 
 		grafanaDeployment.Spec.Template.Spec.PriorityClassName = r.installation.Spec.PriorityClassName
 		if grafanaDeployment.Spec.Template.Spec.Containers == nil {
-			grafanaDeployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
+			grafanaDeployment.Spec.Template.Spec.Containers = []corev1.Container{{}, {}}
 		}
 
 		grafanaDeployment.Spec.Template.Spec.ServiceAccountName = "grafana-serviceaccount"
@@ -433,7 +438,7 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/api/health",
-					Port:   intstr.FromString("3000"),
+					Port:   intstr.FromInt(3000),
 					Scheme: "HTTP",
 				},
 			},
@@ -446,7 +451,7 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/api/health",
-					Port:   intstr.FromString("3000"),
+					Port:   intstr.FromInt(3000),
 					Scheme: "HTTP",
 				},
 			},
@@ -486,7 +491,24 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 			},
 		}
 
-		grafanaDeployment.Spec.Template.Spec.Containers[1].Args = []string{"-provider=openshift", "-pass-basic-auth=false", "-https-address=:9091", "-http-address=", "-email-domain=*", "-upstream=http://localhost:3000", "-openshift-sar={'resource':'namespaces','verb':'get'}", "-openshift-delegate-urls={'/'':{'resource':'namespaces','verb':'get'}}", "-tls-cert=/etc/tls/private/tls.crt", "-tls-key=/etc/tls/private/tls.key", "-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token", "-cookie-secret-file=/etc/proxy/secrets/session_secret", "-openshift-service-account=grafana-serviceaccount", "-openshift-ca=/etc/pki/tls/cert.pem", "-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", "-skip-auth-regex=^/metrics"}
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Args = []string{
+			"-provider=openshift",
+			"-pass-basic-auth=false",
+			"-https-address=:9091",
+			"-http-address=",
+			"-email-domain=*",
+			"-upstream=http://localhost:3000",
+			"-openshift-sar={\"resource\":\"namespaces\",\"verb\":\"get\"}",
+			"-openshift-delegate-urls={\"/\":{\"resource\":\"namespaces\",\"verb\":\"get\"}}",
+			"-tls-cert=/etc/tls/private/tls.crt",
+			"-tls-key=/etc/tls/private/tls.key",
+			"-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
+			"-cookie-secret-file=/etc/proxy/secrets/session_secret",
+			"-openshift-service-account=grafana-serviceaccount",
+			"-openshift-ca=/etc/pki/tls/cert.pem",
+			"-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+			"-skip-auth-regex=^/metrics",
+		}
 
 		return nil
 
