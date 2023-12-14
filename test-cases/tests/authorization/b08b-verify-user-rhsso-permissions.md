@@ -1,6 +1,6 @@
 ---
 automation:
-  - INTLY-6408
+  - MGDAPI-3462
 components:
   - product-sso
 products:
@@ -24,6 +24,8 @@ products:
       - 1.35.0
       - 1.38.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # B08B - Verify User RHSSO Permissions

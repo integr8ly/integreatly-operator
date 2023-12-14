@@ -5,7 +5,7 @@ products:
       - external
 estimate: 2h
 tags:
-  - per-release
+  - manual-selection
 ---
 
 # A40 - RHOAM on OSD Trial

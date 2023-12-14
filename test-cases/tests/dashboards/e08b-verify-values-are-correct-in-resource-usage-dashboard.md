@@ -22,6 +22,8 @@ products:
       - 1.30.0
       - 1.33.0
       - 1.36.0
+tags:
+  - manual-selection
 ---
 
 # E08B - Verify values are correct in Resource usage dashboard

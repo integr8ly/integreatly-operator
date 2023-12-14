@@ -26,6 +26,7 @@ products:
 estimate: 30m
 tags:
   - destructive
+  - manual-selection
 ---
 
 # E04B - Verify SLO dashboard
