@@ -122,6 +122,17 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 			t.Fatal(err)
 		}
 
+		// Remove non-RHOAM links from the list
+		var filteredLinks []*cdp.Node
+		for _, link := range links {
+			if strings.Contains(link.AttributeValue("href"), "rhoam") {
+				filteredLinks = append(filteredLinks, link)
+			} else if strings.Contains(link.AttributeValue("href"), "3scale") {
+				filteredLinks = append(filteredLinks, link)
+			}
+		}
+		links = filteredLinks
+
 		// Assert number of links is as expected
 		if len(links) != len(expectedConsoleLinks) {
 			return fmt.Errorf("expected %d console links but got %d", len(expectedConsoleLinks), len(links))
@@ -142,18 +153,22 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 			chromedp.Nodes(`img`, &icons, chromedp.FromNode(lastElement), chromedp.ByQueryAll),
 		)
 
-		// Assert number of icons is as expected
-		if len(icons) != len(expectedConsoleLinks) {
-			return fmt.Errorf("expected %d console icons but got %d", len(expectedConsoleLinks), len(icons))
+		// Assert number of icons is as expected, can be more if other add-ons are installed
+		if len(icons) < len(expectedConsoleLinks) {
+			return fmt.Errorf("expected at least %d console icons but got %d", len(expectedConsoleLinks), len(icons))
 		}
 
 		// Assert the icons itself are as expected
+		totalRhoamIcons := 0
 		for idx := range links {
 			consoleLinkIcon := icons[idx].AttributeValue("src")
 			expectedLinkIcon := expectedConsoleLinks[idx].Icon
-			if consoleLinkIcon != expectedLinkIcon {
-				return fmt.Errorf("expected %s as a console link url but got: %s", expectedLinkIcon, consoleLinkIcon)
+			if consoleLinkIcon == expectedLinkIcon {
+				totalRhoamIcons += 1
 			}
+		}
+		if totalRhoamIcons != len(expectedConsoleLinks) {
+			return fmt.Errorf("expected %d RHOAM console icons but got %d", len(expectedConsoleLinks), totalRhoamIcons)
 		}
 
 		return nil
