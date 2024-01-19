@@ -795,7 +795,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 				return ctrl.Result{}, err
 			}
 
-			return ctrl.Result{}, err
+			return result, nil
 		}
 		log.Infof("found required secret", l.Fields{"secret": secretName})
 		eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
