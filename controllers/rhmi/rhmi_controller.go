@@ -244,7 +244,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
-	timer := time.AfterFunc(time.Minute*12, func() {
+	timer := time.AfterFunc(time.Minute*30, func() {
 		reconcileDelayedMetric.Set(1)
 	})
 	defer timer.Stop()

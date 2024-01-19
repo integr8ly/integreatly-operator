@@ -314,7 +314,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 					Alert: fmt.Sprintf("%sInstallationControllerReconcileDelayed", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-						"message": fmt.Sprintf("The reconcile function of the installation controller in a completed state of %s operator is taking more than 12 minutes to complete", strings.ToUpper(installationName)),
+						"message": fmt.Sprintf("The reconcile function of the installation controller in a completed state of %s operator is taking more than 30 minutes to complete", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) (installation_controller_reconcile_delayed == 1)`),
 					For:    "1m",
