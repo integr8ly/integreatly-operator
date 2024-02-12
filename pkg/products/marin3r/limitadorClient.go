@@ -31,7 +31,7 @@ func NewLimitadorClient(podExecutor resources.PodExecutorInterface, nameSpace, p
 
 func (l LimitadorClient) GetLimitsByName(limitName string) ([]limitadorLimit, error) {
 	response, _, err := l.PodExecutor.ExecuteRemoteCommand(l.Namespace, l.PodName, []string{"/bin/sh",
-		"-c", fmt.Sprintf("wget -qO - http://127.0.0.1:8080/limits/%s", limitName)})
+		"-c", fmt.Sprintf("curl -fsSL http://127.0.0.1:8080/limits/%s", limitName)})
 	if err != nil {
 		return nil, err
 	}
