@@ -85,7 +85,15 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
-	return r.ensureLimits(ctx, client)
+	// Limitador quay.io/kuadrant/limitador:v1.3.0 does not support DELETE method
+	// It will pick up the changes from Config file and do the appropriate actions
+	// It does not require restart the pod
+	// In the case of a restart, repicked up the initial state from the Config file
+	// So we don't need ensureLimits(), that compared RHOAM and Limitador configuration and used old limitador DELETE method
+	// Cleanup is suggested in the file - to delete ensureLimits() and related code
+	// return r.ensureLimits(ctx, client)
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
