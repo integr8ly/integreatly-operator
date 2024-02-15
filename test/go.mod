@@ -13,7 +13,7 @@ require (
 	github.com/chromedp/chromedp v0.9.2
 	github.com/google/go-cmp v0.6.0
 	github.com/headzoo/surf v1.0.1
-	github.com/integr8ly/cloud-resource-operator v1.1.1
+	github.com/integr8ly/cloud-resource-operator v1.1.3
 	github.com/integr8ly/integreatly-operator v1.19.1-0.20230418125645-5aec6c015174
 	github.com/integr8ly/keycloak-client v0.1.14
 	github.com/onsi/ginkgo/v2 v2.9.1
@@ -161,5 +161,3 @@ replace k8s.io/client-go => k8s.io/client-go v0.26.3
 
 // Required to import parent module - cannot import remotely as parent module was importing test directoy
 replace github.com/integr8ly/integreatly-operator => ../
-
-replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20240218081835-3c86ec7d775e

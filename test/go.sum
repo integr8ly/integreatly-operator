@@ -633,6 +633,8 @@ github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH
 github.com/imdario/mergo v0.3.13 h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk=
 github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK2O4oXg=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
+github.com/integr8ly/cloud-resource-operator v1.1.3 h1:+aZ1IMGgctaeZx7L2EgJz/oIUzArMJcmxg26j0gniPM=
+github.com/integr8ly/cloud-resource-operator v1.1.3/go.mod h1:Ng8ziNWjDVw1Wi0VXLoysFLrvRSx4ZKGfuQwQxftJuc=
 github.com/integr8ly/keycloak-client v0.1.14 h1:WfjOaAxk4yjG+wF80/AT8LJi1RhDAm9tUbSB+lB1sQ0=
 github.com/integr8ly/keycloak-client v0.1.14/go.mod h1:b4x7gwWAkJw7qIhTWRsD/upu5eaUKbWIosmizFGFu/E=
 github.com/itchyny/gojq v0.12.7 h1:hYPTpeWfrJ1OT+2j6cvBScbhl0TkdwGM4bc66onUSOQ=
@@ -1013,8 +1015,6 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802/go.mod h1
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
-github.com/valerymo/cloud-resource-operator v0.25.1-0.20240218081835-3c86ec7d775e h1:aC8Y/t33qke+KquYQvidsnOIqZ70aqohKmjaA3aLqLc=
-github.com/valerymo/cloud-resource-operator v0.25.1-0.20240218081835-3c86ec7d775e/go.mod h1:Ng8ziNWjDVw1Wi0VXLoysFLrvRSx4ZKGfuQwQxftJuc=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/vishvananda/netlink v1.0.0/go.mod h1:+SR5DhBJrl6ZM7CoCKvpw5BKroDKQ+PJqOg65H/2ktk=
 github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df/go.mod h1:JP3t17pCcGlemwknint6hfoeCVQrEMVwxRLRjXpq+BU=
