@@ -108,5 +108,5 @@ func GetClusterVersion(cr *configv1.ClusterVersion) (string, error) {
 	if cr.Status.Desired.Version != "" {
 		return cr.Status.Desired.Version, nil
 	}
-	return "", fmt.Errorf("dedired.version not set in status block")
+	return "", fmt.Errorf("desired.version not set in status block")
 }
