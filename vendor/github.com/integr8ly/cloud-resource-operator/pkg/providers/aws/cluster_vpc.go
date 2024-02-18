@@ -252,7 +252,7 @@ func createPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 		break
 	}
 	if subnet == nil {
-
+		return nil, fmt.Errorf("failed to create subnet")
 	}
 	return subnet, nil
 }

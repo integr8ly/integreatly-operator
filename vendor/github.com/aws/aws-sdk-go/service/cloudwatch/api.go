@@ -62,7 +62,10 @@ func (c *CloudWatch) DeleteAlarmsRequest(input *DeleteAlarmsInput) (req *request
 // you could delete 99 metric alarms and one composite alarms with one operation,
 // but you can't delete two composite alarms with one operation.
 //
-// In the event of an error, no alarms are deleted.
+// If you specify an incorrect alarm name or make any other error in the operation,
+// no alarms are deleted. To confirm that alarms were deleted successfully,
+// you can use the DescribeAlarms (https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_DescribeAlarms.html)
+// operation after using DeleteAlarms.
 //
 // It is possible to create a loop or cycle of composite alarms, where composite
 // alarm A depends on composite alarm B, and composite alarm B also depends
@@ -3394,16 +3397,18 @@ func (c *CloudWatch) PutMetricAlarmRequest(input *PutMetricAlarmInput) (req *req
 // If you are an IAM user, you must have Amazon EC2 permissions for some alarm
 // operations:
 //
-//   - The iam:CreateServiceLinkedRole for all alarms with EC2 actions
+//   - The iam:CreateServiceLinkedRole permission for all alarms with EC2 actions
 //
-//   - The iam:CreateServiceLinkedRole to create an alarm with Systems Manager
-//     OpsItem actions.
+//   - The iam:CreateServiceLinkedRole permissions to create an alarm with
+//     Systems Manager OpsItem or response plan actions.
 //
 // The first time you create an alarm in the Amazon Web Services Management
 // Console, the CLI, or by using the PutMetricAlarm API, CloudWatch creates
 // the necessary service-linked role for you. The service-linked roles are called
 // AWSServiceRoleForCloudWatchEvents and AWSServiceRoleForCloudWatchAlarms_ActionSSM.
 // For more information, see Amazon Web Services service-linked role (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html#iam-term-service-linked-role).
+//
+// Each PutMetricAlarm action has a maximum uncompressed payload of 120 KB.
 //
 // # Cross-account alarms
 //
@@ -4860,7 +4865,7 @@ func (s *Datapoint) SetUnit(v string) *Datapoint {
 type DeleteAlarmsInput struct {
 	_ struct{} `type:"structure"`
 
-	// The alarms to be deleted.
+	// The alarms to be deleted. Do not enclose the alarm names in quote marks.
 	//
 	// AlarmNames is a required field
 	AlarmNames []*string `type:"list" required:"true"`
@@ -5649,7 +5654,14 @@ type DescribeAlarmsInput struct {
 
 	// Use this parameter to specify whether you want the operation to return metric
 	// alarms or composite alarms. If you omit this parameter, only metric alarms
-	// are returned.
+	// are returned, even if composite alarms exist in the account.
+	//
+	// For example, if you omit this parameter or specify MetricAlarms, the operation
+	// returns only a list of metric alarms. It does not return any composite alarms,
+	// even if composite alarms exist in the account.
+	//
+	// If you specify CompositeAlarms, the operation returns only a list of composite
+	// alarms, and does not return any metric alarms.
 	AlarmTypes []*string `type:"list" enum:"AlarmType"`
 
 	// If you use this parameter and specify the name of a composite alarm, the
@@ -6110,13 +6122,15 @@ type Dimension struct {
 
 	// The name of the dimension. Dimension names must contain only ASCII characters,
 	// must include at least one non-whitespace character, and cannot start with
-	// a colon (:).
+	// a colon (:). ASCII control characters are not supported as part of dimension
+	// names.
 	//
 	// Name is a required field
 	Name *string `min:"1" type:"string" required:"true"`
 
 	// The value of the dimension. Dimension values must contain only ASCII characters
-	// and must include at least one non-whitespace character.
+	// and must include at least one non-whitespace character. ASCII control characters
+	// are not supported as part of dimension values.
 	//
 	// Value is a required field
 	Value *string `min:"1" type:"string" required:"true"`
@@ -6670,7 +6684,7 @@ type GetInsightRuleReportInput struct {
 	Metrics []*string `type:"list"`
 
 	// Determines what statistic to use to rank the contributors. Valid values are
-	// SUM and MAXIMUM.
+	// Sum and Maximum.
 	OrderBy *string `min:"1" type:"string"`
 
 	// The period, in seconds, to use for the statistics in the InsightRuleMetricDatapoint
@@ -7439,9 +7453,9 @@ type GetMetricStreamOutput struct {
 	// The name of the metric stream.
 	Name *string `min:"1" type:"string"`
 
-	// The output format for the stream. Valid values are json and opentelemetry0.7.
-	// For more information about metric stream output formats, see Metric streams
-	// output formats (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats.html).
+	// The output format for the stream. Valid values are json, opentelemetry1.0,
+	// and opentelemetry0.7. For more information about metric stream output formats,
+	// see Metric streams output formats (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats.html).
 	OutputFormat *string `min:"1" type:"string" enum:"MetricStreamOutputFormat"`
 
 	// The ARN of the IAM role that is used by this metric stream.
@@ -8519,7 +8533,7 @@ type ListTagsForResourceInput struct {
 	//
 	// The ARN format of an alarm is arn:aws:cloudwatch:Region:account-id:alarm:alarm-name
 	//
-	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule:insight-rule-name
+	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule/insight-rule-name
 	//
 	// For more information about ARN format, see Resource Types Defined by Amazon
 	// CloudWatch (https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html#amazoncloudwatch-resources-for-iam-policies)
@@ -9880,7 +9894,8 @@ type MetricStreamEntry struct {
 	// The name of the metric stream.
 	Name *string `min:"1" type:"string"`
 
-	// The output format of this metric stream. Valid values are json and opentelemetry0.7.
+	// The output format of this metric stream. Valid values are json, opentelemetry1.0,
+	// and opentelemetry0.7.
 	OutputFormat *string `min:"1" type:"string" enum:"MetricStreamOutputFormat"`
 
 	// The current state of this stream. Valid values are running and stopped.
@@ -9947,12 +9962,31 @@ func (s *MetricStreamEntry) SetState(v string) *MetricStreamEntry {
 	return s
 }
 
-// This structure contains the name of one of the metric namespaces that is
-// listed in a filter of a metric stream.
+// This structure contains a metric namespace and optionally, a list of metric
+// names, to either include in a metric stream or exclude from a metric stream.
+//
+// A metric stream's filters can include up to 1000 total names. This limit
+// applies to the sum of namespace names and metric names in the filters. For
+// example, this could include 10 metric namespace filters with 99 metrics each,
+// or 20 namespace filters with 49 metrics specified in each filter.
 type MetricStreamFilter struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the metric namespace in the filter.
+	// The names of the metrics to either include or exclude from the metric stream.
+	//
+	// If you omit this parameter, all metrics in the namespace are included or
+	// excluded, depending on whether this filter is specified as an exclude filter
+	// or an include filter.
+	//
+	// Each metric name can contain only ASCII printable characters (ASCII range
+	// 32 through 126). Each metric name must contain at least one non-whitespace
+	// character.
+	MetricNames []*string `type:"list"`
+
+	// The name of the metric namespace for this filter.
+	//
+	// The namespace can contain only ASCII printable characters (ASCII range 32
+	// through 126). It must contain at least one non-whitespace character.
 	Namespace *string `min:"1" type:"string"`
 }
 
@@ -9987,6 +10021,12 @@ func (s *MetricStreamFilter) Validate() error {
 	return nil
 }
 
+// SetMetricNames sets the MetricNames field's value.
+func (s *MetricStreamFilter) SetMetricNames(v []*string) *MetricStreamFilter {
+	s.MetricNames = v
+	return s
+}
+
 // SetNamespace sets the Namespace field's value.
 func (s *MetricStreamFilter) SetNamespace(v string) *MetricStreamFilter {
 	s.Namespace = &v
@@ -10005,8 +10045,9 @@ type MetricStreamStatisticsConfiguration struct {
 	// listed in the IncludeMetrics array in this structure. This list can include
 	// as many as 20 statistics.
 	//
-	// If the OutputFormat for the stream is opentelemetry0.7, the only valid values
-	// are p?? percentile statistics such as p90, p99 and so on.
+	// If the OutputFormat for the stream is opentelemetry1.0 or opentelemetry0.7,
+	// the only valid values are p?? percentile statistics such as p90, p99 and
+	// so on.
 	//
 	// If the OutputFormat for the stream is json, the valid values include the
 	// abbreviations for all of the statistics listed in CloudWatch statistics definitions
@@ -10997,22 +11038,48 @@ type PutMetricAlarmInput struct {
 
 	// The actions to execute when this alarm transitions to the ALARM state from
 	// any other state. Each action is specified as an Amazon Resource Name (ARN).
+	// Valid values:
 	//
-	// Valid Values: arn:aws:automate:region:ec2:stop | arn:aws:automate:region:ec2:terminate
-	// | arn:aws:automate:region:ec2:recover | arn:aws:automate:region:ec2:reboot
-	// | arn:aws:sns:region:account-id:sns-topic-name | arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
-	// | arn:aws:ssm:region:account-id:opsitem:severity | arn:aws:ssm-incidents::account-id:response-plan:response-plan-name
+	// EC2 actions:
 	//
-	// Valid Values (for use with IAM roles): arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
+	//    * arn:aws:automate:region:ec2:stop
+	//
+	//    * arn:aws:automate:region:ec2:terminate
+	//
+	//    * arn:aws:automate:region:ec2:reboot
+	//
+	//    * arn:aws:automate:region:ec2:recover
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
+	//
+	// Autoscaling action:
+	//
+	//    * arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SNS notification action:
+	//
+	//    * arn:aws:sns:region:account-id:sns-topic-name:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SSM integration actions:
+	//
+	//    * arn:aws:ssm:region:account-id:opsitem:severity#CATEGORY=category-name
+	//
+	//    * arn:aws:ssm-incidents::account-id:responseplan/response-plan-name
 	AlarmActions []*string `type:"list"`
 
 	// The description for the alarm.
 	AlarmDescription *string `type:"string"`
 
 	// The name for the alarm. This name must be unique within the Region.
+	//
+	// The name must contain only UTF-8 characters, and can't contain ASCII control
+	// characters
 	//
 	// AlarmName is a required field
 	AlarmName *string `min:"1" type:"string" required:"true"`
@@ -11057,32 +11124,82 @@ type PutMetricAlarmInput struct {
 	// EvaluationPeriods is a required field
 	EvaluationPeriods *int64 `min:"1" type:"integer" required:"true"`
 
-	// The percentile statistic for the metric specified in MetricName. Specify
-	// a value between p0.0 and p100. When you call PutMetricAlarm and specify a
-	// MetricName, you must specify either Statistic or ExtendedStatistic, but not
-	// both.
+	// The extended statistic for the metric specified in MetricName. When you call
+	// PutMetricAlarm and specify a MetricName, you must specify either Statistic
+	// or ExtendedStatistic but not both.
+	//
+	// If you specify ExtendedStatistic, the following are valid values:
+	//
+	//    * p90
+	//
+	//    * tm90
+	//
+	//    * tc90
+	//
+	//    * ts90
+	//
+	//    * wm90
+	//
+	//    * IQM
+	//
+	//    * PR(n:m) where n and m are values of the metric
+	//
+	//    * TC(X%:X%) where X is between 10 and 90 inclusive.
+	//
+	//    * TM(X%:X%) where X is between 10 and 90 inclusive.
+	//
+	//    * TS(X%:X%) where X is between 10 and 90 inclusive.
+	//
+	//    * WM(X%:X%) where X is between 10 and 90 inclusive.
+	//
+	// For more information about these extended statistics, see CloudWatch statistics
+	// definitions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html).
 	ExtendedStatistic *string `type:"string"`
 
 	// The actions to execute when this alarm transitions to the INSUFFICIENT_DATA
 	// state from any other state. Each action is specified as an Amazon Resource
-	// Name (ARN).
+	// Name (ARN). Valid values:
 	//
-	// Valid Values: arn:aws:automate:region:ec2:stop | arn:aws:automate:region:ec2:terminate
-	// | arn:aws:automate:region:ec2:recover | arn:aws:automate:region:ec2:reboot
-	// | arn:aws:sns:region:account-id:sns-topic-name | arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	// EC2 actions:
 	//
-	// Valid Values (for use with IAM roles): >arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
+	//    * arn:aws:automate:region:ec2:stop
+	//
+	//    * arn:aws:automate:region:ec2:terminate
+	//
+	//    * arn:aws:automate:region:ec2:reboot
+	//
+	//    * arn:aws:automate:region:ec2:recover
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
+	//
+	// Autoscaling action:
+	//
+	//    * arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SNS notification action:
+	//
+	//    * arn:aws:sns:region:account-id:sns-topic-name:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SSM integration actions:
+	//
+	//    * arn:aws:ssm:region:account-id:opsitem:severity#CATEGORY=category-name
+	//
+	//    * arn:aws:ssm-incidents::account-id:responseplan/response-plan-name
 	InsufficientDataActions []*string `type:"list"`
 
 	// The name for the metric associated with the alarm. For each PutMetricAlarm
 	// operation, you must specify either MetricName or a Metrics array.
 	//
 	// If you are creating an alarm based on a math expression, you cannot specify
-	// this parameter, or any of the Dimensions, Period, Namespace, Statistic, or
-	// ExtendedStatistic parameters. Instead, you specify all this information in
-	// the Metrics array.
+	// this parameter, or any of the Namespace, Dimensions, Period, Unit, Statistic,
+	// or ExtendedStatistic parameters. Instead, you specify all this information
+	// in the Metrics array.
 	MetricName *string `min:"1" type:"string"`
 
 	// An array of MetricDataQuery structures that enable you to create an alarm
@@ -11096,8 +11213,8 @@ type PutMetricAlarmInput struct {
 	// designate this expression by setting ReturnData to true for this object in
 	// the array. For more information, see MetricDataQuery (https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDataQuery.html).
 	//
-	// If you use the Metrics parameter, you cannot include the MetricName, Dimensions,
-	// Period, Namespace, Statistic, or ExtendedStatistic parameters of PutMetricAlarm
+	// If you use the Metrics parameter, you cannot include the Namespace, MetricName,
+	// Dimensions, Period, Unit, Statistic, or ExtendedStatistic parameters of PutMetricAlarm
 	// in the same operation. Instead, you retrieve the metrics you are using in
 	// your math expression as part of the Metrics array.
 	Metrics []*MetricDataQuery `type:"list"`
@@ -11106,16 +11223,40 @@ type PutMetricAlarmInput struct {
 	Namespace *string `min:"1" type:"string"`
 
 	// The actions to execute when this alarm transitions to an OK state from any
-	// other state. Each action is specified as an Amazon Resource Name (ARN).
+	// other state. Each action is specified as an Amazon Resource Name (ARN). Valid
+	// values:
 	//
-	// Valid Values: arn:aws:automate:region:ec2:stop | arn:aws:automate:region:ec2:terminate
-	// | arn:aws:automate:region:ec2:recover | arn:aws:automate:region:ec2:reboot
-	// | arn:aws:sns:region:account-id:sns-topic-name | arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	// EC2 actions:
 	//
-	// Valid Values (for use with IAM roles): arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
-	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
+	//    * arn:aws:automate:region:ec2:stop
+	//
+	//    * arn:aws:automate:region:ec2:terminate
+	//
+	//    * arn:aws:automate:region:ec2:reboot
+	//
+	//    * arn:aws:automate:region:ec2:recover
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
+	//
+	//    * arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
+	//
+	// Autoscaling action:
+	//
+	//    * arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SNS notification action:
+	//
+	//    * arn:aws:sns:region:account-id:sns-topic-name:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
+	//
+	// SSM integration actions:
+	//
+	//    * arn:aws:ssm:region:account-id:opsitem:severity#CATEGORY=category-name
+	//
+	//    * arn:aws:ssm-incidents::account-id:responseplan/response-plan-name
 	OKActions []*string `type:"list"`
 
 	// The length, in seconds, used each time the metric specified in MetricName
@@ -11146,7 +11287,8 @@ type PutMetricAlarmInput struct {
 	Statistic *string `type:"string" enum:"Statistic"`
 
 	// A list of key-value pairs to associate with the alarm. You can associate
-	// as many as 50 tags with an alarm.
+	// as many as 50 tags with an alarm. To be able to associate tags with the alarm
+	// when you create the alarm, you must have the cloudwatch:TagResource permission.
 	//
 	// Tags can help you organize and categorize your resources. You can also use
 	// them to scope user permissions by granting a user permission to access or
@@ -11190,7 +11332,9 @@ type PutMetricAlarmInput struct {
 	// that an instance receives on all network interfaces. You can also specify
 	// a unit when you create a custom metric. Units help provide conceptual meaning
 	// to your data. Metric data points that specify a unit of measure, such as
-	// Percent, are aggregated separately.
+	// Percent, are aggregated separately. If you are creating an alarm based on
+	// a metric math expression, you can specify the unit for each metric (if needed)
+	// within the objects in the Metrics array.
 	//
 	// If you don't specify Unit, CloudWatch retrieves all unit types that have
 	// been published for the metric and attempts to evaluate the alarm. Usually,
@@ -11463,7 +11607,8 @@ type PutMetricDataInput struct {
 	// MetricData is a required field
 	MetricData []*MetricDatum `type:"list" required:"true"`
 
-	// The namespace for the metric data.
+	// The namespace for the metric data. You can use ASCII characters for the namespace,
+	// except for control characters which are not supported.
 	//
 	// To avoid conflicts with Amazon Web Services service namespaces, you should
 	// not specify a namespace that begins with AWS/
@@ -11590,9 +11735,9 @@ type PutMetricStreamInput struct {
 	// Name is a required field
 	Name *string `min:"1" type:"string" required:"true"`
 
-	// The output format for the stream. Valid values are json and opentelemetry0.7.
-	// For more information about metric stream output formats, see Metric streams
-	// output formats (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats.html).
+	// The output format for the stream. Valid values are json, opentelemetry1.0,
+	// and opentelemetry0.7. For more information about metric stream output formats,
+	// see Metric streams output formats (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats.html).
 	//
 	// OutputFormat is a required field
 	OutputFormat *string `min:"1" type:"string" required:"true" enum:"MetricStreamOutputFormat"`
@@ -11619,8 +11764,8 @@ type PutMetricStreamInput struct {
 	// that you can stream depend on the stream's OutputFormat. If the OutputFormat
 	// is json, you can stream any additional statistic that is supported by CloudWatch,
 	// listed in CloudWatch statistics definitions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html.html).
-	// If the OutputFormat is opentelemetry0.7, you can stream percentile statistics
-	// such as p95, p99.9, and so on.
+	// If the OutputFormat is opentelemetry1.0 or opentelemetry0.7, you can stream
+	// percentile statistics such as p95, p99.9, and so on.
 	StatisticsConfigurations []*MetricStreamStatisticsConfiguration `type:"list"`
 
 	// A list of key-value pairs to associate with the metric stream. You can associate
@@ -12382,7 +12527,7 @@ type TagResourceInput struct {
 	//
 	// The ARN format of an alarm is arn:aws:cloudwatch:Region:account-id:alarm:alarm-name
 	//
-	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule:insight-rule-name
+	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule/insight-rule-name
 	//
 	// For more information about ARN format, see Resource Types Defined by Amazon
 	// CloudWatch (https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html#amazoncloudwatch-resources-for-iam-policies)
@@ -12485,7 +12630,7 @@ type UntagResourceInput struct {
 	//
 	// The ARN format of an alarm is arn:aws:cloudwatch:Region:account-id:alarm:alarm-name
 	//
-	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule:insight-rule-name
+	// The ARN format of a Contributor Insights rule is arn:aws:cloudwatch:Region:account-id:insight-rule/insight-rule-name
 	//
 	// For more information about ARN format, see Resource Types Defined by Amazon
 	// CloudWatch (https://docs.aws.amazon.com/IAM/latest/UserGuide/list_amazoncloudwatch.html#amazoncloudwatch-resources-for-iam-policies)
@@ -12717,6 +12862,9 @@ const (
 
 	// MetricStreamOutputFormatOpentelemetry07 is a MetricStreamOutputFormat enum value
 	MetricStreamOutputFormatOpentelemetry07 = "opentelemetry0.7"
+
+	// MetricStreamOutputFormatOpentelemetry10 is a MetricStreamOutputFormat enum value
+	MetricStreamOutputFormatOpentelemetry10 = "opentelemetry1.0"
 )
 
 // MetricStreamOutputFormat_Values returns all elements of the MetricStreamOutputFormat enum
@@ -12724,6 +12872,7 @@ func MetricStreamOutputFormat_Values() []string {
 	return []string{
 		MetricStreamOutputFormatJson,
 		MetricStreamOutputFormatOpentelemetry07,
+		MetricStreamOutputFormatOpentelemetry10,
 	}
 }
 
