@@ -8,6 +8,17 @@
 //
 // For product documentation, see: https://cloud.google.com/service-infrastructure/docs/service-networking/getting-started
 //
+// # Library status
+//
+// These client libraries are officially supported by Google. However, this
+// library is considered complete and is in maintenance mode. This means
+// that we will address critical bugs and security issues but will not add
+// any new features.
+//
+// When possible, we recommend using our newer
+// [Cloud Client Libraries for Go](https://pkg.go.dev/cloud.google.com/go)
+// that are still actively being worked and iterated on.
+//
 // # Creating a client
 //
 // Usage example:
@@ -17,28 +28,31 @@
 //	ctx := context.Background()
 //	servicenetworkingService, err := servicenetworking.NewService(ctx)
 //
-// In this example, Google Application Default Credentials are used for authentication.
-//
-// For information on how to create and obtain Application Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
+// In this example, Google Application Default Credentials are used for
+// authentication. For information on how to create and obtain Application
+// Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
 //
 // # Other authentication options
 //
-// By default, all available scopes (see "Constants") are used to authenticate. To restrict scopes, use option.WithScopes:
+// By default, all available scopes (see "Constants") are used to authenticate.
+// To restrict scopes, use [google.golang.org/api/option.WithScopes]:
 //
 //	servicenetworkingService, err := servicenetworking.NewService(ctx, option.WithScopes(servicenetworking.ServiceManagementScope))
 //
-// To use an API key for authentication (note: some APIs do not support API keys), use option.WithAPIKey:
+// To use an API key for authentication (note: some APIs do not support API
+// keys), use [google.golang.org/api/option.WithAPIKey]:
 //
 //	servicenetworkingService, err := servicenetworking.NewService(ctx, option.WithAPIKey("AIza..."))
 //
-// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth flow), use option.WithTokenSource:
+// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth
+// flow, use [google.golang.org/api/option.WithTokenSource]:
 //
 //	config := &oauth2.Config{...}
 //	// ...
 //	token, err := config.Exchange(ctx, ...)
 //	servicenetworkingService, err := servicenetworking.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 //
-// See https://godoc.org/google.golang.org/api/option/ for details on options.
+// See [google.golang.org/api/option.ClientOption] for details on options.
 package servicenetworking // import "google.golang.org/api/servicenetworking/v1"
 
 import (
@@ -235,6 +249,7 @@ type ServicesProjectsGlobalService struct {
 
 func NewServicesProjectsGlobalNetworksService(s *APIService) *ServicesProjectsGlobalNetworksService {
 	rs := &ServicesProjectsGlobalNetworksService{s: s}
+	rs.DnsZones = NewServicesProjectsGlobalNetworksDnsZonesService(s)
 	rs.PeeredDnsDomains = NewServicesProjectsGlobalNetworksPeeredDnsDomainsService(s)
 	return rs
 }
@@ -242,7 +257,18 @@ func NewServicesProjectsGlobalNetworksService(s *APIService) *ServicesProjectsGl
 type ServicesProjectsGlobalNetworksService struct {
 	s *APIService
 
+	DnsZones *ServicesProjectsGlobalNetworksDnsZonesService
+
 	PeeredDnsDomains *ServicesProjectsGlobalNetworksPeeredDnsDomainsService
+}
+
+func NewServicesProjectsGlobalNetworksDnsZonesService(s *APIService) *ServicesProjectsGlobalNetworksDnsZonesService {
+	rs := &ServicesProjectsGlobalNetworksDnsZonesService{s: s}
+	return rs
+}
+
+type ServicesProjectsGlobalNetworksDnsZonesService struct {
+	s *APIService
 }
 
 func NewServicesProjectsGlobalNetworksPeeredDnsDomainsService(s *APIService) *ServicesProjectsGlobalNetworksPeeredDnsDomainsService {
@@ -511,6 +537,13 @@ type AddSubnetworkRequest struct {
 
 	// Description: Optional. Description of the subnet.
 	Description string `json:"description,omitempty"`
+
+	// InternalRange: Optional. The url of an Internal Range. Eg:
+	// `projects//locations/global/internalRanges/`. If specified, it means
+	// that the subnetwork cidr will be created using the combination of
+	// requested_address/ip_prefix_length. Note that the subnet cidr has to
+	// be within the cidr range of this Internal Range.
+	InternalRange string `json:"internalRange,omitempty"`
 
 	// IpPrefixLength: Required. The prefix length of the subnet's IP
 	// address range. Use CIDR range notation, such as `29` to provision a
@@ -1601,6 +1634,10 @@ type Control struct {
 	// recommended value for most services is servicecontrol.googleapis.com
 	Environment string `json:"environment,omitempty"`
 
+	// MethodPolicies: Defines policies applying to the API methods of the
+	// service.
+	MethodPolicies []*MethodPolicy `json:"methodPolicies,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "Environment") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
@@ -1851,6 +1888,10 @@ type DnsRecordSet struct {
 	// Type: Required. The identifier of a supported record type.
 	Type string `json:"type,omitempty"`
 
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
 	// ForceSendFields is a list of field names (e.g. "Data") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
@@ -1909,11 +1950,45 @@ func (s *DnsZone) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DnsZonePair: * Represents a pair of private and peering DNS zone
+// resources. *
+type DnsZonePair struct {
+	// ConsumerPeeringZone: The DNS peering zone in the consumer project.
+	ConsumerPeeringZone *DnsZone `json:"consumerPeeringZone,omitempty"`
+
+	// ProducerPrivateZone: The private DNS zone in the shared producer host
+	// project.
+	ProducerPrivateZone *DnsZone `json:"producerPrivateZone,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ConsumerPeeringZone")
+	// to unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ConsumerPeeringZone") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DnsZonePair) MarshalJSON() ([]byte, error) {
+	type NoMethod DnsZonePair
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Documentation: `Documentation` provides the information for
 // describing a service. Example: documentation: summary: > The Google
 // Calendar API gives access to most calendar features. pages: - name:
 // Overview content: (== include google/foo/overview.md ==) - name:
-// Tutorial content: (== include google/foo/tutorial.md ==) subpages; -
+// Tutorial content: (== include google/foo/tutorial.md ==) subpages: -
 // name: Java content: (== include google/foo/tutorial_java.md ==)
 // rules: - selector: google.calendar.Calendar.Get description: > ... -
 // selector: google.calendar.Calendar.Put description: > ...
@@ -1958,6 +2033,11 @@ type Documentation struct {
 	// elements. **NOTE:** All service configuration rules follow "last one
 	// wins" order.
 	Rules []*DocumentationRule `json:"rules,omitempty"`
+
+	// SectionOverrides: Specifies section and content to override
+	// boilerplate content provided by go/api-docgen. Currently overrides
+	// following sections: 1. rest.service.client_libraries
+	SectionOverrides []*Page `json:"sectionOverrides,omitempty"`
 
 	// ServiceRootUrl: Specifies the service root url if the default one
 	// (the service name from the yaml file) is not suitable. This can be
@@ -2009,6 +2089,11 @@ type DocumentationRule struct {
 	// leading & trailing comments taken from the proto source definition of
 	// the proto element.
 	Description string `json:"description,omitempty"`
+
+	// DisableReplacementWords: String of comma or space separated
+	// case-sensitive words for which method/field name replacement will be
+	// disabled by go/api-docgen.
+	DisableReplacementWords string `json:"disableReplacementWords,omitempty"`
 
 	// Selector: The selector is a comma-separated list of patterns for any
 	// element such as a method, a field, an enum value. Each pattern is a
@@ -2375,6 +2460,96 @@ type Field struct {
 
 func (s *Field) MarshalJSON() ([]byte, error) {
 	type NoMethod Field
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// FieldPolicy: Google API Policy Annotation This message defines a
+// simple API policy annotation that can be used to annotate API request
+// and response message fields with applicable policies. One field may
+// have multiple applicable policies that must all be satisfied before a
+// request can be processed. This policy annotation is used to generate
+// the overall policy that will be used for automatic runtime policy
+// enforcement and documentation generation.
+type FieldPolicy struct {
+	// ResourcePermission: Specifies the required permission(s) for the
+	// resource referred to by the field. It requires the field contains a
+	// valid resource reference, and the request must pass the permission
+	// checks to proceed. For example, "resourcemanager.projects.get".
+	ResourcePermission string `json:"resourcePermission,omitempty"`
+
+	// ResourceType: Specifies the resource type for the resource referred
+	// to by the field.
+	ResourceType string `json:"resourceType,omitempty"`
+
+	// Selector: Selects one or more request or response message fields to
+	// apply this `FieldPolicy`. When a `FieldPolicy` is used in proto
+	// annotation, the selector must be left as empty. The service config
+	// generator will automatically fill the correct value. When a
+	// `FieldPolicy` is used in service config, the selector must be a
+	// comma-separated string with valid request or response field paths,
+	// such as "foo.bar" or "foo.bar,foo.baz".
+	Selector string `json:"selector,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ResourcePermission")
+	// to unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ResourcePermission") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FieldPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod FieldPolicy
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GetDnsZoneResponse: Represents managed DNS zones created in the
+// shared Producer host and consumer projects.
+type GetDnsZoneResponse struct {
+	// ConsumerPeeringZone: The DNS peering zone created in the consumer
+	// project.
+	ConsumerPeeringZone *DnsZone `json:"consumerPeeringZone,omitempty"`
+
+	// ProducerPrivateZone: The private DNS zone created in the shared
+	// producer host project.
+	ProducerPrivateZone *DnsZone `json:"producerPrivateZone,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ConsumerPeeringZone")
+	// to unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ConsumerPeeringZone") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GetDnsZoneResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod GetDnsZoneResponse
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2964,6 +3139,73 @@ func (s *ListConnectionsResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// ListDnsRecordSetsResponse: Represents all DNS RecordSets associated
+// with the producer network
+type ListDnsRecordSetsResponse struct {
+	// DnsRecordSets: DNS record Set Resource
+	DnsRecordSets []*DnsRecordSet `json:"dnsRecordSets,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DnsRecordSets") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DnsRecordSets") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ListDnsRecordSetsResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod ListDnsRecordSetsResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ListDnsZonesResponse: Represents all DNS zones in the shared producer
+// host project and the matching peering zones in the consumer project.
+type ListDnsZonesResponse struct {
+	// DnsZonePairs: All pairs of private DNS zones in the shared producer
+	// host project and the matching peering zones in the consumer project..
+	DnsZonePairs []*DnsZonePair `json:"dnsZonePairs,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DnsZonePairs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DnsZonePairs") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ListDnsZonesResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod ListDnsZonesResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ListOperationsResponse: The response message for
 // Operations.ListOperations.
 type ListOperationsResponse struct {
@@ -3279,8 +3521,53 @@ func (s *Method) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// MethodPolicy: Defines policies applying to an RPC method.
+type MethodPolicy struct {
+	// RequestPolicies: Policies that are applicable to the request message.
+	RequestPolicies []*FieldPolicy `json:"requestPolicies,omitempty"`
+
+	// Selector: Selects a method to which these policies should be
+	// enforced, for example,
+	// "google.pubsub.v1.Subscriber.CreateSubscription". Refer to selector
+	// for syntax details. NOTE: This field must not be set in the proto
+	// annotation. It will be automatically filled by the service config
+	// compiler .
+	Selector string `json:"selector,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "RequestPolicies") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "RequestPolicies") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *MethodPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod MethodPolicy
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // MethodSettings: Describes the generator configuration for a method.
 type MethodSettings struct {
+	// AutoPopulatedFields: List of top-level fields of the request message,
+	// that should be automatically populated by the client libraries based
+	// on their (google.api.field_info).format. Currently supported format:
+	// UUID4. Example of a YAML configuration: publishing: method_settings:
+	// - selector: google.example.v1.ExampleService.CreateExample
+	// auto_populated_fields: - request_id
+	AutoPopulatedFields []string `json:"autoPopulatedFields,omitempty"`
+
 	// LongRunning: Describes settings to use for long-running operations
 	// when generating API methods for RPCs. Complements RPCs that use the
 	// annotations in google/longrunning/operations.proto. Example of a YAML
@@ -3296,20 +3583,21 @@ type MethodSettings struct {
 	// options.
 	Selector string `json:"selector,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "LongRunning") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "AutoPopulatedFields")
+	// to unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
 	// sent to the server regardless of whether the field is empty or not.
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "LongRunning") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "AutoPopulatedFields") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -3996,8 +4284,8 @@ type Operation struct {
 	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
-	// Response: The normal response of the operation in case of success. If
-	// the original method returns no data on success, such as `Delete`, the
+	// Response: The normal, successful response of the operation. If the
+	// original method returns no data on success, such as `Delete`, the
 	// response is `google.protobuf.Empty`. If the original method is
 	// standard `Get`/`Create`/`Update`, the response should be the
 	// resource. For other methods, the response should have the type
@@ -4205,7 +4493,10 @@ type PolicyBinding struct {
 	// the specified granularity. The role must be one of the following: -
 	// 'roles/container.hostServiceAgentUser' applied on the shared VPC host
 	// project - 'roles/compute.securityAdmin' applied on the shared VPC
-	// host project
+	// host project - 'roles/compute.networkAdmin' applied on the shared VPC
+	// host project - 'roles/compute.xpnAdmin' applied on the shared VPC
+	// host project - 'roles/dns.admin' applied on the shared VPC host
+	// project
 	Role string `json:"role,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Member") to
@@ -4281,6 +4572,9 @@ type Publishing struct {
 	//   "PHOTOS" - Photos Org.
 	//   "STREET_VIEW" - Street View Org.
 	//   "SHOPPING" - Shopping Org.
+	//   "GEO" - Geo Org.
+	//   "GENERATIVE_AI" - Generative AI -
+	// https://developers.generativeai.google
 	Organization string `json:"organization,omitempty"`
 
 	// ProtoReferenceDocumentationUri: Optional link to proto reference
@@ -5659,6 +5953,43 @@ type ValidateConsumerConfigResponse struct {
 
 func (s *ValidateConsumerConfigResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ValidateConsumerConfigResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// VpcServiceControls: Response for the get VPC Service Controls
+// request.
+type VpcServiceControls struct {
+	// Enabled: Output only. Indicates whether the VPC Service Controls are
+	// enabled or disabled for the connection. If the consumer called the
+	// EnableVpcServiceControls method, then this is true. If the consumer
+	// called DisableVpcServiceControls, then this is false. The default is
+	// false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Enabled") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Enabled") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *VpcServiceControls) MarshalJSON() ([]byte, error) {
+	type NoMethod VpcServiceControls
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -7853,6 +8184,386 @@ func (c *ServicesDnsRecordSetsAddCall) Do(opts ...googleapi.CallOption) (*Operat
 
 }
 
+// method id "servicenetworking.services.dnsRecordSets.get":
+
+type ServicesDnsRecordSetsGetCall struct {
+	s            *APIService
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Producers can use this method to retrieve information about the
+// DNS record set added to the private zone inside the shared tenant
+// host project associated with a consumer network.
+//
+//   - parent: Parent resource identifying the connection which owns this
+//     collection of DNS zones in the format services/{service}.
+func (r *ServicesDnsRecordSetsService) Get(parent string) *ServicesDnsRecordSetsGetCall {
+	c := &ServicesDnsRecordSetsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// ConsumerNetwork sets the optional parameter "consumerNetwork":
+// Required. The consumer network containing the record set. Must be in
+// the form of projects/{project}/global/networks/{network}
+func (c *ServicesDnsRecordSetsGetCall) ConsumerNetwork(consumerNetwork string) *ServicesDnsRecordSetsGetCall {
+	c.urlParams_.Set("consumerNetwork", consumerNetwork)
+	return c
+}
+
+// Domain sets the optional parameter "domain": Required. The domain
+// name of the zone containing the recordset.
+func (c *ServicesDnsRecordSetsGetCall) Domain(domain string) *ServicesDnsRecordSetsGetCall {
+	c.urlParams_.Set("domain", domain)
+	return c
+}
+
+// Type sets the optional parameter "type": Required. RecordSet Type eg.
+// type='A'. See the list of Supported DNS Types
+// (https://cloud.google.com/dns/records/json-record).
+func (c *ServicesDnsRecordSetsGetCall) Type(type_ string) *ServicesDnsRecordSetsGetCall {
+	c.urlParams_.Set("type", type_)
+	return c
+}
+
+// Zone sets the optional parameter "zone": Required. The name of the
+// zone containing the record set.
+func (c *ServicesDnsRecordSetsGetCall) Zone(zone string) *ServicesDnsRecordSetsGetCall {
+	c.urlParams_.Set("zone", zone)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ServicesDnsRecordSetsGetCall) Fields(s ...googleapi.Field) *ServicesDnsRecordSetsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ServicesDnsRecordSetsGetCall) IfNoneMatch(entityTag string) *ServicesDnsRecordSetsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ServicesDnsRecordSetsGetCall) Context(ctx context.Context) *ServicesDnsRecordSetsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ServicesDnsRecordSetsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ServicesDnsRecordSetsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/dnsRecordSets:get")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "servicenetworking.services.dnsRecordSets.get" call.
+// Exactly one of *DnsRecordSet or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DnsRecordSet.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ServicesDnsRecordSetsGetCall) Do(opts ...googleapi.CallOption) (*DnsRecordSet, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &DnsRecordSet{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Producers can use this method to retrieve information about the DNS record set added to the private zone inside the shared tenant host project associated with a consumer network.",
+	//   "flatPath": "v1/services/{servicesId}/dnsRecordSets:get",
+	//   "httpMethod": "GET",
+	//   "id": "servicenetworking.services.dnsRecordSets.get",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "consumerNetwork": {
+	//       "description": "Required. The consumer network containing the record set. Must be in the form of projects/{project}/global/networks/{network}",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "domain": {
+	//       "description": "Required. The domain name of the zone containing the recordset.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "parent": {
+	//       "description": "Required. Parent resource identifying the connection which owns this collection of DNS zones in the format services/{service}.",
+	//       "location": "path",
+	//       "pattern": "^services/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "type": {
+	//       "description": "Required. RecordSet Type eg. type='A'. See the list of [Supported DNS Types](https://cloud.google.com/dns/records/json-record).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "zone": {
+	//       "description": "Required. The name of the zone containing the record set.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/dnsRecordSets:get",
+	//   "response": {
+	//     "$ref": "DnsRecordSet"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/service.management"
+	//   ]
+	// }
+
+}
+
+// method id "servicenetworking.services.dnsRecordSets.list":
+
+type ServicesDnsRecordSetsListCall struct {
+	s            *APIService
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Producers can use this method to retrieve a list of available
+// DNS RecordSets available inside the private zone on the tenant host
+// project accessible from their network.
+//
+//   - parent: The service that is managing peering connectivity for a
+//     service producer's organization. For Google services that support
+//     this functionality, this value is
+//     `services/servicenetworking.googleapis.com`.
+func (r *ServicesDnsRecordSetsService) List(parent string) *ServicesDnsRecordSetsListCall {
+	c := &ServicesDnsRecordSetsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// ConsumerNetwork sets the optional parameter "consumerNetwork":
+// Required. The network that the consumer is using to connect with
+// services. Must be in the form of
+// projects/{project}/global/networks/{network} {project} is the project
+// number, as in '12345' {network} is the network name.
+func (c *ServicesDnsRecordSetsListCall) ConsumerNetwork(consumerNetwork string) *ServicesDnsRecordSetsListCall {
+	c.urlParams_.Set("consumerNetwork", consumerNetwork)
+	return c
+}
+
+// Zone sets the optional parameter "zone": Required. The name of the
+// private DNS zone in the shared producer host project from which the
+// record set will be removed.
+func (c *ServicesDnsRecordSetsListCall) Zone(zone string) *ServicesDnsRecordSetsListCall {
+	c.urlParams_.Set("zone", zone)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ServicesDnsRecordSetsListCall) Fields(s ...googleapi.Field) *ServicesDnsRecordSetsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ServicesDnsRecordSetsListCall) IfNoneMatch(entityTag string) *ServicesDnsRecordSetsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ServicesDnsRecordSetsListCall) Context(ctx context.Context) *ServicesDnsRecordSetsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ServicesDnsRecordSetsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ServicesDnsRecordSetsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/dnsRecordSets:list")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "servicenetworking.services.dnsRecordSets.list" call.
+// Exactly one of *ListDnsRecordSetsResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *ListDnsRecordSetsResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ServicesDnsRecordSetsListCall) Do(opts ...googleapi.CallOption) (*ListDnsRecordSetsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &ListDnsRecordSetsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Producers can use this method to retrieve a list of available DNS RecordSets available inside the private zone on the tenant host project accessible from their network.",
+	//   "flatPath": "v1/services/{servicesId}/dnsRecordSets:list",
+	//   "httpMethod": "GET",
+	//   "id": "servicenetworking.services.dnsRecordSets.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "consumerNetwork": {
+	//       "description": "Required. The network that the consumer is using to connect with services. Must be in the form of projects/{project}/global/networks/{network} {project} is the project number, as in '12345' {network} is the network name.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "parent": {
+	//       "description": "Required. The service that is managing peering connectivity for a service producer's organization. For Google services that support this functionality, this value is `services/servicenetworking.googleapis.com`.",
+	//       "location": "path",
+	//       "pattern": "^services/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "zone": {
+	//       "description": "Required. The name of the private DNS zone in the shared producer host project from which the record set will be removed.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/dnsRecordSets:list",
+	//   "response": {
+	//     "$ref": "ListDnsRecordSetsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/service.management"
+	//   ]
+	// }
+
+}
+
 // method id "servicenetworking.services.dnsRecordSets.remove":
 
 type ServicesDnsRecordSetsRemoveCall struct {
@@ -8615,6 +9326,163 @@ func (c *ServicesProjectsGlobalNetworksGetCall) Do(opts ...googleapi.CallOption)
 
 }
 
+// method id "servicenetworking.services.projects.global.networks.getVpcServiceControls":
+
+type ServicesProjectsGlobalNetworksGetVpcServiceControlsCall struct {
+	s            *APIService
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetVpcServiceControls: Consumers use this method to find out the
+// state of VPC Service Controls. The controls could be enabled or
+// disabled for a connection.
+//
+//   - name: Name of the VPC Service Controls config to retrieve in the
+//     format:
+//     `services/{service}/projects/{project}/global/networks/{network}`.
+//     {service} is the peering service that is managing connectivity for
+//     the service producer's organization. For Google services that
+//     support this functionality, this value is
+//     `servicenetworking.googleapis.com`. {project} is a project number
+//     e.g. `12345` that contains the service consumer's VPC network.
+//     {network} is the name of the service consumer's VPC network.
+func (r *ServicesProjectsGlobalNetworksService) GetVpcServiceControls(name string) *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall {
+	c := &ServicesProjectsGlobalNetworksGetVpcServiceControlsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) Fields(s ...googleapi.Field) *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) IfNoneMatch(entityTag string) *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) Context(ctx context.Context) *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}/vpcServiceControls")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "servicenetworking.services.projects.global.networks.getVpcServiceControls" call.
+// Exactly one of *VpcServiceControls or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *VpcServiceControls.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ServicesProjectsGlobalNetworksGetVpcServiceControlsCall) Do(opts ...googleapi.CallOption) (*VpcServiceControls, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &VpcServiceControls{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Consumers use this method to find out the state of VPC Service Controls. The controls could be enabled or disabled for a connection.",
+	//   "flatPath": "v1/services/{servicesId}/projects/{projectsId}/global/networks/{networksId}/vpcServiceControls",
+	//   "httpMethod": "GET",
+	//   "id": "servicenetworking.services.projects.global.networks.getVpcServiceControls",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. Name of the VPC Service Controls config to retrieve in the format: `services/{service}/projects/{project}/global/networks/{network}`. {service} is the peering service that is managing connectivity for the service producer's organization. For Google services that support this functionality, this value is `servicenetworking.googleapis.com`. {project} is a project number e.g. `12345` that contains the service consumer's VPC network. {network} is the name of the service consumer's VPC network.",
+	//       "location": "path",
+	//       "pattern": "^services/[^/]+/projects/[^/]+/global/networks/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}/vpcServiceControls",
+	//   "response": {
+	//     "$ref": "VpcServiceControls"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/service.management"
+	//   ]
+	// }
+
+}
+
 // method id "servicenetworking.services.projects.global.networks.updateConsumerConfig":
 
 type ServicesProjectsGlobalNetworksUpdateConsumerConfigCall struct {
@@ -8760,6 +9628,318 @@ func (c *ServicesProjectsGlobalNetworksUpdateConsumerConfigCall) Do(opts ...goog
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/service.management"
+	//   ]
+	// }
+
+}
+
+// method id "servicenetworking.services.projects.global.networks.dnsZones.get":
+
+type ServicesProjectsGlobalNetworksDnsZonesGetCall struct {
+	s            *APIService
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Service producers can use this method to retrieve a DNS zone in
+// the shared producer host project and the matching peering zones in
+// consumer project
+//
+//   - name: The network that the consumer is using to connect with
+//     services. Must be in the form of
+//     services/{service}/projects/{project}/global/networks/{network}/zone
+//     s/{zoneName} Where {service} is the peering service that is
+//     managing connectivity for the service producer's organization. For
+//     Google services that support this {project} is the project number,
+//     as in '12345' {network} is the network name. {zoneName} is the DNS
+//     zone name.
+func (r *ServicesProjectsGlobalNetworksDnsZonesService) Get(name string) *ServicesProjectsGlobalNetworksDnsZonesGetCall {
+	c := &ServicesProjectsGlobalNetworksDnsZonesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) Fields(s ...googleapi.Field) *ServicesProjectsGlobalNetworksDnsZonesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) IfNoneMatch(entityTag string) *ServicesProjectsGlobalNetworksDnsZonesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) Context(ctx context.Context) *ServicesProjectsGlobalNetworksDnsZonesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "servicenetworking.services.projects.global.networks.dnsZones.get" call.
+// Exactly one of *GetDnsZoneResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *GetDnsZoneResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ServicesProjectsGlobalNetworksDnsZonesGetCall) Do(opts ...googleapi.CallOption) (*GetDnsZoneResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &GetDnsZoneResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Service producers can use this method to retrieve a DNS zone in the shared producer host project and the matching peering zones in consumer project",
+	//   "flatPath": "v1/services/{servicesId}/projects/{projectsId}/global/networks/{networksId}/dnsZones/{dnsZonesId}",
+	//   "httpMethod": "GET",
+	//   "id": "servicenetworking.services.projects.global.networks.dnsZones.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The network that the consumer is using to connect with services. Must be in the form of services/{service}/projects/{project}/global/networks/{network}/zones/{zoneName} Where {service} is the peering service that is managing connectivity for the service producer's organization. For Google services that support this {project} is the project number, as in '12345' {network} is the network name. {zoneName} is the DNS zone name",
+	//       "location": "path",
+	//       "pattern": "^services/[^/]+/projects/[^/]+/global/networks/[^/]+/dnsZones/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "GetDnsZoneResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/service.management"
+	//   ]
+	// }
+
+}
+
+// method id "servicenetworking.services.projects.global.networks.dnsZones.list":
+
+type ServicesProjectsGlobalNetworksDnsZonesListCall struct {
+	s            *APIService
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: * Service producers can use this method to retrieve a list of
+// available DNS zones in the shared producer host project and the
+// matching peering zones in the consumer project. *
+//
+//   - parent: Parent resource identifying the connection which owns this
+//     collection of DNS zones in the format
+//     services/{service}/projects/{project}/global/networks/{network}
+//     Service: The service that is managing connectivity for the service
+//     producer's organization. For Google services that support this
+//     functionality, this value is `servicenetworking.googleapis.com`.
+//     Projects: the consumer project containing the consumer network.
+//     Network: The consumer network accessible from the tenant project.
+func (r *ServicesProjectsGlobalNetworksDnsZonesService) List(parent string) *ServicesProjectsGlobalNetworksDnsZonesListCall {
+	c := &ServicesProjectsGlobalNetworksDnsZonesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) Fields(s ...googleapi.Field) *ServicesProjectsGlobalNetworksDnsZonesListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) IfNoneMatch(entityTag string) *ServicesProjectsGlobalNetworksDnsZonesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) Context(ctx context.Context) *ServicesProjectsGlobalNetworksDnsZonesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/dnsZones:list")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "servicenetworking.services.projects.global.networks.dnsZones.list" call.
+// Exactly one of *ListDnsZonesResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListDnsZonesResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ServicesProjectsGlobalNetworksDnsZonesListCall) Do(opts ...googleapi.CallOption) (*ListDnsZonesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &ListDnsZonesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "* Service producers can use this method to retrieve a list of available DNS zones in the shared producer host project and the matching peering zones in the consumer project. *",
+	//   "flatPath": "v1/services/{servicesId}/projects/{projectsId}/global/networks/{networksId}/dnsZones:list",
+	//   "httpMethod": "GET",
+	//   "id": "servicenetworking.services.projects.global.networks.dnsZones.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. Parent resource identifying the connection which owns this collection of DNS zones in the format services/{service}/projects/{project}/global/networks/{network} Service: The service that is managing connectivity for the service producer's organization. For Google services that support this functionality, this value is `servicenetworking.googleapis.com`. Projects: the consumer project containing the consumer network. Network: The consumer network accessible from the tenant project.",
+	//       "location": "path",
+	//       "pattern": "^services/[^/]+/projects/[^/]+/global/networks/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/dnsZones:list",
+	//   "response": {
+	//     "$ref": "ListDnsZonesResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",

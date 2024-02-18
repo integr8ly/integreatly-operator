@@ -143,7 +143,7 @@ func CreateSessionFromStrategy(ctx context.Context, c client.Client, credentials
 			awsConfig.Credentials = stscreds.NewCredentials(sess, credentials.RoleArn)
 		} else {
 			svc := sts.New(session.Must(session.NewSession(&awsConfig)))
-			credentialsProvider := stscreds.NewWebIdentityRoleProvider(svc, credentials.RoleArn, "Red-Hat-cloud-resources-operator", credentials.TokenFilePath)
+			credentialsProvider := stscreds.NewWebIdentityRoleProviderWithOptions(svc, credentials.RoleArn, "Red-Hat-cloud-resources-operator", stscreds.FetchTokenPath(credentials.TokenFilePath))
 			awsConfig.Credentials = awsCredentials.NewCredentials(credentialsProvider)
 		}
 	} else {

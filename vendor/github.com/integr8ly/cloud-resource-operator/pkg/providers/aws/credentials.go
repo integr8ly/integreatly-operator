@@ -177,7 +177,7 @@ func NewCredentialMinterCredentialManager(client client.Client) *CredentialMinte
 	}
 }
 
-//ReconcileProviderCredentials Ensure the credentials the AWS provider requires are available
+// ReconcileProviderCredentials Ensure the credentials the AWS provider requires are available
 func (m *CredentialMinterCredentialManager) ReconcileProviderCredentials(ctx context.Context, ns string) (*Credentials, error) {
 	creds, err := m.reconcileCredentials(ctx, m.ProviderCredentialName, ns, operatorEntries)
 	if err != nil {

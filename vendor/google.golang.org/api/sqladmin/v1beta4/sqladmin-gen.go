@@ -8,6 +8,17 @@
 //
 // For product documentation, see: https://developers.google.com/cloud-sql/
 //
+// # Library status
+//
+// These client libraries are officially supported by Google. However, this
+// library is considered complete and is in maintenance mode. This means
+// that we will address critical bugs and security issues but will not add
+// any new features.
+//
+// When possible, we recommend using our newer
+// [Cloud Client Libraries for Go](https://pkg.go.dev/cloud.google.com/go)
+// that are still actively being worked and iterated on.
+//
 // # Creating a client
 //
 // Usage example:
@@ -17,28 +28,31 @@
 //	ctx := context.Background()
 //	sqladminService, err := sqladmin.NewService(ctx)
 //
-// In this example, Google Application Default Credentials are used for authentication.
-//
-// For information on how to create and obtain Application Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
+// In this example, Google Application Default Credentials are used for
+// authentication. For information on how to create and obtain Application
+// Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
 //
 // # Other authentication options
 //
-// By default, all available scopes (see "Constants") are used to authenticate. To restrict scopes, use option.WithScopes:
+// By default, all available scopes (see "Constants") are used to authenticate.
+// To restrict scopes, use [google.golang.org/api/option.WithScopes]:
 //
 //	sqladminService, err := sqladmin.NewService(ctx, option.WithScopes(sqladmin.SqlserviceAdminScope))
 //
-// To use an API key for authentication (note: some APIs do not support API keys), use option.WithAPIKey:
+// To use an API key for authentication (note: some APIs do not support API
+// keys), use [google.golang.org/api/option.WithAPIKey]:
 //
 //	sqladminService, err := sqladmin.NewService(ctx, option.WithAPIKey("AIza..."))
 //
-// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth flow), use option.WithTokenSource:
+// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth
+// flow, use [google.golang.org/api/option.WithTokenSource]:
 //
 //	config := &oauth2.Config{...}
 //	// ...
 //	token, err := config.Exchange(ctx, ...)
 //	sqladminService, err := sqladmin.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 //
-// See https://godoc.org/google.golang.org/api/option/ for details on options.
+// See [google.golang.org/api/option.ClientOption] for details on options.
 package sqladmin // import "google.golang.org/api/sqladmin/v1beta4"
 
 import (
@@ -357,6 +371,11 @@ type ApiWarning struct {
 	//   "MAX_RESULTS_EXCEEDS_LIMIT" - Warning when user provided maxResults
 	// parameter exceeds the limit. The returned result set may be
 	// incomplete.
+	//   "COMPROMISED_CREDENTIALS" - Warning when user tries to
+	// create/update a user with credentials that have previously been
+	// compromised by a public data breach.
+	//   "INTERNAL_STATE_FAILURE" - Warning when the operation succeeds but
+	// some non-critical workflow state failed.
 	Code string `json:"code,omitempty"`
 
 	// Message: The warning message.
@@ -406,8 +425,8 @@ type BackupConfiguration struct {
 	// Location: Location of the backup
 	Location string `json:"location,omitempty"`
 
-	// PointInTimeRecoveryEnabled: (Postgres only) Whether point in time
-	// recovery is enabled.
+	// PointInTimeRecoveryEnabled: Whether point in time recovery is
+	// enabled.
 	PointInTimeRecoveryEnabled bool `json:"pointInTimeRecoveryEnabled,omitempty"`
 
 	// ReplicationLogArchivingEnabled: Reserved for future use.
@@ -473,6 +492,43 @@ type BackupContext struct {
 
 func (s *BackupContext) MarshalJSON() ([]byte, error) {
 	type NoMethod BackupContext
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BackupReencryptionConfig: Backup Reencryption Config
+type BackupReencryptionConfig struct {
+	// BackupLimit: Backup re-encryption limit
+	BackupLimit int64 `json:"backupLimit,omitempty"`
+
+	// BackupType: Type of backups users want to re-encrypt.
+	//
+	// Possible values:
+	//   "BACKUP_TYPE_UNSPECIFIED" - Unknown backup type, will be defaulted
+	// to AUTOMATIC backup type
+	//   "AUTOMATED" - Reencrypt automatic backups
+	//   "ON_DEMAND" - Reencrypt on-demand backups
+	BackupType string `json:"backupType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BackupLimit") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BackupLimit") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BackupReencryptionConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod BackupReencryptionConfig
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -753,6 +809,11 @@ type CloneContext struct {
 	// the source instance is cloned.
 	PointInTime string `json:"pointInTime,omitempty"`
 
+	// PreferredZone: Optional. (Point-in-time recovery for PostgreSQL only)
+	// Clone to an instance in the specified zone. If no zone is specified,
+	// clone to the same zone as the source instance.
+	PreferredZone string `json:"preferredZone,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "AllocatedIpRange") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
@@ -823,6 +884,7 @@ type ConnectSettings struct {
 	//   "POSTGRES_12" - The database version is PostgreSQL 12.
 	//   "POSTGRES_13" - The database version is PostgreSQL 13.
 	//   "POSTGRES_14" - The database version is PostgreSQL 14.
+	//   "POSTGRES_15" - The database version is PostgreSQL 15.
 	//   "MYSQL_8_0" - The database version is MySQL 8.
 	//   "MYSQL_8_0_18" - The database major version is MySQL 8.0 and the
 	// minor version is 18.
@@ -855,13 +917,26 @@ type ConnectSettings struct {
 	//   "SQLSERVER_2019_EXPRESS" - The database version is SQL Server 2019
 	// Express.
 	//   "SQLSERVER_2019_WEB" - The database version is SQL Server 2019 Web.
+	//   "SQLSERVER_2022_STANDARD" - The database version is SQL Server 2022
+	// Standard.
+	//   "SQLSERVER_2022_ENTERPRISE" - The database version is SQL Server
+	// 2022 Enterprise.
+	//   "SQLSERVER_2022_EXPRESS" - The database version is SQL Server 2022
+	// Express.
+	//   "SQLSERVER_2022_WEB" - The database version is SQL Server 2022 Web.
 	DatabaseVersion string `json:"databaseVersion,omitempty"`
+
+	// DnsName: The dns name of the instance.
+	DnsName string `json:"dnsName,omitempty"`
 
 	// IpAddresses: The assigned IP addresses for the instance.
 	IpAddresses []*IpMapping `json:"ipAddresses,omitempty"`
 
 	// Kind: This is always `sql#connectSettings`.
 	Kind string `json:"kind,omitempty"`
+
+	// PscEnabled: Whether PSC connectivity is enabled for this instance.
+	PscEnabled bool `json:"pscEnabled,omitempty"`
 
 	// Region: The cloud region for the instance. e.g. `us-central1`,
 	// `europe-west1`. The region cannot be changed after instance creation.
@@ -893,6 +968,35 @@ type ConnectSettings struct {
 
 func (s *ConnectSettings) MarshalJSON() ([]byte, error) {
 	type NoMethod ConnectSettings
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DataCacheConfig: Data cache configurations.
+type DataCacheConfig struct {
+	// DataCacheEnabled: Whether data cache is enabled for the instance.
+	DataCacheEnabled bool `json:"dataCacheEnabled,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataCacheEnabled") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataCacheEnabled") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DataCacheConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod DataCacheConfig
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1058,6 +1162,7 @@ type DatabaseInstance struct {
 	//   "POSTGRES_12" - The database version is PostgreSQL 12.
 	//   "POSTGRES_13" - The database version is PostgreSQL 13.
 	//   "POSTGRES_14" - The database version is PostgreSQL 14.
+	//   "POSTGRES_15" - The database version is PostgreSQL 15.
 	//   "MYSQL_8_0" - The database version is MySQL 8.
 	//   "MYSQL_8_0_18" - The database major version is MySQL 8.0 and the
 	// minor version is 18.
@@ -1090,6 +1195,13 @@ type DatabaseInstance struct {
 	//   "SQLSERVER_2019_EXPRESS" - The database version is SQL Server 2019
 	// Express.
 	//   "SQLSERVER_2019_WEB" - The database version is SQL Server 2019 Web.
+	//   "SQLSERVER_2022_STANDARD" - The database version is SQL Server 2022
+	// Standard.
+	//   "SQLSERVER_2022_ENTERPRISE" - The database version is SQL Server
+	// 2022 Enterprise.
+	//   "SQLSERVER_2022_EXPRESS" - The database version is SQL Server 2022
+	// Express.
+	//   "SQLSERVER_2022_WEB" - The database version is SQL Server 2022 Web.
 	DatabaseVersion string `json:"databaseVersion,omitempty"`
 
 	// DiskEncryptionConfiguration: Disk encryption configuration specific
@@ -1098,6 +1210,9 @@ type DatabaseInstance struct {
 
 	// DiskEncryptionStatus: Disk encryption status specific to an instance.
 	DiskEncryptionStatus *DiskEncryptionStatus `json:"diskEncryptionStatus,omitempty"`
+
+	// DnsName: Output only. The dns name of the instance.
+	DnsName string `json:"dnsName,omitempty"`
 
 	// Etag: This field is deprecated and will be removed from a future
 	// version of the API. Use the `settings.settingsVersion` field instead.
@@ -1160,9 +1275,17 @@ type DatabaseInstance struct {
 	// proactive database wellness job
 	OutOfDiskReport *SqlOutOfDiskReport `json:"outOfDiskReport,omitempty"`
 
+	// PrimaryDnsName: Output only. DEPRECATED: please use write_endpoint
+	// instead.
+	PrimaryDnsName string `json:"primaryDnsName,omitempty"`
+
 	// Project: The project ID of the project containing the Cloud SQL
 	// instance. The Google apps domain is prefixed if applicable.
 	Project string `json:"project,omitempty"`
+
+	// PscServiceAttachmentLink: Output only. The link to service attachment
+	// of PSC instance.
+	PscServiceAttachmentLink string `json:"pscServiceAttachmentLink,omitempty"`
 
 	// Region: The geographical region. Can be: * `us-central` (`FIRST_GEN`
 	// instances only) * `us-central1` (`SECOND_GEN` instances only) *
@@ -1210,6 +1333,16 @@ type DatabaseInstance struct {
 	// Settings: The user settings.
 	Settings *Settings `json:"settings,omitempty"`
 
+	// SqlNetworkArchitecture: The SQL network architecture for the
+	// instance.
+	//
+	// Possible values:
+	//   "SQL_NETWORK_ARCHITECTURE_UNSPECIFIED"
+	//   "NEW_NETWORK_ARCHITECTURE" - Instance is a Tenancy Unit (TU)
+	// instance.
+	//   "OLD_NETWORK_ARCHITECTURE" - Instance is an Umbrella instance.
+	SqlNetworkArchitecture string `json:"sqlNetworkArchitecture,omitempty"`
+
 	// State: The current serving state of the Cloud SQL instance.
 	//
 	// Possible values:
@@ -1241,6 +1374,10 @@ type DatabaseInstance struct {
 	//   "KMS_KEY_ISSUE" - The KMS key used by the instance is either
 	// revoked or denied access to
 	SuspensionReason []string `json:"suspensionReason,omitempty"`
+
+	// WriteEndpoint: Output only. The dns name of the primary instance in a
+	// replication group.
+	WriteEndpoint string `json:"writeEndpoint,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -1339,6 +1476,41 @@ type DatabasesListResponse struct {
 
 func (s *DatabasesListResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod DatabasesListResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DemoteContext: This context is used to demote an existing standalone
+// instance to be a Cloud SQL read replica for an external database
+// server.
+type DemoteContext struct {
+	// Kind: This is always `sql#demoteContext`.
+	Kind string `json:"kind,omitempty"`
+
+	// SourceRepresentativeInstanceName: Required. The name of the instance
+	// which acts as an on-premises primary instance in the replication
+	// setup.
+	SourceRepresentativeInstanceName string `json:"sourceRepresentativeInstanceName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DemoteContext) MarshalJSON() ([]byte, error) {
+	type NoMethod DemoteContext
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1587,6 +1759,17 @@ func (s *DiskEncryptionStatus) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// Empty: A generic empty message that you can re-use to avoid defining
+// duplicated empty messages in your APIs. A typical example is to use
+// it as the request or the response type of an API method. For
+// instance: service Foo { rpc Bar(google.protobuf.Empty) returns
+// (google.protobuf.Empty); }
+type Empty struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+}
+
 // ExportContext: Database instance export context.
 type ExportContext struct {
 	// BakExportOptions: Options for exporting BAK files (SQL Server-only)
@@ -1660,6 +1843,25 @@ func (s *ExportContext) MarshalJSON() ([]byte, error) {
 // ExportContextBakExportOptions: Options for exporting BAK files (SQL
 // Server-only)
 type ExportContextBakExportOptions struct {
+	// BakType: Type of this bak file will be export, FULL or DIFF, SQL
+	// Server only
+	//
+	// Possible values:
+	//   "BAK_TYPE_UNSPECIFIED" - Default type.
+	//   "FULL" - Full backup.
+	//   "DIFF" - Differential backup.
+	//   "TLOG" - SQL Server Transaction Log
+	BakType string `json:"bakType,omitempty"`
+
+	// CopyOnly: Deprecated: copy_only is deprecated. Use differential_base
+	// instead
+	CopyOnly bool `json:"copyOnly,omitempty"`
+
+	// DifferentialBase: Whether or not the backup can be used as a
+	// differential base copy_only backup can not be served as differential
+	// base
+	DifferentialBase bool `json:"differentialBase,omitempty"`
+
 	// StripeCount: Option for specifying how many stripes to use for the
 	// export. If blank, and the value of the striped field is true, the
 	// number of stripes is automatically chosen.
@@ -1668,7 +1870,7 @@ type ExportContextBakExportOptions struct {
 	// Striped: Whether or not the export should be striped.
 	Striped bool `json:"striped,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "StripeCount") to
+	// ForceSendFields is a list of field names (e.g. "BakType") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
@@ -1676,10 +1878,10 @@ type ExportContextBakExportOptions struct {
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "StripeCount") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "BakType") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
@@ -1884,6 +2086,7 @@ type Flag struct {
 	//   "POSTGRES_12" - The database version is PostgreSQL 12.
 	//   "POSTGRES_13" - The database version is PostgreSQL 13.
 	//   "POSTGRES_14" - The database version is PostgreSQL 14.
+	//   "POSTGRES_15" - The database version is PostgreSQL 15.
 	//   "MYSQL_8_0" - The database version is MySQL 8.
 	//   "MYSQL_8_0_18" - The database major version is MySQL 8.0 and the
 	// minor version is 18.
@@ -1916,6 +2119,13 @@ type Flag struct {
 	//   "SQLSERVER_2019_EXPRESS" - The database version is SQL Server 2019
 	// Express.
 	//   "SQLSERVER_2019_WEB" - The database version is SQL Server 2019 Web.
+	//   "SQLSERVER_2022_STANDARD" - The database version is SQL Server 2022
+	// Standard.
+	//   "SQLSERVER_2022_ENTERPRISE" - The database version is SQL Server
+	// 2022 Enterprise.
+	//   "SQLSERVER_2022_EXPRESS" - The database version is SQL Server 2022
+	// Express.
+	//   "SQLSERVER_2022_WEB" - The database version is SQL Server 2022 Web.
 	AppliesTo []string `json:"appliesTo,omitempty"`
 
 	// InBeta: Whether or not the flag is considered in beta.
@@ -2154,27 +2364,57 @@ func (s *ImportContext) MarshalJSON() ([]byte, error) {
 // ImportContextBakImportOptions: Import parameters specific to SQL
 // Server .BAK files
 type ImportContextBakImportOptions struct {
+	// BakType: Type of the bak content, FULL or DIFF.
+	//
+	// Possible values:
+	//   "BAK_TYPE_UNSPECIFIED" - Default type.
+	//   "FULL" - Full backup.
+	//   "DIFF" - Differential backup.
+	//   "TLOG" - SQL Server Transaction Log
+	BakType string `json:"bakType,omitempty"`
+
 	EncryptionOptions *ImportContextBakImportOptionsEncryptionOptions `json:"encryptionOptions,omitempty"`
+
+	// NoRecovery: Whether or not the backup importing will restore database
+	// with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+	NoRecovery bool `json:"noRecovery,omitempty"`
+
+	// RecoveryOnly: Whether or not the backup importing request will just
+	// bring database online without downloading Bak content only one of
+	// "no_recovery" and "recovery_only" can be true otherwise error will
+	// return. Applies only to Cloud SQL for SQL Server.
+	RecoveryOnly bool `json:"recoveryOnly,omitempty"`
+
+	// StopAt: Optional. The timestamp when the import should stop. This
+	// timestamp is in the RFC 3339 (https://tools.ietf.org/html/rfc3339)
+	// format (for example, `2023-10-01T16:19:00.094`). This field is
+	// equivalent to the STOPAT keyword and applies to Cloud SQL for SQL
+	// Server only.
+	StopAt string `json:"stopAt,omitempty"`
+
+	// StopAtMark: Optional. The marked transaction where the import should
+	// stop. This field is equivalent to the STOPATMARK keyword and applies
+	// to Cloud SQL for SQL Server only.
+	StopAtMark string `json:"stopAtMark,omitempty"`
 
 	// Striped: Whether or not the backup set being restored is striped.
 	// Applies only to Cloud SQL for SQL Server.
 	Striped bool `json:"striped,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "EncryptionOptions")
-	// to unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "BakType") to
+	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
 	// sent to the server regardless of whether the field is empty or not.
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "EncryptionOptions") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "BakType") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -2415,6 +2655,38 @@ func (s *InstancesDemoteMasterRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// InstancesDemoteRequest: This request is used to demote an existing
+// standalone instance to be a Cloud SQL read replica for an external
+// database server.
+type InstancesDemoteRequest struct {
+	// DemoteContext: Required. This context is used to demote an existing
+	// standalone instance to be a Cloud SQL read replica for an external
+	// database server.
+	DemoteContext *DemoteContext `json:"demoteContext,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DemoteContext") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DemoteContext") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *InstancesDemoteRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod InstancesDemoteRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // InstancesExportRequest: Database instance export request.
 type InstancesExportRequest struct {
 	// ExportContext: Contains details about the export operation.
@@ -2580,6 +2852,37 @@ func (s *InstancesListServerCasResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// InstancesReencryptRequest: Database Instance reencrypt request.
+type InstancesReencryptRequest struct {
+	// BackupReencryptionConfig: Configuration specific to backup
+	// re-encryption
+	BackupReencryptionConfig *BackupReencryptionConfig `json:"backupReencryptionConfig,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "BackupReencryptionConfig") to unconditionally include in API
+	// requests. By default, fields with empty or default values are omitted
+	// from API requests. However, any non-pointer, non-interface field
+	// appearing in ForceSendFields will be sent to the server regardless of
+	// whether the field is empty or not. This may be used to include empty
+	// fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BackupReencryptionConfig")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *InstancesReencryptRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod InstancesReencryptRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // InstancesRestoreBackupRequest: Database instance restore backup
 // request.
 type InstancesRestoreBackupRequest struct {
@@ -2703,8 +3006,50 @@ type IpConfiguration struct {
 	// updated, but it cannot be removed after it is set.
 	PrivateNetwork string `json:"privateNetwork,omitempty"`
 
-	// RequireSsl: Whether SSL connections over IP are enforced or not.
+	// PscConfig: PSC settings for this instance.
+	PscConfig *PscConfig `json:"pscConfig,omitempty"`
+
+	// RequireSsl: Whether SSL/TLS connections over IP are enforced. If set
+	// to false, then allow both non-SSL/non-TLS and SSL/TLS connections.
+	// For SSL/TLS connections, the client certificate won't be verified. If
+	// set to true, then only allow connections encrypted with SSL/TLS and
+	// with valid client certificates. If you want to enforce SSL/TLS
+	// without enforcing the requirement for valid client certificates, then
+	// use the `ssl_mode` flag instead of the legacy `require_ssl` flag.
 	RequireSsl bool `json:"requireSsl,omitempty"`
+
+	// SslMode: Specify how SSL/TLS is enforced in database connections.
+	// This flag is supported only for PostgreSQL. Use the legacy
+	// `require_ssl` flag for enforcing SSL/TLS in MySQL and SQL Server.
+	// But, for PostgreSQL, use the `ssl_mode` flag instead of the legacy
+	// `require_ssl` flag. To avoid the conflict between those flags in
+	// PostgreSQL, only the following value pairs are valid: *
+	// `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` *
+	// `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` *
+	// `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true`
+	// Note that the value of `ssl_mode` gets priority over the value of the
+	// legacy `require_ssl`. For example, for the pair
+	// `ssl_mode=ENCRYPTED_ONLY, require_ssl=false`, the
+	// `ssl_mode=ENCRYPTED_ONLY` means "only accepts SSL connection", while
+	// the `require_ssl=false` means "both non-SSL and SSL connections are
+	// allowed". The database respects `ssl_mode` in this case and only
+	// accepts SSL connections.
+	//
+	// Possible values:
+	//   "SSL_MODE_UNSPECIFIED" - The SSL mode is unknown.
+	//   "ALLOW_UNENCRYPTED_AND_ENCRYPTED" - Allow non-SSL/non-TLS and
+	// SSL/TLS connections. For SSL/TLS connections, the client certificate
+	// won't be verified. When this value is used, the legacy `require_ssl`
+	// flag must be false or cleared to avoid the conflict between values of
+	// two flags.
+	//   "ENCRYPTED_ONLY" - Only allow connections encrypted with SSL/TLS.
+	// When this value is used, the legacy `require_ssl` flag must be false
+	// or cleared to avoid the conflict between values of two flags.
+	//   "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" - Only allow connections
+	// encrypted with SSL/TLS and with valid client certificates. When this
+	// value is used, the legacy `require_ssl` flag must be true or cleared
+	// to avoid the conflict between values of two flags.
+	SslMode string `json:"sslMode,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AllocatedIpRange") to
 	// unconditionally include in API requests. By default, fields with
@@ -2730,7 +3075,7 @@ func (s *IpConfiguration) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// IpMapping: Database instance IP Mapping.
+// IpMapping: Database instance IP mapping
 type IpMapping struct {
 	// IpAddress: The IP address assigned.
 	IpAddress string `json:"ipAddress,omitempty"`
@@ -2801,6 +3146,7 @@ type LocationPreference struct {
 
 	// SecondaryZone: The preferred Compute Engine zone for the
 	// secondary/failover (for example: us-central1-a, us-central1-b, etc.).
+	// To disable this field, set it to 'no_secondary_zone'.
 	SecondaryZone string `json:"secondaryZone,omitempty"`
 
 	// Zone: The preferred Compute Engine zone (for example: us-central1-a,
@@ -2858,6 +3204,10 @@ type MaintenanceWindow struct {
 	//   "stable" - For instance update that requires a restart, this update
 	// track indicates your instance prefer to let Cloud SQL choose the
 	// timing of restart (within its Maintenance window, if applicable).
+	//   "week5" - For instance update that requires a restart, this update
+	// track indicates your instance prefer to let Cloud SQL choose the
+	// timing of restart (within its Maintenance window, if applicable) to
+	// be at least 5 weeks after the notification.
 	UpdateTrack string `json:"updateTrack,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Day") to
@@ -3044,6 +3394,9 @@ func (s *OnPremisesConfiguration) MarshalJSON() ([]byte, error) {
 // return an Operation resource, only the fields relevant to the
 // operation are populated in the resource.
 type Operation struct {
+	// ApiWarning: An Admin API warning message.
+	ApiWarning *ApiWarning `json:"apiWarning,omitempty"`
+
 	// BackupContext: The context for backup operation, if applicable.
 	BackupContext *BackupContext `json:"backupContext,omitempty"`
 
@@ -3130,6 +3483,7 @@ type Operation struct {
 	//   "AUTO_RESTART" - Performs auto-restart of an HA-enabled Cloud SQL
 	// database for auto recovery.
 	//   "REENCRYPT" - Re-encrypts CMEK instances with latest key version.
+	//   "SWITCHOVER" - Switches over to replica instance from primary.
 	OperationType string `json:"operationType,omitempty"`
 
 	// SelfLink: The URI of this resource.
@@ -3166,7 +3520,7 @@ type Operation struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "BackupContext") to
+	// ForceSendFields is a list of field names (e.g. "ApiWarning") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
@@ -3174,10 +3528,10 @@ type Operation struct {
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BackupContext") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "ApiWarning") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
@@ -3389,6 +3743,10 @@ type PasswordValidationPolicy struct {
 	// numeric, and non-alphanumeric characters.
 	Complexity string `json:"complexity,omitempty"`
 
+	// DisallowCompromisedCredentials: Disallow credentials that have been
+	// previously compromised by a public data breach.
+	DisallowCompromisedCredentials bool `json:"disallowCompromisedCredentials,omitempty"`
+
 	// DisallowUsernameSubstring: Disallow username as a part of the
 	// password.
 	DisallowUsernameSubstring bool `json:"disallowUsernameSubstring,omitempty"`
@@ -3457,9 +3815,51 @@ func (s *PerformDiskShrinkContext) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// PscConfig: PSC settings for a Cloud SQL instance.
+type PscConfig struct {
+	// AllowedConsumerProjects: Optional. The list of consumer projects that
+	// are allow-listed for PSC connections to this instance. This instance
+	// can be connected to with PSC from any network in these projects. Each
+	// consumer project in this list may be represented by a project number
+	// (numeric) or by a project id (alphanumeric).
+	AllowedConsumerProjects []string `json:"allowedConsumerProjects,omitempty"`
+
+	// PscEnabled: Whether PSC connectivity is enabled for this instance.
+	PscEnabled bool `json:"pscEnabled,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "AllowedConsumerProjects") to unconditionally include in API
+	// requests. By default, fields with empty or default values are omitted
+	// from API requests. However, any non-pointer, non-interface field
+	// appearing in ForceSendFields will be sent to the server regardless of
+	// whether the field is empty or not. This may be used to include empty
+	// fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AllowedConsumerProjects")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *PscConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod PscConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ReplicaConfiguration: Read-replica configuration for connecting to
 // the primary instance.
 type ReplicaConfiguration struct {
+	// CascadableReplica: Optional. Specifies if a SQL Server replica is a
+	// cascadable replica. A cascadable replica is a SQL Server cross region
+	// replica that supports replica(s) under it.
+	CascadableReplica bool `json:"cascadableReplica,omitempty"`
+
 	// FailoverTarget: Specifies if the replica is the failover target. If
 	// the field is set to `true` the replica will be designated as a
 	// failover replica. In case the primary instance fails, the replica
@@ -3480,15 +3880,15 @@ type ReplicaConfiguration struct {
 	// the data directory.
 	MysqlReplicaConfiguration *MySqlReplicaConfiguration `json:"mysqlReplicaConfiguration,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "FailoverTarget") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "CascadableReplica")
+	// to unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
 	// sent to the server regardless of whether the field is empty or not.
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "FailoverTarget") to
+	// NullFields is a list of field names (e.g. "CascadableReplica") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -3691,6 +4091,9 @@ type Settings struct {
 	// Generation instances.
 	CrashSafeReplicationEnabled bool `json:"crashSafeReplicationEnabled,omitempty"`
 
+	// DataCacheConfig: Configuration for data cache.
+	DataCacheConfig *DataCacheConfig `json:"dataCacheConfig,omitempty"`
+
 	// DataDiskSizeGb: The size of data disk, in GB. The data disk size
 	// minimum is 10GB.
 	DataDiskSizeGb int64 `json:"dataDiskSizeGb,omitempty,string"`
@@ -3721,6 +4124,14 @@ type Settings struct {
 
 	// DenyMaintenancePeriods: Deny maintenance periods
 	DenyMaintenancePeriods []*DenyMaintenancePeriod `json:"denyMaintenancePeriods,omitempty"`
+
+	// Edition: Optional. The edition of the instance.
+	//
+	// Possible values:
+	//   "EDITION_UNSPECIFIED" - The instance did not specify the edition.
+	//   "ENTERPRISE" - The instance is an enterprise edition.
+	//   "ENTERPRISE_PLUS" - The instance is an Enterprise Plus edition.
+	Edition string `json:"edition,omitempty"`
 
 	// InsightsConfig: Insights configuration, for now relevant only for
 	// Postgres.
@@ -3880,7 +4291,8 @@ type SqlExternalSyncSettingError struct {
 	//   "BINLOG_NOT_ENABLED"
 	//   "INCOMPATIBLE_DATABASE_VERSION"
 	//   "REPLICA_ALREADY_SETUP"
-	//   "INSUFFICIENT_PRIVILEGE"
+	//   "INSUFFICIENT_PRIVILEGE" - The replication user is missing
+	// privileges that are required.
 	//   "UNSUPPORTED_MIGRATION_TYPE" - Unsupported migration type.
 	//   "NO_PGLOGICAL_INSTALLED" - No pglogical extension installed on
 	// databases, applicable for postgres.
@@ -3913,7 +4325,7 @@ type SqlExternalSyncSettingError struct {
 	//   "UNSUPPORTED_DEFINER" - The customer has a definer that will break
 	// EM setup.
 	//   "SQLSERVER_SERVERNAME_MISMATCH" - SQL Server @@SERVERNAME does not
-	// match actual host name
+	// match actual host name.
 	//   "PRIMARY_ALREADY_SETUP" - The primary instance has been setup and
 	// will fail the setup.
 	//   "UNSUPPORTED_BINLOG_FORMAT" - The primary instance has unsupported
@@ -3926,6 +4338,25 @@ type SqlExternalSyncSettingError struct {
 	// eg: PostgreSQL tables without primary keys.
 	//   "EXISTING_DATA_IN_REPLICA" - The replica instance contains existing
 	// data.
+	//   "MISSING_OPTIONAL_PRIVILEGES" - The replication user is missing
+	// privileges that are optional.
+	//   "RISKY_BACKUP_ADMIN_PRIVILEGE" - Additional BACKUP_ADMIN privilege
+	// is granted to the replication user which may lock source MySQL 8
+	// instance for DDLs during initial sync.
+	//   "INSUFFICIENT_GCS_PERMISSIONS" - The Cloud Storage bucket is
+	// missing necessary permissions.
+	//   "INVALID_FILE_INFO" - The Cloud Storage bucket has an error in the
+	// file or contains invalid file information.
+	//   "UNSUPPORTED_DATABASE_SETTINGS" - The source instance has
+	// unsupported database settings for migration.
+	//   "MYSQL_PARALLEL_IMPORT_INSUFFICIENT_PRIVILEGE" - The replication
+	// user is missing parallel import specific privileges. (e.g. LOCK
+	// TABLES) for MySQL.
+	//   "LOCAL_INFILE_OFF" - The global variable local_infile is off on
+	// external server replica.
+	//   "TURN_ON_PITR_AFTER_PROMOTE" - This code instructs customers to
+	// turn on point-in-time recovery manually for the instance after
+	// promoting the Cloud SQL for PostgreSQL instance.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Detail") to
@@ -3957,6 +4388,9 @@ type SqlInstancesGetDiskShrinkConfigResponse struct {
 	// Kind: This is always `sql#getDiskShrinkConfig`.
 	Kind string `json:"kind,omitempty"`
 
+	// Message: Additional message to customers.
+	Message string `json:"message,omitempty"`
+
 	// MinimalTargetSizeGb: The minimum size to which a disk can be shrunk
 	// in GigaBytes.
 	MinimalTargetSizeGb int64 `json:"minimalTargetSizeGb,omitempty,string"`
@@ -3984,6 +4418,43 @@ type SqlInstancesGetDiskShrinkConfigResponse struct {
 
 func (s *SqlInstancesGetDiskShrinkConfigResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod SqlInstancesGetDiskShrinkConfigResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SqlInstancesGetLatestRecoveryTimeResponse: Instance get latest
+// recovery time response.
+type SqlInstancesGetLatestRecoveryTimeResponse struct {
+	// Kind: This is always `sql#getLatestRecoveryTime`.
+	Kind string `json:"kind,omitempty"`
+
+	// LatestRecoveryTime: Timestamp, identifies the latest recovery time of
+	// the source instance.
+	LatestRecoveryTime string `json:"latestRecoveryTime,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SqlInstancesGetLatestRecoveryTimeResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod SqlInstancesGetLatestRecoveryTimeResponse
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -4039,6 +4510,17 @@ type SqlInstancesStartExternalSyncRequest struct {
 	//   "OFFLINE" - Offline external sync only dumps and loads a one-time
 	// snapshot of the primary instance's data
 	SyncMode string `json:"syncMode,omitempty"`
+
+	// SyncParallelLevel: Optional. Parallel level for initial data sync.
+	// Currently only applicable for MySQL.
+	//
+	// Possible values:
+	//   "EXTERNAL_SYNC_PARALLEL_LEVEL_UNSPECIFIED" - Unknown sync parallel
+	// level. Will be defaulted to OPTIMAL.
+	//   "MIN" - Minimal parallel level.
+	//   "OPTIMAL" - Optimal parallel level.
+	//   "MAX" - Maximum parallel level.
+	SyncParallelLevel string `json:"syncParallelLevel,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "MysqlSyncConfig") to
 	// unconditionally include in API requests. By default, fields with
@@ -4767,6 +5249,10 @@ type User struct {
 	//   "BUILT_IN" - The database's built-in user type.
 	//   "CLOUD_IAM_USER" - Cloud IAM user.
 	//   "CLOUD_IAM_SERVICE_ACCOUNT" - Cloud IAM service account.
+	//   "CLOUD_IAM_GROUP" - Cloud IAM Group non-login user.
+	//   "CLOUD_IAM_GROUP_USER" - Cloud IAM Group login user.
+	//   "CLOUD_IAM_GROUP_SERVICE_ACCOUNT" - Cloud IAM Group service
+	// account.
 	Type string `json:"type,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -6238,7 +6724,8 @@ type DatabasesInsertCall struct {
 }
 
 // Insert: Inserts a resource containing information about a database
-// inside a Cloud SQL instance.
+// inside a Cloud SQL instance. **Note:** You can't modify the default
+// character set and collation.
 //
 //   - instance: Database instance ID. This does not include the project
 //     ID.
@@ -6343,7 +6830,7 @@ func (c *DatabasesInsertCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 	}
 	return ret, nil
 	// {
-	//   "description": "Inserts a resource containing information about a database inside a Cloud SQL instance.",
+	//   "description": "Inserts a resource containing information about a database inside a Cloud SQL instance. **Note:** You can't modify the default character set and collation.",
 	//   "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/databases",
 	//   "httpMethod": "POST",
 	//   "id": "sql.databases.insert",
@@ -7464,6 +7951,160 @@ func (c *InstancesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 
 }
 
+// method id "sql.instances.demote":
+
+type InstancesDemoteCall struct {
+	s                      *Service
+	project                string
+	instance               string
+	instancesdemoterequest *InstancesDemoteRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// Demote: Demotes an existing standalone instance to be a Cloud SQL
+// read replica for an external database server.
+//
+// - instance: The name of the Cloud SQL instance.
+// - project: The project ID of the project that contains the instance.
+func (r *InstancesService) Demote(project string, instance string, instancesdemoterequest *InstancesDemoteRequest) *InstancesDemoteCall {
+	c := &InstancesDemoteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.instance = instance
+	c.instancesdemoterequest = instancesdemoterequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InstancesDemoteCall) Fields(s ...googleapi.Field) *InstancesDemoteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InstancesDemoteCall) Context(ctx context.Context) *InstancesDemoteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *InstancesDemoteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *InstancesDemoteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancesdemoterequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sql/v1beta4/projects/{project}/instances/{instance}/demote")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"instance": c.instance,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sql.instances.demote" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InstancesDemoteCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Demotes an existing standalone instance to be a Cloud SQL read replica for an external database server.",
+	//   "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/demote",
+	//   "httpMethod": "POST",
+	//   "id": "sql.instances.demote",
+	//   "parameterOrder": [
+	//     "project",
+	//     "instance"
+	//   ],
+	//   "parameters": {
+	//     "instance": {
+	//       "description": "Required. The name of the Cloud SQL instance.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Required. The project ID of the project that contains the instance.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/demote",
+	//   "request": {
+	//     "$ref": "InstancesDemoteRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/sqlservice.admin"
+	//   ]
+	// }
+
+}
+
 // method id "sql.instances.demoteMaster":
 
 type InstancesDemoteMasterCall struct {
@@ -7633,8 +8274,8 @@ type InstancesExportCall struct {
 // Export: Exports data from a Cloud SQL instance to a Cloud Storage
 // bucket as a SQL dump or CSV file.
 //
-//   - instance: Cloud SQL instance ID. This does not include the project
-//     ID.
+//   - instance: The Cloud SQL instance ID. This doesn't include the
+//     project ID.
 //   - project: Project ID of the project that contains the instance to be
 //     exported.
 func (r *InstancesService) Export(project string, instance string, instancesexportrequest *InstancesExportRequest) *InstancesExportCall {
@@ -7747,7 +8388,7 @@ func (c *InstancesExportCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 	//   ],
 	//   "parameters": {
 	//     "instance": {
-	//       "description": "Cloud SQL instance ID. This does not include the project ID.",
+	//       "description": "The Cloud SQL instance ID. This doesn't include the project ID.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
@@ -8946,6 +9587,15 @@ func (r *InstancesService) PromoteReplica(project string, instance string) *Inst
 	return c
 }
 
+// Failover sets the optional parameter "failover": Set to true if the
+// promote operation should attempt to re-add the original primary as a
+// replica when it comes back online. Otherwise, if this value is false
+// or not set, the original primary will be a standalone instance.
+func (c *InstancesPromoteReplicaCall) Failover(failover bool) *InstancesPromoteReplicaCall {
+	c.urlParams_.Set("failover", fmt.Sprint(failover))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -9042,6 +9692,11 @@ func (c *InstancesPromoteReplicaCall) Do(opts ...googleapi.CallOption) (*Operati
 	//     "instance"
 	//   ],
 	//   "parameters": {
+	//     "failover": {
+	//       "description": "Set to true if the promote operation should attempt to re-add the original primary as a replica when it comes back online. Otherwise, if this value is false or not set, the original primary will be a standalone instance.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
 	//     "instance": {
 	//       "description": "Cloud SQL read replica instance name.",
 	//       "location": "path",
@@ -9056,6 +9711,160 @@ func (c *InstancesPromoteReplicaCall) Do(opts ...googleapi.CallOption) (*Operati
 	//     }
 	//   },
 	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/promoteReplica",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/sqlservice.admin"
+	//   ]
+	// }
+
+}
+
+// method id "sql.instances.reencrypt":
+
+type InstancesReencryptCall struct {
+	s                         *Service
+	project                   string
+	instance                  string
+	instancesreencryptrequest *InstancesReencryptRequest
+	urlParams_                gensupport.URLParams
+	ctx_                      context.Context
+	header_                   http.Header
+}
+
+// Reencrypt: Reencrypt CMEK instance with latest key version.
+//
+//   - instance: Cloud SQL instance ID. This does not include the project
+//     ID.
+//   - project: ID of the project that contains the instance.
+func (r *InstancesService) Reencrypt(project string, instance string, instancesreencryptrequest *InstancesReencryptRequest) *InstancesReencryptCall {
+	c := &InstancesReencryptCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.instance = instance
+	c.instancesreencryptrequest = instancesreencryptrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InstancesReencryptCall) Fields(s ...googleapi.Field) *InstancesReencryptCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InstancesReencryptCall) Context(ctx context.Context) *InstancesReencryptCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *InstancesReencryptCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *InstancesReencryptCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancesreencryptrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sql/v1beta4/projects/{project}/instances/{instance}/reencrypt")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"instance": c.instance,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sql.instances.reencrypt" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InstancesReencryptCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Reencrypt CMEK instance with latest key version.",
+	//   "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/reencrypt",
+	//   "httpMethod": "POST",
+	//   "id": "sql.instances.reencrypt",
+	//   "parameterOrder": [
+	//     "project",
+	//     "instance"
+	//   ],
+	//   "parameters": {
+	//     "instance": {
+	//       "description": "Cloud SQL instance ID. This does not include the project ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "ID of the project that contains the instance.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/reencrypt",
+	//   "request": {
+	//     "$ref": "InstancesReencryptRequest"
+	//   },
 	//   "response": {
 	//     "$ref": "Operation"
 	//   },
@@ -9954,6 +10763,165 @@ func (c *InstancesStopReplicaCall) Do(opts ...googleapi.CallOption) (*Operation,
 
 }
 
+// method id "sql.instances.switchover":
+
+type InstancesSwitchoverCall struct {
+	s          *Service
+	project    string
+	instance   string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Switchover: Switches over from the primary instance to a replica
+// instance.
+//
+// - instance: Cloud SQL read replica instance name.
+// - project: ID of the project that contains the replica.
+func (r *InstancesService) Switchover(project string, instance string) *InstancesSwitchoverCall {
+	c := &InstancesSwitchoverCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.instance = instance
+	return c
+}
+
+// DbTimeout sets the optional parameter "dbTimeout": (MySQL only) Cloud
+// SQL instance operations timeout, which is a sum of all database
+// operations. Default value is 10 minutes and can be modified to a
+// maximum value of 24 hours.
+func (c *InstancesSwitchoverCall) DbTimeout(dbTimeout string) *InstancesSwitchoverCall {
+	c.urlParams_.Set("dbTimeout", dbTimeout)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InstancesSwitchoverCall) Fields(s ...googleapi.Field) *InstancesSwitchoverCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InstancesSwitchoverCall) Context(ctx context.Context) *InstancesSwitchoverCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *InstancesSwitchoverCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *InstancesSwitchoverCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sql/v1beta4/projects/{project}/instances/{instance}/switchover")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"instance": c.instance,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sql.instances.switchover" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InstancesSwitchoverCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Switches over from the primary instance to a replica instance.",
+	//   "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/switchover",
+	//   "httpMethod": "POST",
+	//   "id": "sql.instances.switchover",
+	//   "parameterOrder": [
+	//     "project",
+	//     "instance"
+	//   ],
+	//   "parameters": {
+	//     "dbTimeout": {
+	//       "description": "Optional. (MySQL only) Cloud SQL instance operations timeout, which is a sum of all database operations. Default value is 10 minutes and can be modified to a maximum value of 24 hours.",
+	//       "format": "google-duration",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "instance": {
+	//       "description": "Cloud SQL read replica instance name.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "ID of the project that contains the replica.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/switchover",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/sqlservice.admin"
+	//   ]
+	// }
+
+}
+
 // method id "sql.instances.truncateLog":
 
 type InstancesTruncateLogCall struct {
@@ -10255,6 +11223,150 @@ func (c *InstancesUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/sqlservice.admin"
+	//   ]
+	// }
+
+}
+
+// method id "sql.operations.cancel":
+
+type OperationsCancelCall struct {
+	s          *Service
+	project    string
+	operation  string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Cancel: Cancels an instance operation that has been performed on an
+// instance.
+//
+// - operation: Instance operation ID.
+// - project: Project ID of the project that contains the instance.
+func (r *OperationsService) Cancel(project string, operation string) *OperationsCancelCall {
+	c := &OperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.operation = operation
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *OperationsCancelCall) Fields(s ...googleapi.Field) *OperationsCancelCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *OperationsCancelCall) Context(ctx context.Context) *OperationsCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *OperationsCancelCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *OperationsCancelCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sql/v1beta4/projects/{project}/operations/{operation}/cancel")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":   c.project,
+		"operation": c.operation,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sql.operations.cancel" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Cancels an instance operation that has been performed on an instance.",
+	//   "flatPath": "sql/v1beta4/projects/{project}/operations/{operation}/cancel",
+	//   "httpMethod": "POST",
+	//   "id": "sql.operations.cancel",
+	//   "parameterOrder": [
+	//     "project",
+	//     "operation"
+	//   ],
+	//   "parameters": {
+	//     "operation": {
+	//       "description": "Instance operation ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID of the project that contains the instance.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "sql/v1beta4/projects/{project}/operations/{operation}/cancel",
+	//   "response": {
+	//     "$ref": "Empty"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
@@ -10779,6 +11891,166 @@ func (c *ProjectsInstancesGetDiskShrinkConfigCall) Do(opts ...googleapi.CallOpti
 	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/getDiskShrinkConfig",
 	//   "response": {
 	//     "$ref": "SqlInstancesGetDiskShrinkConfigResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/sqlservice.admin"
+	//   ]
+	// }
+
+}
+
+// method id "sql.projects.instances.getLatestRecoveryTime":
+
+type ProjectsInstancesGetLatestRecoveryTimeCall struct {
+	s            *Service
+	project      string
+	instance     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetLatestRecoveryTime: Get Latest Recovery Time for a given instance.
+//
+//   - instance: Cloud SQL instance ID. This does not include the project
+//     ID.
+//   - project: Project ID of the project that contains the instance.
+func (r *ProjectsInstancesService) GetLatestRecoveryTime(project string, instance string) *ProjectsInstancesGetLatestRecoveryTimeCall {
+	c := &ProjectsInstancesGetLatestRecoveryTimeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.instance = instance
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) Fields(s ...googleapi.Field) *ProjectsInstancesGetLatestRecoveryTimeCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) IfNoneMatch(entityTag string) *ProjectsInstancesGetLatestRecoveryTimeCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) Context(ctx context.Context) *ProjectsInstancesGetLatestRecoveryTimeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sql/v1beta4/projects/{project}/instances/{instance}/getLatestRecoveryTime")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"instance": c.instance,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sql.projects.instances.getLatestRecoveryTime" call.
+// Exactly one of *SqlInstancesGetLatestRecoveryTimeResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *SqlInstancesGetLatestRecoveryTimeResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ProjectsInstancesGetLatestRecoveryTimeCall) Do(opts ...googleapi.CallOption) (*SqlInstancesGetLatestRecoveryTimeResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &SqlInstancesGetLatestRecoveryTimeResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Get Latest Recovery Time for a given instance.",
+	//   "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/getLatestRecoveryTime",
+	//   "httpMethod": "GET",
+	//   "id": "sql.projects.instances.getLatestRecoveryTime",
+	//   "parameterOrder": [
+	//     "project",
+	//     "instance"
+	//   ],
+	//   "parameters": {
+	//     "instance": {
+	//       "description": "Cloud SQL instance ID. This does not include the project ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID of the project that contains the instance.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "sql/v1beta4/projects/{project}/instances/{instance}/getLatestRecoveryTime",
+	//   "response": {
+	//     "$ref": "SqlInstancesGetLatestRecoveryTimeResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",

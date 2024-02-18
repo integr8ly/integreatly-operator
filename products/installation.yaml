@@ -65,7 +65,7 @@ products:
         channel: rhmi
         installFrom: index
         package: rhmi-cloud-resources
-        index: quay.io/integreatly/cloud-resource-operator:index-v1.1.2
+        index: quay.io/integreatly/cloud-resource-operator:index-v1.1.3
     marin3r:
         channel: rhmi
         installFrom: local
