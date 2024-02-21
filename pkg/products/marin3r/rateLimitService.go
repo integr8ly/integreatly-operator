@@ -85,13 +85,14 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
+	// Following notes just for Info, about deletion of ensureLimits() related code:
 	// Limitador quay.io/kuadrant/limitador:v1.3.0 does not support DELETE method
 	// It will pick up the changes from Config file and do the appropriate actions
-	// It does not require restart the pod
-	// In the case of a restart, repicked up the initial state from the Config file
+	// It does not require restart the pod. In the case of a restart, repicked up the initial state from the Config file
 	// So we don't need ensureLimits(), that compared RHOAM and Limitador configuration and used old limitador DELETE method
-	// Cleanup is suggested in the file - to delete ensureLimits() and related code
+	// Slack thread with discussion - https://redhat-internal.slack.com/archives/C04J77H00TD/p1707736217609739
 	// return r.ensureLimits(ctx, client)
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 
 }
@@ -530,77 +531,6 @@ func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx con
 			},
 		},
 	}, nil
-}
-
-func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// List rate limit pods
-	rateLimitPods := &corev1.PodList{}
-	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(r.Namespace),
-		k8sclient.MatchingLabels(map[string]string{"app": quota.RateLimitName}),
-	}
-	if err := client.List(ctx, rateLimitPods, opts...); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if len(rateLimitPods.Items) == 0 {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	for _, pod := range rateLimitPods.Items {
-		if pod.Status.Phase != corev1.PodRunning {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("waiting for rate limit pods to be ready")
-		}
-	}
-
-	// Get current limits in redis
-	limitadorClient := NewLimitadorClient(r.PodExecutor, r.Namespace, rateLimitPods.Items[0].Name)
-	limitadorLimitsInRedis, err := limitadorClient.GetLimitsByName(ratelimit.RateLimitDomain)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Get limits from configuration
-	limitadorSetting, err := r.getLimitadorSetting(ctx, client)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// If there are difference, delete the limits and delete a pod to reload the limits from the config map
-	if r.differentLimitSettings(limitadorLimitsInRedis, limitadorSetting) {
-		phase, err := r.deleteRedisLimits(ctx, client, limitadorClient)
-
-		if phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
-
-		if err := client.Delete(ctx, &corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      rateLimitPods.Items[0].Name,
-				Namespace: rateLimitPods.Items[0].Namespace,
-			},
-		}); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *RateLimitServiceReconciler) deleteRedisLimits(ctx context.Context, client k8sclient.Client, limitadorClient *LimitadorClient) (integreatlyv1alpha1.StatusPhase, error) {
-
-	rateLimitService := &corev1.Service{}
-	if err := client.Get(ctx, k8sclient.ObjectKey{Name: quota.RateLimitName, Namespace: r.Namespace}, rateLimitService); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if err := limitadorClient.DeleteLimitsByNameUsingPod(ratelimit.RateLimitDomain, rateLimitService.Spec.ClusterIP); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *RateLimitServiceReconciler) getLimitadorSetting(ctx context.Context, client k8sclient.Client) ([]limitadorLimit, error) {
