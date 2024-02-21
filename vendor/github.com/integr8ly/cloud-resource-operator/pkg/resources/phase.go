@@ -13,7 +13,7 @@ import (
 	errorUtil "github.com/pkg/errors"
 )
 
-//UpdatePhase Updates the custom resource with the current phase
+// UpdatePhase Updates the custom resource with the current phase
 func UpdatePhase(ctx context.Context, client client.Client, inst client.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil
@@ -33,7 +33,7 @@ func UpdatePhase(ctx context.Context, client client.Client, inst client.Object, 
 	return nil
 }
 
-//UpdateSnapshotPhase Updates the snapshot custom resource with the current phase
+// UpdateSnapshotPhase Updates the snapshot custom resource with the current phase
 func UpdateSnapshotPhase(ctx context.Context, client client.Client, inst client.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil

@@ -93,7 +93,7 @@ type RedisDeploymentDetails struct {
 	Port int64
 }
 
-//Data Redis provider Data function
+// Data Redis provider Data function
 func (r *RedisDeploymentDetails) Data() map[string][]byte {
 	return map[string][]byte{
 		"uri":  []byte(r.URI),

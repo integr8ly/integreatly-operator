@@ -32,7 +32,7 @@ func NewSTSCredentialManager(client client.Client, ns string) *STSCredentialMana
 	}
 }
 
-//ReconcileProviderCredentials Ensure the credentials the AWS provider requires are available
+// ReconcileProviderCredentials Ensure the credentials the AWS provider requires are available
 func (m *STSCredentialManager) ReconcileProviderCredentials(ctx context.Context, _ string) (*Credentials, error) {
 	secret, err := getSTSCredentialsSecret(ctx, m.Client, m.OperatorNamespace)
 	if err != nil {

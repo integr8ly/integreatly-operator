@@ -64,7 +64,7 @@ var (
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	Version3Scale         ProductVersion = "2.13.0"
-	VersionCloudResources ProductVersion = "1.1.2"
+	VersionCloudResources ProductVersion = "1.1.3"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMarin3r        ProductVersion = "0.12.3"
@@ -77,7 +77,7 @@ var (
 	// Operator image tags
 	OperatorVersionRHSSO          OperatorVersion = "7.6.5-8"
 	OperatorVersionRHSSOUser      OperatorVersion = "7.6.5-8"
-	OperatorVersionCloudResources OperatorVersion = "1.1.2"
+	OperatorVersionCloudResources OperatorVersion = "1.1.3"
 	OperatorVersion3Scale         OperatorVersion = "0.11.8-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
 

@@ -27,7 +27,6 @@ func ShortenString(s string, n int) string {
 	cutSize := n - postfixLen
 
 	if n < (hashLen + 1) {
-		n = len(s)
 		cutSize = len(s)
 	}
 	cutStr := s[0:cutSize]
