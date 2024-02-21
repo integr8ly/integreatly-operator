@@ -8,7 +8,7 @@ ratelimit:
     url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.9-2"
 limitador:
   - name: marin3r-limitador
-    url: "quay.io/3scale/limitador:v0.5.1"
+    url: "quay.io/kuadrant/limitador:v1.3.0"
 grafana:
   - name: grafana
     url: "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
