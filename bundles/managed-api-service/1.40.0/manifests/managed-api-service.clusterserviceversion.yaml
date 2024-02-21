@@ -70,9 +70,9 @@ metadata:
           "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.5-opr-004": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
-          "sso7-rhel8-operator-d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d6a2ea7f5227947227f8b3985e60c026d49e5835fb0b5746f6ee9e12ec277846",
+          "rhsso-operator.7.6.7-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
+          "sso7-rhel8-operator-711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
           "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
           "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
           "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81db8f40d7c4c66ae15af014c8d45708c7750b53f074fa9f1cf464ca2bf5160c",

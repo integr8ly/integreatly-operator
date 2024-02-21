@@ -11,7 +11,7 @@ limitador:
     url: "quay.io/3scale/limitador:v0.5.1"
 grafana:
   - name: grafana
-    url: "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
+    url: "registry.redhat.io/rhel9/grafana@sha256:8ae4e07283e61f8bda7c5b621ded8928fd00a774986027c5bd87ed9d5bc14c02"
 grafana-ose-oauth-proxy:
   - name: grafana-ose-oauth-proxy
-    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:219bf2d14157acd90298df58bfe77c2e3ed51ce0c743c2e51b3ed54b73dafc14"
+    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:6331f77131cd2ecfba7cbbdf5ade042cc0ed724fda939755384bc21d234b765e"
