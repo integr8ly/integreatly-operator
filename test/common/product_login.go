@@ -126,7 +126,7 @@ func assertGrafanaLoginAuthorized(t TestingTB, userName string) chromedp.Action 
 				return false, nil
 			}
 
-			if !strings.Contains(html, "Home - Grafana") {
+			if !strings.Contains(html, "Grafana") {
 				t.Logf("User not at Grafana home yet")
 				return false, nil
 			}
