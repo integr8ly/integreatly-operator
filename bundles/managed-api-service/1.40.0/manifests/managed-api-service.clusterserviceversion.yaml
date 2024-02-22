@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.40.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.15"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -63,8 +63,8 @@ metadata:
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:4f807ee6e885e966853f70e1c40bbc179dc1f994b401ac868b7f2b921f9d17a0",
           "system_searchd": "registry.redhat.io/3scale-mas/searchd-rhel7@sha256:1426e4bd4aa0eb28b479900ffc02621203886280d24997cd11818387ff30d9df"
         },
-        "cloud-resource-operator.v1.1.2": {
-          "cloud-resources.v1.1.2": "quay.io/integreatly/cloud-resource-operator:v1.1.2"
+        "cloud-resource-operator.v1.1.3": {
+          "cloud-resources.v1.1.3": "quay.io/integreatly/cloud-resource-operator:v1.1.3"
         },
         "marin3r.v0.11.0": {
           "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
@@ -73,22 +73,22 @@ metadata:
           "rhsso-operator.7.6.7-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
           "sso7-rhel8-operator-711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
           "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:08ab3f6d97e63a6a128d27bc50adb211bc39a0d6169c7b8e2a510457ec73aec0",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81db8f40d7c4c66ae15af014c8d45708c7750b53f074fa9f1cf464ca2bf5160c",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81db8f40d7c4c66ae15af014c8d45708c7750b53f074fa9f1cf464ca2bf5160c"
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:21033463e761a6ff142551fa93ec20196ad46f18b0dc4a0c692866d4410c64ce",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:21033463e761a6ff142551fa93ec20196ad46f18b0dc4a0c692866d4410c64ce",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:c9634cf64e2b0c3a7e8314b870dba12bb6a370b44545f9347ca577f7a5a13103",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:c9634cf64e2b0c3a7e8314b870dba12bb6a370b44545f9347ca577f7a5a13103"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.9-2"
         },
         "limitador": {
-          "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
+          "marin3r-limitador": "quay.io/kuadrant/limitador:v1.3.0"
         },
         "grafana": {
-          "grafana": "registry.redhat.io/rhel9/grafana@sha256:43c8f19a426aea02579dcc1aa818f92666e0d8743b489df074b2fdf465ce29fe"
+          "grafana": "registry.redhat.io/rhel9/grafana@sha256:8ae4e07283e61f8bda7c5b621ded8928fd00a774986027c5bd87ed9d5bc14c02"
         },
         "grafana-ose-oauth-proxy": {
-          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:219bf2d14157acd90298df58bfe77c2e3ed51ce0c743c2e51b3ed54b73dafc14"
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:6331f77131cd2ecfba7cbbdf5ade042cc0ed724fda939755384bc21d234b765e"
         }
       }
     serviceAffecting: "true"
@@ -663,7 +663,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.40.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
