@@ -245,7 +245,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.Config.GetOperatorNamespace(),
 		r.installation.Spec.PriorityClassName,
 	)
-	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+	// We need to be 100% sure that we do not get past this stage if the operator version isn't the desired version
+	// For now, using the above logic as temp workaround.
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud-resources csv deployments priority class name", err)
 		return phase, err
 	}
