@@ -50,9 +50,10 @@ func TestUsersCreateRealmSSO(t TestingTB, ctx *TestingContext) {
 
 	userSSOConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host, keyCloakAuthConsolePath)
 
+	createRealmInUserSSO(t, userSSOConsoleUrl, dedicatedAdminUser)
+
 	for _, developerUser := range developerUsers {
 		createRealmInUserSSO(t, userSSOConsoleUrl, developerUser)
-		createRealmInUserSSO(t, userSSOConsoleUrl, dedicatedAdminUser)
 	}
 
 }
