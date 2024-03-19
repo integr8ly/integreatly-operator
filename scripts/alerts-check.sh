@@ -28,12 +28,10 @@ do
     sleep 60
 done
 
-OPENSHIFT_MONITORING=$(oc exec -n openshift-monitoring prometheus-k8s-0 -- curl $ROUTE -s -H "Authorization: Bearer $TOKEN")
-RHOAM_MONITORING=$(oc exec -n ${NAMESPACE_PREFIX}operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --header="Authorization: Bearer $TOKEN" --no-check-certificate $ROUTE)
 # Define an array of monitoring data sources
 declare -A monitoring_sources=(
-  ["rhoam"]=$RHOAM_MONITORING
-  ["openshift"]=$OPENSHIFT_MONITORING
+  ["rhoam"]="{}"
+  ["openshift"]="{}"
 )
 
 # Define an array of products to report on
@@ -47,6 +45,11 @@ trap 'find . -name "tmp-*" -delete; for source_name in "${!monitoring_sources[@]
 
 # function to check if there are no alerts firing bar deadmansnitch
 function CHECK_NO_ALERTS() {
+
+  OPENSHIFT_MONITORING=$(oc exec -n openshift-monitoring prometheus-k8s-0 -- curl $ROUTE -s -H "Authorization: Bearer $TOKEN")
+  RHOAM_MONITORING=$(oc exec -n ${NAMESPACE_PREFIX}operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --header="Authorization: Bearer $TOKEN" --no-check-certificate $ROUTE)
+  monitoring_sources["rhoam"]=$RHOAM_MONITORING
+  monitoring_sources["openshift"]=$OPENSHIFT_MONITORING
 
   # Extract firing alerts from OpenShift monitoring
   openshift_alerts=$(echo "$OPENSHIFT_MONITORING" | jq -r '.data.alerts[] | select(.state == "firing") | [.labels.alertname, .state, .activeAt, .labels.severity] | @csv')
@@ -116,6 +119,8 @@ for product_name in "${products[@]}"; do
     continue
   fi
 
+  CHECK_NO_ALERTS
+
   # Loop over each monitoring source
   for source_name in "${!monitoring_sources[@]}"; do
     source_data="${monitoring_sources[$source_name]}"
@@ -150,13 +155,13 @@ for product_name in "${products[@]}"; do
 
     done
   done
-
-  CHECK_NO_ALERTS
 done
 
 #If no product is passed in then run for all products
 if [[ "$2" == "" ]]; then
   while :; do
+
+    CHECK_NO_ALERTS
 
     # Loop over each monitoring source
     for source_name in "${!monitoring_sources[@]}"; do
@@ -172,8 +177,6 @@ if [[ "$2" == "" ]]; then
         sort -t',' -k 1,1 -u "${source_name}-alert-${alert_state}-${REPORT_TIME}-report.csv" -o "${source_name}-alert-${alert_state}-${REPORT_TIME}-report.csv"
       done
     done
-
-    CHECK_NO_ALERTS
 
     echo -e "\n=================== Sleeping for $SLEEP_TIME seconds ======================\n"
     sleep $SLEEP_TIME

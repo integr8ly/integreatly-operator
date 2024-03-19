@@ -17,6 +17,7 @@ products:
       - 1.31.0
       - 1.34.0
       - 1.37.0
+      - 1.40.0
 estimate: 90m
 tags:
   - destructive
@@ -103,7 +104,18 @@ tags:
 
     ```shell script
 
-    oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p '{"spec":{"alertingEmailAddress":"<rh_username>+CUSTOMER1@redhat.com <rh_username>+CUSTOMER2@redhat.com"}}'
+    ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+    {
+    "parameters":{
+       "items":[
+          {
+             "id":"notification-email",
+             "value":"<rh_username>+CUSTOMER1@redhat.com <rh_username>+CUSTOMER2@redhat.com"
+          }
+       ]
+    }
+    }
+    EOF
     ```
 
 6.  Verify email addresses are added to Alert Manager configurations
@@ -120,9 +132,9 @@ tags:
 
     Run those commands and verify that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
 
-7.  From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
+7.  From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password.
 
-8.  Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password
+8.  Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password. You can use Testing IDP and `customer-admin01` instead (Testing IDP password needs to be used in this case).
 
     ```shell script
 
@@ -142,7 +154,7 @@ tags:
 
     oc new-project httpbin && \
     oc new-app quay.io/trepel/httpbin
-    oc scale deploymentconfig/httpbin --replicas=6
+    oc scale deployment/httpbin --replicas=6
     printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
     ```
 
@@ -150,9 +162,9 @@ tags:
 
 12. Finish the 3scale wizard
 
-13. Once on your API overview page, click on `Integration` on the left, then on `Configuration`
+13. Once on your API overview page, click on `Integration` on the left, then on `Configuration`. Promote to both Staging and Production
 
-14. Take note of the `example curl for testing` and replace the placeholder here
+14. Take note of the `example curl for testing`. Modify it to point to Production APIcast and replace the placeholder...
 
     ```js
     export default function () {
@@ -162,7 +174,7 @@ tags:
     }
     ```
 
-    in the integreatly-operator repo under `test-cases/tests/alerts/rate-limit.js` with the route from the curl example including the user_key param
+    ...in the integreatly-operator repo under `test-cases/tests/alerts/rate-limit.js` with the route from the curl example including the user_key param modified to point to Production APIcast
 
 15. Verify RHOAMApiUsageOverLimit alert is present
 
@@ -195,7 +207,7 @@ tags:
 
     An `empty query result` should be returned.
 
-    Navigate back to the prometheus console, go to `Alerts` and search for the corresponding alert name in the table above e.g. `RHOAMApiUsageLevel1ThresholdExceeded`
+    Navigate to the Prometheus web console (use `oc port-forward -n redhat-rhoam-operator-observability prometheus-rhoam-0 9090:9090` for that), go to `Alerts` and search for the corresponding alert name in the table above e.g. `RHOAMApiUsageLevel1ThresholdExceeded`
 
     Run a separate load test for each rpm from the RHOAMApiUsageLevel<level No.>ThresholdExceeded using k6
 
@@ -216,7 +228,7 @@ tags:
 
     Interrupt the script (Ctrl+C), wait 1 minute and repeat for the next rpm
 
-17. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent. Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
+17. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent (these might not be sent). Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
 
 18. Verify customer facing Grafana instance and Dashboard is present
 
@@ -250,7 +262,7 @@ tags:
 19. Verify RHOAMApiUsageOverLimit alert triggered.
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
-    since then please verify that the alert is firing and that an email has been received to the BU and Customer email.
+    since then please verify that the alert is firing and that an email has been received to the BU and Customer email (both for firing and for resolving).
 
 20. Revert the changes back
 
