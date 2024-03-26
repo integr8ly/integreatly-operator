@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -112,7 +113,11 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		var sections []*cdp.Node
 
 		sectionSelector := `section[class="pf-c-app-launcher__group"]`
-		if strings.Contains(clusterVersion, "4.15.") {
+		match, err := regexp.MatchString("4\\.1[56789]\\.", clusterVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if match {
 			sectionSelector = `section[class="pf-v5-c-app-launcher__group"]`
 		}
 
@@ -130,7 +135,7 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 
 		// Get all the links from this section
 		var links []*cdp.Node
-		err := chromedp.Run(ctx,
+		err = chromedp.Run(ctx,
 			chromedp.Nodes(`a`, &links, chromedp.FromNode(lastElement), chromedp.ByQueryAll),
 		)
 
