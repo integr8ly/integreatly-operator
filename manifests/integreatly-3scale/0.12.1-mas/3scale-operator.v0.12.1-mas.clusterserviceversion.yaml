@@ -239,7 +239,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_d43311c37edd0fedcb82b0923b000adfbda9092c929292a4ff7d320048c58b55
+    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     features.operators.openshift.io/disconnected: "true"
@@ -561,7 +561,7 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM
                         value: quay.io/integreatly/delorean:3scale-mas-system-rhel8_33153e4c76701369063a262e50c5e1b7bac8cc021a8450103bd387e19a17c474
                       - name: RELATED_IMAGE_ZYNC
-                        value: quay.io/integreatly/delorean:3scale-mas-zync-rhel9_4e5183295ee8e58d04019741cc07d423be84e178fb8ab4b0ddfd2a1023ad9ec0
+                        value: quay.io/integreatly/delorean:3scale-mas-zync-rhel9_27e75c465a56166ac49b969b1864a6cf6999ce3f4a12b8be7df36d17272e1428
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
                         value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_5f34496aa68c01d91c8e407178c9f20860e8a74862ef3340e1badd5fa8115448
                       - name: RELATED_IMAGE_BACKEND_REDIS
@@ -578,7 +578,7 @@ spec:
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
                         value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_9ea878427fde40941a2ddb091f38201019dea9b32362dd665fabd8e71c157ca8
-                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_d43311c37edd0fedcb82b0923b000adfbda9092c929292a4ff7d320048c58b55
+                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
                     name: manager
                     ports:
                       - containerPort: 8080
@@ -1159,9 +1159,9 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:d43311c37edd0fedcb82b0923b000adfbda9092c929292a4ff7d320048c58b55
-      name: 3scale-rhel9-operator-d43311c37edd0fedcb82b0923b000adfbda9092c929292a4ff7d320048c58b55-annotation
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:d43311c37edd0fedcb82b0923b000adfbda9092c929292a4ff7d320048c58b55
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
+      name: 3scale-rhel9-operator-b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e-annotation
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
       name: backend
@@ -1169,7 +1169,7 @@ spec:
       name: apicast
     - image: registry.redhat.io/3scale-mas/system-rhel8@sha256:33153e4c76701369063a262e50c5e1b7bac8cc021a8450103bd387e19a17c474
       name: system
-    - image: registry.redhat.io/3scale-mas/zync-rhel9@sha256:4e5183295ee8e58d04019741cc07d423be84e178fb8ab4b0ddfd2a1023ad9ec0
+    - image: registry.redhat.io/3scale-mas/zync-rhel9@sha256:27e75c465a56166ac49b969b1864a6cf6999ce3f4a12b8be7df36d17272e1428
       name: zync
     - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:5f34496aa68c01d91c8e407178c9f20860e8a74862ef3340e1badd5fa8115448
       name: system_memcached
