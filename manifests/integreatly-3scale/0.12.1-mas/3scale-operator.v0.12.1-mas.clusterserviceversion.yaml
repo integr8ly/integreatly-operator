@@ -239,7 +239,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
+    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     features.operators.openshift.io/disconnected: "true"
@@ -578,7 +578,7 @@ spec:
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
                         value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_9e7afa5b3c65d9acaac7602a849fdb3763c1fc3849706e37e14c7b2d44dd051c
-                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
+                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94
                     name: manager
                     ports:
                       - containerPort: 8080
@@ -1159,9 +1159,9 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
-      name: 3scale-rhel9-operator-b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e-annotation
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:b9bd243fa40578a34b9c3d78700306b92b50840ccc3ee27da2a6a4d30241ed1e
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94
+      name: 3scale-rhel9-operator-81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94-annotation
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
       name: backend
