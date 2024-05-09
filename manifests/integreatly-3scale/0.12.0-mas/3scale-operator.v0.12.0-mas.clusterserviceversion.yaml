@@ -202,7 +202,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_666b564f56edf41bb8b185a15829f628df99c0fabf6900f7079ab35cda97ae82
+    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_f82d786224b1eef8f71412ece813fc6def5cf0bc62364687389dc84d885aee77
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -467,8 +467,8 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_fbc7ee26660076f9e7029c652a19d3d0f2eac54a17ed4135899363a85367a3dc
-                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_666b564f56edf41bb8b185a15829f628df99c0fabf6900f7079ab35cda97ae82
+                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_135cd6909abb1150c43ffaa2d53156ffa9472e0b38ef8a422c6edb1b26a14c6b
+                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_f82d786224b1eef8f71412ece813fc6def5cf0bc62364687389dc84d885aee77
                     name: manager
                     ports:
                       - containerPort: 8080
@@ -1040,9 +1040,9 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-    - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:666b564f56edf41bb8b185a15829f628df99c0fabf6900f7079ab35cda97ae82
-      name: 3scale-rhel7-operator-666b564f56edf41bb8b185a15829f628df99c0fabf6900f7079ab35cda97ae82-annotation
-    - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:666b564f56edf41bb8b185a15829f628df99c0fabf6900f7079ab35cda97ae82
+    - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f82d786224b1eef8f71412ece813fc6def5cf0bc62364687389dc84d885aee77
+      name: 3scale-rhel7-operator-f82d786224b1eef8f71412ece813fc6def5cf0bc62364687389dc84d885aee77-annotation
+    - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f82d786224b1eef8f71412ece813fc6def5cf0bc62364687389dc84d885aee77
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:7d07caf7b6c5a195ba4706e82f3d28c3793afab99b1a6d5a7020547c48534cdc
       name: backend
@@ -1066,7 +1066,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:fbc7ee26660076f9e7029c652a19d3d0f2eac54a17ed4135899363a85367a3dc
+    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:135cd6909abb1150c43ffaa2d53156ffa9472e0b38ef8a422c6edb1b26a14c6b
       name: system_searchd
   replaces: 3scale-operator.v0.11.8-mas
   skips:
