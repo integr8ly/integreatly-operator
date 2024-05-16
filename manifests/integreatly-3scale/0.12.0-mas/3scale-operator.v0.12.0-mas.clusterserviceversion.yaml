@@ -449,11 +449,11 @@ spec:
                       - name: RELATED_IMAGE_APICAST
                         value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_88b8ae0343b0bcbfcdb6caa3b86ade2012b01703605986440099a094c0ba80ee
                       - name: RELATED_IMAGE_SYSTEM
-                        value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_21316648ec9400387fcb91cf9f3f6d9a3e47a2a28b0fa49d3c6c517023477cf0
+                        value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_7649595705eb2dba5e68f0d644b633f4e9fd87013954cdcfd3549ccb9760bd45
                       - name: RELATED_IMAGE_ZYNC
                         value: quay.io/integreatly/delorean:3scale-mas-zync-rhel9_5ce07697df96ac3e5ca08a9e99073ccd72a1b095030c32acf26a037b6a95fceb
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                        value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_a792fe056e43af84813c9f54f7051790eec657aed50eb2cf7eb5bf0f16eed7ec
+                        value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_72e239481d722b5df34e0ee8086f01a4e4906bbf09babc6f34a149ec20759d32
                       - name: RELATED_IMAGE_BACKEND_REDIS
                         value: quay.io/integreatly/delorean:rhel8-redis-6_444200241cb9186cd97d564d7acf077d83fc997a8ee5ee7fdae41b604895085c
                       - name: RELATED_IMAGE_SYSTEM_REDIS
@@ -467,7 +467,7 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_5af890d914f2ffa683578895a997e2f00be2c2032167da147da6a7950e3d4f13
+                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_2306e24f992eb8dbb822f8fc46ce503564b2206ba0fd391fd45df1c6b1af722c
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_1d967087ed28cb8289a3e4cc774c51e82cd897799fca0f0f0067fe15ffc6ff67
                     name: manager
                     ports:
@@ -1048,11 +1048,11 @@ spec:
       name: backend
     - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:88b8ae0343b0bcbfcdb6caa3b86ade2012b01703605986440099a094c0ba80ee
       name: apicast
-    - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:21316648ec9400387fcb91cf9f3f6d9a3e47a2a28b0fa49d3c6c517023477cf0
+    - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:7649595705eb2dba5e68f0d644b633f4e9fd87013954cdcfd3549ccb9760bd45
       name: system
     - image: registry.redhat.io/3scale-mas/zync-rhel9@sha256:5ce07697df96ac3e5ca08a9e99073ccd72a1b095030c32acf26a037b6a95fceb
       name: zync
-    - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:a792fe056e43af84813c9f54f7051790eec657aed50eb2cf7eb5bf0f16eed7ec
+    - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:72e239481d722b5df34e0ee8086f01a4e4906bbf09babc6f34a149ec20759d32
       name: system_memcached
     - image: registry.redhat.io/rhel8/redis-6@sha256:444200241cb9186cd97d564d7acf077d83fc997a8ee5ee7fdae41b604895085c
       name: backend_redis
@@ -1066,7 +1066,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:5af890d914f2ffa683578895a997e2f00be2c2032167da147da6a7950e3d4f13
+    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:2306e24f992eb8dbb822f8fc46ce503564b2206ba0fd391fd45df1c6b1af722c
       name: system_searchd
   replaces: 3scale-operator.v0.11.8-mas
   skips:
