@@ -126,7 +126,7 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
 	// ensure the IDP is available in OpenShift
-	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*5, true, func(ctx2 context.Context) (done bool, err error) {
 		// Use a temporary HTTP client to avoid polluting testing client
 		tempHTTPClient, err := NewTestingHTTPClient(kubeConfig)
 		if err != nil {
@@ -148,7 +148,7 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 }
 
 func waitForOauthDeployment(ctx context.Context, client dynclient.Client) error {
-	err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, true, func(ctx2 context.Context) (done bool, err error) {
 		oauthDeployment := &appsv1.Deployment{}
 		if err := client.Get(ctx, types.NamespacedName{Name: "oauth-openshift", Namespace: "openshift-authentication"}, oauthDeployment); err != nil {
 			return true, fmt.Errorf("error occurred while getting dedicated admin group")
@@ -423,7 +423,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 
 // polls the keycloak client until it is ready
 func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) error {
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx2 context.Context) (done bool, err error) {
 		keycloakClient := &v1alpha1.KeycloakClient{}
 
 		if err := client.Get(ctx, types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClient); err != nil {
@@ -575,7 +575,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 }
 
 func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
-	err := wait.PollImmediate(time.Second*2, time.Minute*2, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*2, time.Minute*2, true, func(ctx2 context.Context) (done bool, err error) {
 		if err := client.Delete(ctx, &v1alpha1.KeycloakClient{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      keycloakClientName,

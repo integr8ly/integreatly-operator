@@ -186,7 +186,7 @@ func updateAPIManager(dynClient *TestingContext, replicas map[string]int64) (thr
 }
 
 func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *TestingContext, replicas map[string]int64, retryInterval, timeout time.Duration, t TestingTB) error {
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		apim, err = getAPIManager(ctx.Client)
 		if err != nil {
 			t.Fatalf("failed to get APIManager : %v", err)
@@ -243,7 +243,7 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 
 func check3ScaleReplicasAreReady(ctx *TestingContext, t TestingTB, replicas map[string]int64, retryInterval, timeout time.Duration) error {
 
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 
 		for name, replicasID := range threeScaleDeploymentConfigs {
 			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}

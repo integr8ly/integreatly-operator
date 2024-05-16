@@ -77,7 +77,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	userSyncRetryInterval := time.Second * 30
 	userSyncTimeout := time.Minute * 5
 
-	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(goctx.TODO(), userSyncRetryInterval, userSyncTimeout, false, func(ctx goctx.Context) (done bool, err error) {
 
 		// ensure that a generated keycloak user cr has been created for the user
 		generatedKeycloakUsers := &keycloak.KeycloakUserList{}

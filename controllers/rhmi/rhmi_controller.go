@@ -19,12 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
@@ -47,9 +49,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -1133,7 +1135,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		if mtrReconciled == "" {
 			log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
-			err := wait.Poll(time.Minute*2, time.Minute*10, func() (done bool, err error) {
+			err := wait.PollUntilContextTimeout(context.TODO(), time.Minute*2, time.Minute*10, false, func(ctx context.Context) (done bool, err error) {
 				mtrReconciled := os.Getenv("MTR_RECONCILED")
 				if mtrReconciled == "" {
 					log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
@@ -1160,15 +1162,20 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	mapper := installationMapper{context: context.TODO(), client: mgr.GetClient()}
+
+	// Create an EnqueueRequestsFromMapFunc using installationMapper.Map
+	enqueueAllInstallations := handler.EnqueueRequestsFromMapFunc(mapper.Map)
+
 	// Instead of calling .Complete(r), we call .Build(r), which
 	// does the same but returns the controller instance, to be
 	// stored in the reconciler
 	reconcileController, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhmiv1alpha1.RHMI{}).
-		Watches(&source.Kind{Type: &usersv1.User{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &usersv1.Group{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&usersv1.User{}, enqueueAllInstallations).
+		Watches(&corev1.Secret{}, enqueueAllInstallations).
+		Watches(&usersv1.Group{}, enqueueAllInstallations).
+		Watches(&corev1.ConfigMap{}, enqueueAllInstallations, builder.WithPredicates(newObjectPredicate(isName(marin3rconfig.RateLimitConfigMapName)))).
 		Build(r)
 
 	if err != nil {
@@ -1339,11 +1346,7 @@ func getRebalancePods() bool {
 
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
-	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
-	if err != nil {
-		return fmt.Errorf("failed to get API Group-Resources: %v", err)
-	}
-	store, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
+	store, err := cache.New(r.restConfig, cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}, Scheme: r.mgr.GetScheme()})
 	if err != nil {
 		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}

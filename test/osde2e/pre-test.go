@@ -29,7 +29,7 @@ var (
 
 // PreTest This tests if an installation of Managed-API or RHMI was finished and is successful
 func PreTest(t common.TestingTB, ctx *common.TestingContext) {
-	err := wait.Poll(time.Second*15, time.Minute*70, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*15, time.Minute*70, false, func(ctx2 context.Context) (done bool, err error) {
 		rhmi, err := getRHMI(ctx.Client)
 		if err != nil {
 			t.Fatalf("error getting RHMI CR: %v", err)

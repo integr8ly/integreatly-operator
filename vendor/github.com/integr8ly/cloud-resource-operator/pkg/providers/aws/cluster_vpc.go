@@ -462,7 +462,7 @@ func getAZs(ec2Svc ec2iface.EC2API) ([]*ec2.AvailabilityZone, error) {
 // function to get subnets, used to check/wait on AWS credentials
 func getSubnets(ec2Svc ec2iface.EC2API) ([]*ec2.Subnet, error) {
 	var subs []*ec2.Subnet
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx context.Context) (bool, error) {
 		listOutput, err := ec2Svc.DescribeSubnets(&ec2.DescribeSubnetsInput{})
 		if err != nil {
 			return false, nil

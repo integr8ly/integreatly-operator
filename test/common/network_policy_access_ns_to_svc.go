@@ -207,7 +207,7 @@ func createPodWithAnEndpoint(ctx *TestingContext, openshiftClient *resources.Ope
 }
 
 func checkPodStatus(ctx *TestingContext, podCR *corev1.Pod) (bool, error) {
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), time.Second*5, time.Minute*5, true, func(ctx2 goctx.Context) (done bool, err error) {
 		key := k8sclient.ObjectKey{Name: podCR.GetName(), Namespace: podCR.GetNamespace()}
 		err = ctx.Client.Get(goctx.TODO(), key, podCR)
 		if err != nil {

@@ -199,7 +199,7 @@ func (m *CredentialMinterCredentialManager) reconcileCredentials(ctx context.Con
 	if err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to reconcile aws credential request %s", name)
 	}
-	err = wait.PollImmediate(time.Second*5, timeOut, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, timeOut, true, func(ctx context.Context) (done bool, err error) {
 		if err = m.Client.Get(ctx, types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -212,12 +212,8 @@ func (m *CredentialMinterCredentialManager) reconcileCredentials(ctx context.Con
 		return nil, errorUtil.Wrap(err, "timed out waiting for credential request to provision")
 	}
 
-	codec, err := v1.NewCodec()
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "failed to create credentials codec")
-	}
 	awsProvStatus := &v1.AWSProviderStatus{}
-	if err = codec.DecodeProviderSpec(cr.Status.ProviderStatus, awsProvStatus); err != nil {
+	if err = v1.Codec.DecodeProviderSpec(cr.Status.ProviderStatus, awsProvStatus); err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to decode credentials request %s", cr.Name)
 	}
 	accessKeyID, secAccessKey, err := m.reconcileAWSCredentials(ctx, cr)
@@ -233,11 +229,7 @@ func (m *CredentialMinterCredentialManager) reconcileCredentials(ctx context.Con
 }
 
 func (m *CredentialMinterCredentialManager) reconcileCredentialRequest(ctx context.Context, name string, ns string, entries []v1.StatementEntry) (*v1.CredentialsRequest, error) {
-	codec, err := v1.NewCodec()
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "failed to create provider codec")
-	}
-	providerSpec, err := codec.EncodeProviderSpec(&v1.AWSProviderSpec{
+	providerSpec, err := v1.Codec.EncodeProviderSpec(&v1.AWSProviderSpec{
 		TypeMeta: controllerruntime.TypeMeta{
 			Kind: "AWSProviderSpec",
 		},

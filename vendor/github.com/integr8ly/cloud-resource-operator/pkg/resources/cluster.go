@@ -122,7 +122,7 @@ func runExec(cs *kubernetes.Clientset, command []string, pod, ns string) (string
 
 	var stdout, stderr bytes.Buffer
 	var stdin io.Reader
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		Stdin:  stdin,
 		Stdout: &stdout,
 		Stderr: &stderr,

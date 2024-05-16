@@ -61,12 +61,14 @@ type deleteRHMIHandler struct {
 }
 
 var _ admission.Handler = &deleteRHMIHandler{}
-var _ admission.DecoderInjector = &deleteRHMIHandler{}
 
-func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme) admission.Handler {
+//var _ admission.DecoderInjector = &deleteRHMIHandler{}
+
+func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder *admission.Decoder) admission.Handler {
 	return &deleteRHMIHandler{
 		restConfig: config,
 		scheme:     scheme,
+		decoder:    decoder,
 	}
 }
 

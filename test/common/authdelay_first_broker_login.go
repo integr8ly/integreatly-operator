@@ -105,7 +105,7 @@ func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestU
 
 // polls the keycloak user until it is ready
 func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client, keycloakUsername string) error {
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx2 context.Context) (done bool, err error) {
 		keycloakUser := &keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, keycloakUsername),
@@ -219,7 +219,7 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 
 	By("Wait until account is provisioned and user is authenticated in 3Scale")
 	// waits until the account is provisioned and user is authenticated in three scale
-	err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx context.Context) (done bool, err error) {
 		t.Logf("\nbrowser URL first:\n %s\nURL with requestURI:\n %s\n", clintBrowser.Url().String(), clintBrowser.Url().RequestURI())
 
 		// checks if an error happened in the login

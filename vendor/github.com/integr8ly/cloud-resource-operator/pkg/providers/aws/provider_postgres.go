@@ -59,6 +59,8 @@ const (
 	defaultPostgresUserKey               = "user"
 	defaultStorageEncrypted              = true
 	postgresProviderName                 = "aws-rds"
+	existingCert                         = "rds-ca-2019"
+	newCert                              = "rds-ca-rsa2048-g1"
 )
 
 var (
@@ -667,7 +669,7 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 // function to get rds instances, used to check/wait on AWS credentials
 func getRDSInstances(cacheSvc rdsiface.RDSAPI) ([]*rds.DBInstance, error) {
 	var pi []*rds.DBInstance
-	err := wait.PollImmediate(time.Second*5, timeOut, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, timeOut, true, func(ctx context.Context) (done bool, err error) {
 		listOutput, err := cacheSvc.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 		if err != nil {
 			return false, nil
@@ -744,6 +746,11 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 	mi := &rds.ModifyDBInstanceInput{}
 	mi.DBInstanceIdentifier = foundConfig.DBInstanceIdentifier
 
+	// Once the fleet has moved to rds-ca-rsa2048-g1 this change is no longer needed the certs can be updated in the const for future cert retirements
+	if *foundConfig.CACertificateIdentifier == *aws.String(existingCert) {
+		mi.CACertificateIdentifier = aws.String(newCert)
+		updateFound = true
+	}
 	if *rdsConfig.DeletionProtection != *foundConfig.DeletionProtection {
 		mi.DeletionProtection = rdsConfig.DeletionProtection
 		updateFound = true
