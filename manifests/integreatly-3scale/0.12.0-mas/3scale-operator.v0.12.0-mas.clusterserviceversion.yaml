@@ -461,13 +461,13 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM_MYSQL
                         value: quay.io/integreatly/delorean:rhel8-mysql-80_ae45771ff311958d6907c82773c3b701933fa6039f865e24fa30f96bb1e630e0
                       - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
-                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_1dff1c1c8ac18f65c82c47770d9dd217dfa7049cffdca166770d77d27a898d17
+                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_1bab9e6caee574f8913893a84754b11347d590b5f96d3ea9c981691bb91af39b
                       - name: RELATED_IMAGE_ZYNC_POSTGRESQL
-                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_1dff1c1c8ac18f65c82c47770d9dd217dfa7049cffdca166770d77d27a898d17
+                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_1bab9e6caee574f8913893a84754b11347d590b5f96d3ea9c981691bb91af39b
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_48d8ab49f7deb639865a9f3dc8c480c59a7d6521b7fd609d3e748008920f1667
+                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_ebac18da8c5a2e4bd96c9e7dadbde8930b89da6bd1cbbeab02425196137981fc
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_1d967087ed28cb8289a3e4cc774c51e82cd897799fca0f0f0067fe15ffc6ff67
                     name: manager
                     ports:
@@ -1060,13 +1060,13 @@ spec:
       name: system_redis
     - image: registry.redhat.io/rhel8/mysql-80@sha256:ae45771ff311958d6907c82773c3b701933fa6039f865e24fa30f96bb1e630e0
       name: system_mysql
-    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1dff1c1c8ac18f65c82c47770d9dd217dfa7049cffdca166770d77d27a898d17
+    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1bab9e6caee574f8913893a84754b11347d590b5f96d3ea9c981691bb91af39b
       name: system_postgresql
-    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1dff1c1c8ac18f65c82c47770d9dd217dfa7049cffdca166770d77d27a898d17
+    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1bab9e6caee574f8913893a84754b11347d590b5f96d3ea9c981691bb91af39b
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:48d8ab49f7deb639865a9f3dc8c480c59a7d6521b7fd609d3e748008920f1667
+    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:ebac18da8c5a2e4bd96c9e7dadbde8930b89da6bd1cbbeab02425196137981fc
       name: system_searchd
   replaces: 3scale-operator.v0.11.8-mas
   skips:
