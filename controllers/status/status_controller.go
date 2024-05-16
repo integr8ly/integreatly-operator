@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 )
 
@@ -237,6 +236,6 @@ func (r *StatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// Watch for addon instances in the specified namespace with the specified name
 		For(&addonv1alpha1.AddonInstance{}, builder.WithPredicates(predicate.And(utils.NamePredicate(r.cfg.AddonInstanceName), utils.NamespacePredicate(r.cfg.AddonInstanceNamespace)))).
 		// Watch for RHMI changes in the same namespace as the Addon Instance
-		Watches(&source.Kind{Type: &v1alpha1.RHMI{}}, &handler.EnqueueRequestForObject{}, builder.WithPredicates(utils.NamespacePredicate(r.cfg.AddonInstanceNamespace))).
+		Watches(&v1alpha1.RHMI{}, &handler.EnqueueRequestForObject{}, builder.WithPredicates(utils.NamespacePredicate(r.cfg.AddonInstanceNamespace))).
 		Complete(r)
 }
