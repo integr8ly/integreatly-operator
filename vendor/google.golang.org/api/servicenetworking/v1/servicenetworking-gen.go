@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -4051,7 +4051,7 @@ type MonitoredResourceDescriptor struct {
 
 	// Type: Required. The monitored resource type. For example, the type
 	// "cloudsql_database" represents databases in Google Cloud SQL. For a
-	// list of types, see Monitoring resource types
+	// list of types, see Monitored resource types
 	// (https://cloud.google.com/monitoring/api/resources) and Logging
 	// resource types
 	// (https://cloud.google.com/logging/docs/api/v2/resource-list).
@@ -4581,6 +4581,11 @@ type Publishing struct {
 	// documentation. Example:
 	// https://cloud.google.com/pubsub/lite/docs/reference/rpc
 	ProtoReferenceDocumentationUri string `json:"protoReferenceDocumentationUri,omitempty"`
+
+	// RestReferenceDocumentationUri: Optional link to REST reference
+	// documentation. Example:
+	// https://cloud.google.com/pubsub/lite/docs/reference/rest
+	RestReferenceDocumentationUri string `json:"restReferenceDocumentationUri,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ApiShortName") to
 	// unconditionally include in API requests. By default, fields with
