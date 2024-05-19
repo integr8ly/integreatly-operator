@@ -47,7 +47,7 @@ github.com/3scale-ops/basereconciler/config
 github.com/3scale-ops/basereconciler/reconciler
 github.com/3scale-ops/basereconciler/resource
 github.com/3scale-ops/basereconciler/util
-# github.com/3scale-ops/marin3r v0.12.3 => github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24
+# github.com/3scale-ops/marin3r v0.13.0
 ## explicit; go 1.20
 github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1
 github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1
@@ -1584,4 +1584,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
-# github.com/3scale-ops/marin3r => github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24

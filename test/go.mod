@@ -1,9 +1,9 @@
 module github.com/integr8ly/integreatly-operator/test
 
-go 1.20
+go 1.19
 
 require (
-	github.com/3scale-ops/marin3r v0.12.3
+	github.com/3scale-ops/marin3r v0.13.0
 	github.com/3scale/3scale-operator v0.11.0
 	github.com/3scale/3scale-porta-go-client v0.11.0
 	github.com/3scale/apicast-operator v0.7.1
@@ -173,6 +173,3 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202108310919
 
 // Required to import parent module - cannot import remotely as parent module was importing test directoy
 replace github.com/integr8ly/integreatly-operator => ../
-
-//replace github.com/3scale-ops/marin3r => ../../marin3r
-replace github.com/3scale-ops/marin3r => github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24

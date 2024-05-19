@@ -1,9 +1,9 @@
 module github.com/integr8ly/integreatly-operator
 
-go 1.20
+go 1.19
 
 require (
-	github.com/3scale-ops/marin3r v0.12.3
+	github.com/3scale-ops/marin3r v0.13.0
 	github.com/3scale/3scale-operator v0.11.0
 	github.com/3scale/3scale-porta-go-client v0.11.0
 	github.com/Masterminds/semver v1.5.0
@@ -166,5 +166,3 @@ require (
 
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
-
-replace github.com/3scale-ops/marin3r => github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24

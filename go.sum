@@ -65,8 +65,8 @@ cloud.google.com/go/storage v1.36.0/go.mod h1:M6M/3V/D3KpzMTJyPOR/HU6n2Si5QdaXYE
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/3scale-ops/basereconciler v0.5.1 h1:0CaK3CyBAbO+HzrxnEQWIiKurvXebXjflqQNiv8iSfY=
 github.com/3scale-ops/basereconciler v0.5.1/go.mod h1:bLk2Jn6trasK88DBCAROnVs67wXP3/qxfY3AGbohHhw=
-github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24 h1:waVpVbB9fHn6c4A8OIeeK45/Kcoc72eMPKhjxgUEQbY=
-github.com/3scale-ops/marin3r v0.12.4-0.20240510161254-4a016e26da24/go.mod h1:opsRBqQlH1QZdCy+WhMK6lKdt4gAwWWRpPSWT64OGpE=
+github.com/3scale-ops/marin3r v0.13.0 h1:YOGg4eXE/6AbJT5v3Z4JANGzkEHGkAbzmn4VB2Ul7r0=
+github.com/3scale-ops/marin3r v0.13.0/go.mod h1:opsRBqQlH1QZdCy+WhMK6lKdt4gAwWWRpPSWT64OGpE=
 github.com/3scale/3scale-operator v0.11.0 h1:4NlQqb62huvNeLGf/batR0V0LeL9042tgK4AVl344H0=
 github.com/3scale/3scale-operator v0.11.0/go.mod h1:FihwpBA+Oc+Xybl1QQUadmOcsdagrQ+SD6DVJm+kCQ4=
 github.com/3scale/3scale-porta-go-client v0.11.0 h1:cHJPJ1xzcc+TXitjAv90dAPZJyLs3u6aQ68mQ4DcHXI=
