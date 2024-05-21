@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -1165,10 +1166,10 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// stored in the reconciler
 	reconcileController, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhmiv1alpha1.RHMI{}).
-		Watches(&source.Kind{Type: &usersv1.User{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &usersv1.Group{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&usersv1.User{}, &handler.EnqueueRequestForObject{}).
+		Watches(&corev1.Secret{}, &handler.EnqueueRequestForObject{}).
+		Watches(&usersv1.Group{}, &handler.EnqueueRequestForObject{}).
+		Watches(&corev1.ConfigMap{}, &handler.EnqueueRequestForObject{}).
 		Build(r)
 
 	if err != nil {
@@ -1339,11 +1340,12 @@ func getRebalancePods() bool {
 
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
-	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
+	var transport http.RoundTripper = &http.Transport{}
+	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, &http.Client{Transport: transport})
 	if err != nil {
 		return fmt.Errorf("failed to get API Group-Resources: %v", err)
 	}
-	store, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
+	store, err := cache.New(r.restConfig, cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}, Scheme: r.mgr.GetScheme(), Mapper: mapper})
 	if err != nil {
 		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}

@@ -20,6 +20,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // IntegreatlyWebhookConfig contains the data and logic to setup the webhooks
@@ -105,17 +106,19 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 		return err
 	}
 
-	webhookServer := mgr.GetWebhookServer()
-	webhookServer.Port = webhookConfig.Port
-	webhookServer.CertDir = webhookConfig.CertDir
-
-	webhookConfig.scheme = mgr.GetScheme()
+	// Create a webhook server.
+	webhookServer := webhook.NewServer(webhook.Options{
+		Port:    webhookConfig.Port,
+		CertDir: webhookConfig.CertDir,
+	})
+	if err := mgr.Add(webhookServer); err != nil {
+		return err
+	}
 
 	bldr := builder.WebhookManagedBy(mgr)
 
 	for _, webhook := range webhookConfig.Webhooks {
 		bldr = webhook.Register.RegisterToBuilder(bldr)
-		webhook.Register.RegisterToServer(webhookConfig.scheme, webhookServer)
 	}
 
 	err = bldr.Complete()

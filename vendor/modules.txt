@@ -73,8 +73,6 @@ github.com/3scale/3scale-porta-go-client/client
 # github.com/Masterminds/semver v1.5.0
 ## explicit
 github.com/Masterminds/semver
-# github.com/Microsoft/go-winio v0.6.1
-## explicit; go 1.17
 # github.com/RHsyseng/operator-utils v1.4.13
 ## explicit; go 1.19
 github.com/RHsyseng/operator-utils/pkg/olm
@@ -174,16 +172,14 @@ github.com/cncf/xds/go/xds/annotations/v3
 github.com/cncf/xds/go/xds/core/v3
 github.com/cncf/xds/go/xds/type/matcher/v3
 github.com/cncf/xds/go/xds/type/v3
-# github.com/containerd/containerd v1.6.19
-## explicit; go 1.17
+# github.com/containerd/containerd v1.6.19 => github.com/containerd/containerd v1.7.17
+## explicit; go 1.21
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
 # github.com/docker/cli v23.0.5+incompatible
 ## explicit
 # github.com/docker/docker v23.0.5+incompatible
-## explicit
-# github.com/docker/go-units v0.5.0
 ## explicit
 # github.com/emicklei/go-restful/v3 v3.11.0
 ## explicit; go 1.13
@@ -734,7 +730,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/opencontainers/image-spec v1.1.0-rc3
+# github.com/opencontainers/image-spec v1.1.0
 ## explicit; go 1.18
 # github.com/openshift/addon-operator v1.12.0
 ## explicit; go 1.18
@@ -1514,8 +1510,8 @@ k8s.io/utils/trace
 # package-operator.run/apis v1.7.0
 ## explicit; go 1.20
 package-operator.run/apis/core/v1alpha1
-# sigs.k8s.io/controller-runtime v0.17.2
-## explicit; go 1.21
+# sigs.k8s.io/controller-runtime v0.17.2 => sigs.k8s.io/controller-runtime v0.16.6
+## explicit; go 1.20
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
 sigs.k8s.io/controller-runtime/pkg/cache
@@ -1546,7 +1542,6 @@ sigs.k8s.io/controller-runtime/pkg/internal/log
 sigs.k8s.io/controller-runtime/pkg/internal/objectutil
 sigs.k8s.io/controller-runtime/pkg/internal/recorder
 sigs.k8s.io/controller-runtime/pkg/internal/source
-sigs.k8s.io/controller-runtime/pkg/internal/syncs
 sigs.k8s.io/controller-runtime/pkg/internal/testing/addr
 sigs.k8s.io/controller-runtime/pkg/internal/testing/certs
 sigs.k8s.io/controller-runtime/pkg/internal/testing/controlplane
@@ -1584,3 +1579,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+# github.com/containerd/containerd => github.com/containerd/containerd v1.7.17
+# sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.16.6

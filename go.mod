@@ -1,6 +1,6 @@
 module github.com/integr8ly/integreatly-operator
 
-go 1.19
+go 1.20
 
 require (
 	github.com/3scale-ops/marin3r v0.13.0
@@ -58,7 +58,6 @@ require (
 	cloud.google.com/go/redis v1.14.1 // indirect
 	cloud.google.com/go/storage v1.36.0 // indirect
 	github.com/3scale-ops/basereconciler v0.5.1 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/antchfx/xpath v1.1.10 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -71,7 +70,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v23.0.5+incompatible // indirect
 	github.com/docker/docker v23.0.5+incompatible // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -117,7 +115,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1 // indirect
 	github.com/ohler55/ojg v1.20.3 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
@@ -166,3 +164,7 @@ require (
 
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+
+replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.17
+
+replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.16.6

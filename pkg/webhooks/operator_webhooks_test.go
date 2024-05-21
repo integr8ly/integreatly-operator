@@ -193,27 +193,27 @@ type mockValidator struct {
 	Value string
 }
 
-var _ admission.Validator = &mockValidator{}
+var _ admission.CustomValidator = &mockValidator{}
 var _ runtime.Object = &mockValidator{}
 
-func (m *mockValidator) ValidateCreate() error {
+func (m *mockValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	if m.Value == "correct" {
-		return nil
+		return nil, nil
 	}
 
-	return fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
+	return nil, fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
 }
 
-func (m *mockValidator) ValidateUpdate(old runtime.Object) error {
+func (m *mockValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	if m.Value == "correct" {
-		return nil
+		return nil, nil
 	}
 
-	return fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
+	return nil, fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
 }
 
-func (m *mockValidator) ValidateDelete() error {
-	return fmt.Errorf("Delete not allowed")
+func (m *mockValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, fmt.Errorf("Delete not allowed")
 }
 
 func (m *mockValidator) DeepCopyObject() runtime.Object {

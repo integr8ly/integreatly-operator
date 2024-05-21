@@ -25,6 +25,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/controllers/status"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 
@@ -121,8 +122,7 @@ func main() {
 	if strings.Contains(watchNamespace, "sandbox") || watchNamespace == "" {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 			Scheme:                 scheme,
-			MetricsBindAddress:     metricsAddr,
-			Port:                   9443,
+			Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 			HealthProbeBindAddress: probeAddr,
 			LeaderElection:         enableLeaderElection,
 			LeaderElectionID:       "28185cee.integreatly.org",
@@ -134,12 +134,10 @@ func main() {
 	} else {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 			Scheme:                 scheme,
-			MetricsBindAddress:     metricsAddr,
-			Port:                   9443,
+			Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 			HealthProbeBindAddress: probeAddr,
 			LeaderElection:         enableLeaderElection,
 			LeaderElectionID:       "28185cee.integreatly.org",
-			Namespace:              watchNamespace,
 		})
 		if err != nil {
 			setupLog.Error(err, "unable to start singletenant manager")
