@@ -59,7 +59,7 @@ cd integreatly-operator
 
 ### 2. Cluster size guidelines
 
-For development work the required vcpu and ram can be lower than that stated in the [service definition](https://access.redhat.com/articles/5534341#scalability-and-service-levels-15).
+For development work the required vCPU and ram can be lower than that stated in the [service definition](https://access.redhat.com/articles/5534341#scalability-and-service-levels-15).
 Different quotas require different values.
 Table belong are typical requested values needed for RHOAM on a cluster with cluster storage set to True.
 
@@ -111,7 +111,7 @@ If you want to run the operator from a specific image, you can specify the image
 IMAGE_FORMAT=<image-registry-address> INSTALLATION_TYPE=managed-api  make cluster/deploy
 ```
 
-*Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhoam`).
+*Note:* if the operator doesn't find an RHMI CR, it will create one (Name: `rhoam`).
 
 | Variable            | Options   |   Type   | Default                        | Details                                                                                                                                    |
 |---------------------|-----------|:--------:|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
@@ -125,7 +125,7 @@ For `RHOAM` (managed-api): `oc get rhmi rhoam -n redhat-rhoam-operator -o jsonpa
 
 For `RHOAM Multitenant` (multitenant-managed-api): `oc get rhmi rhoam -n sandbox-rhoam-operator -o jsonpath='{.status.stage}{"\n"}'`
 
-Once the installation completed the command wil result in following output:  
+Once the installation completed the command will result in following output:
 ```yaml
 "complete"
 ```
@@ -144,12 +144,12 @@ oc create configmap managed-api-service -n <NAMESPACE>
 oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n <NAMESPACE>
 ```
 
-B) Delete the RHOAM cr.
+B) Delete the RHOAM CR.
 ```sh 
 oc delete rhmi rhoam -n <NAMESPACE>
 ```
 
-In both scenarios wait until the RHOAM cr is removed and then run the following command to delete the namespace.
+In both scenarios wait until the RHOAM CR is removed and then run the following command to delete the namespace.
 ```sh 
 oc delete namespace <NAMESPACE>
 ```
