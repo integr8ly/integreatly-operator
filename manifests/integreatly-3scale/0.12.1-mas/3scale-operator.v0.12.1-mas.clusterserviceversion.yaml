@@ -557,9 +557,9 @@ spec:
                       - name: RELATED_IMAGE_BACKEND
                         value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
                       - name: RELATED_IMAGE_APICAST
-                        value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_79098006f00b8275fdaf1f922e4b686e71ce604ff9ccd8df2714c3ac21b25475
+                        value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_de9d51380ad2277810100c92a75adba85ac9a6c50db242d8945c9cab45d1236a
                       - name: RELATED_IMAGE_SYSTEM
-                        value: quay.io/integreatly/delorean:3scale-mas-system-rhel8_91165fac2a2ac7fb55aebe0b078ab7bba97cfb37e107f6d31d613408df85cb8b
+                        value: quay.io/integreatly/delorean:3scale-mas-system-rhel8_b40bc7b0bc22ea2691279aeecfea8d926646dac0538d15a4d0e0c386788920be
                       - name: RELATED_IMAGE_ZYNC
                         value: quay.io/integreatly/delorean:3scale-mas-zync-rhel9_2b62cd196a055d4fcf2307c7203b4b3114316211555f41d626707f2b818f754a
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
@@ -577,7 +577,7 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_d5c247bf8bc1914c731d8d8112997bc803d31f7456f85b0c38f5b1deb950e263
+                        value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_7c82dcf5f00e46fdf9f78318cbd8a2275413c1ddb287b219683656dede814e1c
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_81fd62ec042aa309ed238aebe6b7f50c9c17cf371443f09367e290bad5bc7d94
                     name: manager
                     ports:
@@ -1165,9 +1165,9 @@ spec:
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
       name: backend
-    - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:79098006f00b8275fdaf1f922e4b686e71ce604ff9ccd8df2714c3ac21b25475
+    - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:de9d51380ad2277810100c92a75adba85ac9a6c50db242d8945c9cab45d1236a
       name: apicast
-    - image: registry.redhat.io/3scale-mas/system-rhel8@sha256:91165fac2a2ac7fb55aebe0b078ab7bba97cfb37e107f6d31d613408df85cb8b
+    - image: registry.redhat.io/3scale-mas/system-rhel8@sha256:b40bc7b0bc22ea2691279aeecfea8d926646dac0538d15a4d0e0c386788920be
       name: system
     - image: registry.redhat.io/3scale-mas/zync-rhel9@sha256:2b62cd196a055d4fcf2307c7203b4b3114316211555f41d626707f2b818f754a
       name: zync
@@ -1185,7 +1185,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:d5c247bf8bc1914c731d8d8112997bc803d31f7456f85b0c38f5b1deb950e263
+    - image: registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:7c82dcf5f00e46fdf9f78318cbd8a2275413c1ddb287b219683656dede814e1c
       name: system_searchd
   replaces: 3scale-operator.v0.11.8-mas
   version: 0.12.1-mas
