@@ -1,6 +1,6 @@
 module github.com/integr8ly/integreatly-operator/test
 
-go 1.19
+go 1.20
 
 require (
 	github.com/3scale-ops/marin3r v0.12.3
