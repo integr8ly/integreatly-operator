@@ -90,12 +90,22 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		urlToCheck = *consoleUrl
 	}
 
-	selfSignedCerts, err := HasSelfSignedCerts(fmt.Sprintf("https://%s", urlToCheck), http.DefaultClient)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	selfSignedCerts, err := HasSelfSignedCerts(fmt.Sprintf("https://%s", urlToCheck), httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
 
-	httpClient, err := NewTestingHTTPClient(kubeConfig)
+	httpClient, err = NewTestingHTTPClient(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create testing http client: %v", err)
 	}
@@ -111,7 +121,17 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 }
 
 func NewTestingHTTPClient(kubeConfig *rest.Config) (*http.Client, error) {
-	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, http.DefaultClient)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
@@ -123,7 +143,7 @@ func NewTestingHTTPClient(kubeConfig *rest.Config) (*http.Client, error) {
 	}
 
 	/* #nosec */
-	transport := &http.Transport{
+	transport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: selfSignedCerts}, // gosec G402, Used only in tests, cluster checked for self-signed certs
 	}
 
@@ -131,7 +151,7 @@ func NewTestingHTTPClient(kubeConfig *rest.Config) (*http.Client, error) {
 		fmt.Println("TLS insecure skip verify is enabled")
 	}
 
-	httpClient := &http.Client{
+	httpClient = &http.Client{
 		Jar:           jar,
 		Transport:     transport,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
