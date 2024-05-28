@@ -1,5 +1,5 @@
 include ./make/*.mk
-
+# test
 ORG ?= integreatly
 
 CONFIG_IMAGE ?= 'quay.io/integreatly/managed-api-service-config:latest'
