@@ -164,3 +164,5 @@ require (
 
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+
+replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.17
