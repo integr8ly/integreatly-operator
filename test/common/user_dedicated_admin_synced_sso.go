@@ -132,7 +132,7 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 
 func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 	generatedKU := &keycloak.KeycloakUser{}
-	if err := wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*3, true, func(ctx2 context.Context) (done bool, err error) {
 		err = c.Get(
 			ctx,
 			types.NamespacedName{
@@ -172,7 +172,7 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 }
 
 func pollKeycloakUserGroups(httpClient *http.Client, host, userID string) error {
-	err := wait.PollImmediate(time.Second*15, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*15, time.Minute*5, true, func(ctx context.Context) (done bool, err error) {
 		if time.Now().After(tokenExpiryTime) {
 			timeBeforeTokenReq := time.Now()
 			tokens, err = refreshKeycloakToken(httpClient, host, tokens.RefreshToken)
@@ -447,7 +447,7 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 	}
 
 	// Ensure KeycloakUser CR has been deleted within 2 minutes
-	err = wait.Poll(time.Second*15, time.Minute*2, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*15, time.Minute*2, false, func(ctx2 context.Context) (done bool, err error) {
 		err = c.Get(ctx, types.NamespacedName{Name: fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
 			Namespace: RHSSOProductNamespace}, &keycloak.KeycloakUser{})
 		if err != nil {

@@ -486,7 +486,7 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 		return err
 	}
 
-	err = wait.Poll(time.Second*1, time.Minute*10, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*1, time.Minute*10, false, func(ctx context.Context) (done bool, err error) {
 		rhmi, err := GetRHMI(testingContext.Client, true)
 		if err != nil {
 			return false, err

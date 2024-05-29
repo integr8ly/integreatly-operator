@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"golang.org/x/net/context"
 
 	"time"
 
@@ -77,7 +78,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	}
 
 	// verify that product has been created
-	err = wait.Poll(time.Second*5, time.Minute*2, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*2, false, func(ctx2 context.Context) (done bool, err error) {
 		backendList, err := threescaleClient.ListBackendApis()
 		if err != nil {
 			return false, nil

@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -77,7 +78,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	userSyncRetryInterval := time.Second * 30
 	userSyncTimeout := time.Minute * 5
 
-	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(context.TODO(), userSyncRetryInterval, userSyncTimeout, false, func(ctx context.Context) (done bool, err error) {
 
 		// ensure that a generated keycloak user cr has been created for the user
 		generatedKeycloakUsers := &keycloak.KeycloakUserList{}

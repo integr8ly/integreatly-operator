@@ -277,7 +277,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, c
 
 	// Wait for the secret to te created
 	secret := &corev1.Secret{}
-	err = wait.PollImmediate(time.Second*1, time.Second*30, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*1, time.Second*30, true, func(ctx2 context.Context) (bool, error) {
 		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: namespacePrefix + "operator", Name: "rhmi-webhook-cert"}, secret)
 		if err != nil {
 			if errors.IsNotFound(err) {
@@ -309,7 +309,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.
 	namespaceSegments := strings.Split(watchNS, "-")
 	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 
-	err = wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(ctx2 context.Context) (bool, error) {
 		caConfigMap := &corev1.ConfigMap{}
 		if err := client.Get(ctx,
 			k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: namespacePrefix + "operator"},

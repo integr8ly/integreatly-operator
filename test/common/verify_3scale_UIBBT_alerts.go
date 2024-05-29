@@ -43,7 +43,7 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 
 		// Poll until alerts will stop firing
 
-		err = wait.Poll(1*time.Minute, 7*time.Minute, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Minute, 7*time.Minute, false, func(ctx2 context.Context) (bool, error) {
 			// Check condition here
 			t.Logf("Checking if alerts stopped firing. Repeating for 7 minutes, every 1 minute")
 			isFiring, err := isThreeScaleUIBBTAlertFiring(ctx, t)
@@ -86,7 +86,7 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Failed to scale down system-app: %v", err)
 	}
 
-	err = wait.Poll(1*time.Minute, 7*time.Minute, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Minute, 7*time.Minute, false, func(ctx2 context.Context) (bool, error) {
 		// Check if alerts are firing
 		t.Logf("Checking if alerts started firing. Repeating for 7 minutes, every 1 minute")
 		isFiring, err := isThreeScaleUIBBTAlertFiring(ctx, t)

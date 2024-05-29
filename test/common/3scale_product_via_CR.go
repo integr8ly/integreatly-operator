@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"golang.org/x/net/context"
 	"time"
 
 	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
@@ -22,7 +23,7 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 
 	// poll to make sure the project is deleted from H30 and H29 before attempting to create again
 	project := &projectv1.Project{}
-	err := wait.Poll(tenantCreatedLoopTimeout, tenantCreatedTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), tenantCreatedLoopTimeout, tenantCreatedTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: projectNamespace, Namespace: projectNamespace}, project)
 		if err != nil {
 			return true, nil
@@ -88,7 +89,7 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 	}
 
 	// verify that product has been created
-	err = wait.Poll(time.Second*5, time.Minute*2, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*2, false, func(ctx2 context.Context) (done bool, err error) {
 		productList, err := threescaleClient.ListProducts()
 		if err != nil {
 			return false, nil

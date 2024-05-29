@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"golang.org/x/net/context"
 	"strings"
 	"time"
 
@@ -212,7 +213,7 @@ func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 }
 
 func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t TestingTB) error {
-	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), monitoringRetryInterval, monitoringTimeout, true, func(ctx2 context.Context) (done bool, err error) {
 		err = getKeycloakAlertState(ctx)
 		if err != nil {
 			t.Log("failed to get keycloak alert state:", err)
@@ -310,7 +311,7 @@ func scaleDeployment(t TestingTB, name string, replicas int32, kubeClient kubern
 
 func checkKeycloakOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, originalOperatorReplicas int32) error {
 	t.Logf("Checking correct number of keycloak operator replicas (%d) are set", originalOperatorReplicas)
-	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(keycloakOperatorDeploymentName, ctx.KubeClient)
 
 		if numberOfOperatorReplicas == originalOperatorReplicas {

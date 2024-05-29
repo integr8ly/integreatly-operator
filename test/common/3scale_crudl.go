@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"math/big"
 	"time"
@@ -93,7 +94,7 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 }
 
 func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, userName string) error {
-	err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*5, true, func(ctx2 context.Context) (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
 			t.Logf("Error getting 3scale users: %s", err)

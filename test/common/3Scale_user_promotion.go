@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"golang.org/x/net/context"
 	"os"
 	"strconv"
 	"strings"
@@ -93,7 +94,7 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 		// TODO: Waiting an arbitrary amount of time to verify that a 3Scale reconcile was complete
 		// and did not result in reverting the promotion of test-user to admin
 		// Change this when https://issues.redhat.com/browse/INTLY-7770 implemented
-		err = wait.Poll(time.Second*350, time.Minute*7, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second*350, time.Minute*7, false, func(ctx2 context.Context) (done bool, err error) {
 
 			isAdmin, err := tsClient.VerifyUserIsAdmin(userId)
 			if err != nil {

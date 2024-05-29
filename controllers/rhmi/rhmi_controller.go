@@ -1134,7 +1134,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		if mtrReconciled == "" {
 			log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
-			err := wait.Poll(time.Minute*2, time.Minute*10, func() (done bool, err error) {
+			err := wait.PollUntilContextTimeout(context.TODO(), time.Minute*2, time.Minute*10, false, func(ctx context.Context) (done bool, err error) {
 				mtrReconciled := os.Getenv("MTR_RECONCILED")
 				if mtrReconciled == "" {
 					log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
