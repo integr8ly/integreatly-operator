@@ -574,7 +574,6 @@ gosec:
 	# Module layout causes issues if not using go workspace but is not supported in Cachito for now
 	# https://github.com/securego/gosec/issues/682
 	gosec -exclude-dir test ./...
-	cd test; gosec  ./...
 
 
 ##@ Build Dependencies
@@ -594,7 +593,7 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 KUSTOMIZE_VERSION ?= v4.5.2
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
 OPERATOR_SDK_VERSION=1.21.0
-GOLANGCI_LINT_VERSION=v1.50.0
+GOLANGCI_LINT_VERSION=v1.51.0
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -615,6 +614,7 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
+	echo "version being downloaded is $(GOLANGCI_LINT_VERSION)"
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: mkdocs/serve
