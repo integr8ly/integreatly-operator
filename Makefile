@@ -574,7 +574,6 @@ gosec:
 	# Module layout causes issues if not using go workspace but is not supported in Cachito for now
 	# https://github.com/securego/gosec/issues/682
 	gosec -exclude-dir test ./...
-	cd test; gosec  ./...
 
 
 ##@ Build Dependencies
