@@ -16,6 +16,7 @@ import (
 	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 	"time"
 )
@@ -201,7 +202,7 @@ func TestStatusReconciler_UpdateAddonInstanceWithConditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	addonInstance := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: defaultTestNamespace}}
-	basicClient := utils.NewTestClient(scheme, addonInstance)
+	basicClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(addonInstance).WithStatusSubresource(addonInstance).Build()
 	errStatusClient := moqclient.NewSigsClientMoqWithScheme(scheme, addonInstance)
 	errStatusClient.StatusFunc = func() client.SubResourceWriter {
 		return utils.NewSubResourceWriterMock(true)
@@ -318,7 +319,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, addonInstance, installation, monitoringStack),
+				Client: fake.NewClientBuilder().WithScheme(scheme).WithObjects(addonInstance, installation, monitoringStack).WithStatusSubresource(addonInstance).Build(),
 			},
 			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
 			wantErr: false,
@@ -330,7 +331,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, addonInstance, installation, monitoringStack),
+				Client: fake.NewClientBuilder().WithScheme(scheme).WithObjects(addonInstance, installation, monitoringStack).WithStatusSubresource(addonInstance).Build(),
 			},
 			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
 			wantErr: false,
