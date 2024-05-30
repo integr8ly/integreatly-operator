@@ -577,7 +577,7 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_7c82dcf5f00e46fdf9f78318cbd8a2275413c1ddb287b219683656dede814e1c
+                        value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_f7af64e2af20e610720286a70e437f865a031fb5a0d445abc40118db81ee5d70
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_19fd9f2be66ab83deaf7f7e75c4cda9f00a16c39535e64d94179e9c09da4a72a
                     name: manager
                     ports:
@@ -1185,7 +1185,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:7c82dcf5f00e46fdf9f78318cbd8a2275413c1ddb287b219683656dede814e1c
+    - image: registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:f7af64e2af20e610720286a70e437f865a031fb5a0d445abc40118db81ee5d70
       name: system_searchd
   replaces: 3scale-operator.v0.11.8-mas
   version: 0.12.1-mas
