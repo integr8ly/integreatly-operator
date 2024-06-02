@@ -331,10 +331,10 @@ var (
 	}
 )
 
-func now() *v1.Time {
-	now := v1.Now()
-	return &now
-}
+//func now() *v1.Time {
+//	now := v1.Now()
+//	return &now
+//}
 
 func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{})
