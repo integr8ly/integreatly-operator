@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
-	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -50,7 +49,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -1340,12 +1338,7 @@ func getRebalancePods() bool {
 
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
-	var transport http.RoundTripper = &http.Transport{}
-	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, &http.Client{Transport: transport})
-	if err != nil {
-		return fmt.Errorf("failed to get API Group-Resources: %v", err)
-	}
-	store, err := cache.New(r.restConfig, cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}, Scheme: r.mgr.GetScheme(), Mapper: mapper})
+	store, err := cache.New(r.restConfig, cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}, Scheme: r.mgr.GetScheme()})
 	if err != nil {
 		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}
