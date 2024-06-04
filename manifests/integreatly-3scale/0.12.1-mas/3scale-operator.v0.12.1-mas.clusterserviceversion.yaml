@@ -563,7 +563,7 @@ spec:
                       - name: RELATED_IMAGE_ZYNC
                         value: quay.io/integreatly/delorean:3scale-mas-zync-rhel9_0f3d851f857180b1cf68acb2ca857c4740ac7934d12b488589afd145f78c51bc
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                        value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_5f34496aa68c01d91c8e407178c9f20860e8a74862ef3340e1badd5fa8115448
+                        value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
                       - name: RELATED_IMAGE_BACKEND_REDIS
                         value: quay.io/integreatly/delorean:rhel8-redis-6_c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
                       - name: RELATED_IMAGE_SYSTEM_REDIS
@@ -1171,7 +1171,7 @@ spec:
       name: system
     - image: registry.redhat.io/3scale-mas/zync-rhel9@sha256:0f3d851f857180b1cf68acb2ca857c4740ac7934d12b488589afd145f78c51bc
       name: zync
-    - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:5f34496aa68c01d91c8e407178c9f20860e8a74862ef3340e1badd5fa8115448
+    - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
       name: system_memcached
     - image: registry.redhat.io/rhel8/redis-6@sha256:c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
       name: backend_redis
