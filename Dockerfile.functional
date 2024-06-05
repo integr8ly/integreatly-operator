@@ -28,7 +28,7 @@ COPY Makefile ./
 # compile test binary
 RUN make test/compile/functional
 
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi9/ubi:latest
 # Install chrome for tests
 COPY test-dependency/*.repo /etc/yum.repos.d/
 RUN dnf -y install google-chrome-stable && dnf clean all
