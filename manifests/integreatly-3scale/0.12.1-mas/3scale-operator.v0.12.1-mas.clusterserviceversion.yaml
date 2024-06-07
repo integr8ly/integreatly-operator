@@ -557,7 +557,7 @@ spec:
                       - name: RELATED_IMAGE_BACKEND
                         value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
                       - name: RELATED_IMAGE_APICAST
-                        value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_37c92c979a6152efa0741722781027109d2658fdb38aa0ba1d3df7a88420d737
+                        value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_b3497aeed191b06729e103cecd20705c7050109f2776341a82153c73b4c5adca
                       - name: RELATED_IMAGE_SYSTEM
                         value: quay.io/integreatly/delorean:3scale-mas-system-rhel8_b8d004500c4609ece13f57463b471ec33c0ba8e609c2c565af603e5cb5252845
                       - name: RELATED_IMAGE_ZYNC
@@ -565,11 +565,11 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
                         value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
                       - name: RELATED_IMAGE_BACKEND_REDIS
-                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
+                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
                       - name: RELATED_IMAGE_SYSTEM_REDIS
-                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
+                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
                       - name: RELATED_IMAGE_SYSTEM_MYSQL
-                        value: quay.io/integreatly/delorean:rhel8-mysql-80_57dbe9eee3fe1f1cb09ac3b4e741ddb923f38526d794b34fcf4e7cf3e2d3adca
+                        value: quay.io/integreatly/delorean:rhel8-mysql-80_8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
                       - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
                         value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
                       - name: RELATED_IMAGE_ZYNC_POSTGRESQL
@@ -1165,7 +1165,7 @@ spec:
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:65ebef64bdd6764ddc622cfe32d209856f8353c51704e3df391ccae6042bf403
       name: backend
-    - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:37c92c979a6152efa0741722781027109d2658fdb38aa0ba1d3df7a88420d737
+    - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:b3497aeed191b06729e103cecd20705c7050109f2776341a82153c73b4c5adca
       name: apicast
     - image: registry.redhat.io/3scale-mas/system-rhel8@sha256:b8d004500c4609ece13f57463b471ec33c0ba8e609c2c565af603e5cb5252845
       name: system
@@ -1173,11 +1173,11 @@ spec:
       name: zync
     - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
       name: system_memcached
-    - image: registry.redhat.io/rhel8/redis-6@sha256:c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
+    - image: registry.redhat.io/rhel8/redis-6@sha256:c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
       name: backend_redis
-    - image: registry.redhat.io/rhel8/redis-6@sha256:c4f52544b8d60da6cb494f560a88aa18adc2176da4f6a640b621649ec42a7a27
+    - image: registry.redhat.io/rhel8/redis-6@sha256:c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
       name: system_redis
-    - image: registry.redhat.io/rhel8/mysql-80@sha256:57dbe9eee3fe1f1cb09ac3b4e741ddb923f38526d794b34fcf4e7cf3e2d3adca
+    - image: registry.redhat.io/rhel8/mysql-80@sha256:8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
       name: system_mysql
     - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
       name: system_postgresql
