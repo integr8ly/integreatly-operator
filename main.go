@@ -18,12 +18,16 @@ package main
 
 import (
 	"flag"
+	corev1 "k8s.io/api/core/v1"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/controllers/status"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -118,9 +122,39 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
+	operatorInstallationNamespace := watchNamespace
+	if !k8s.IsRunLocally() {
+		nsBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		if err != nil {
+			setupLog.Error(err, "namespace not found for current environment")
+			os.Exit(1)
+		}
+		operatorInstallationNamespace = strings.TrimSpace(string(nsBytes))
+	}
+
+	// If a watch namespace is detected (i.e. operator is namespace scoped), then pass the NS to cache.Options.DefaultNamespaces
+	// If no watch namespace is detected (i.e. operator is cluster scoped), then pass an empty Cache object
+	var managerCache = cache.Options{}
+	if watchNamespace != "" {
+		managerCache = cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&corev1.ConfigMap{}: {
+					Namespaces: map[string]cache.Config{
+						operatorInstallationNamespace: {},
+						watchNamespace:                {},
+					},
+				},
+			},
+			DefaultNamespaces: map[string]cache.Config{
+				watchNamespace: {},
+			},
+		}
+	}
+
 	var mgr ctrl.Manager
 	if strings.Contains(watchNamespace, "sandbox") || watchNamespace == "" {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Cache:                  managerCache,
 			Scheme:                 scheme,
 			Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 			HealthProbeBindAddress: probeAddr,
@@ -133,6 +167,7 @@ func main() {
 		}
 	} else {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Cache:                  managerCache,
 			Scheme:                 scheme,
 			Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 			HealthProbeBindAddress: probeAddr,
