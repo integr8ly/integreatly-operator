@@ -571,9 +571,9 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM_MYSQL
                         value: quay.io/integreatly/delorean:rhel8-mysql-80_8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
                       - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
-                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
+                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
                       - name: RELATED_IMAGE_ZYNC_POSTGRESQL
-                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
+                        value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
@@ -1179,9 +1179,9 @@ spec:
       name: system_redis
     - image: registry.redhat.io/rhel8/mysql-80@sha256:8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
       name: system_mysql
-    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
+    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
       name: system_postgresql
-    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:fb76dcd2314135bc2000f2657a2948f85a5a861e363f7cf0e7ee1c5f71277c22
+    - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
       name: oc_cli
