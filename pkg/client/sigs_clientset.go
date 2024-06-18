@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -25,12 +26,20 @@ type SigsClientInterface interface {
 }
 
 func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtime.Object) *SigsClientInterfaceMock {
+	sigsClient := utils.NewTestClient(clientScheme, initObjs...)
+	return NewSigsClientInterfaceMock(sigsClient)
+}
+
+func NewSigsClientMoqWithSchemeWithStatusSubresource(clientScheme *runtime.Scheme, initObjs ...runtime.Object) *SigsClientInterfaceMock {
 	clientObjs := make([]k8sclient.Object, len(initObjs))
 	for i, obj := range initObjs {
 		clientObjs[i] = obj.(k8sclient.Object)
 	}
 	sigsClient := fake.NewClientBuilder().WithScheme(clientScheme).WithRuntimeObjects(initObjs...).WithStatusSubresource(clientObjs...).Build()
-	//sigsClient := utils.NewTestClient(clientScheme, initObjs...)
+	return NewSigsClientInterfaceMock(sigsClient)
+}
+
+func NewSigsClientInterfaceMock(sigsClient k8sclient.Client) *SigsClientInterfaceMock {
 	return &SigsClientInterfaceMock{
 		GetSigsClientFunc: func() k8sclient.Client {
 			return sigsClient

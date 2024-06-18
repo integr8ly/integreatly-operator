@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.20
+FROM registry.ci.openshift.org/openshift/release:rhel-8-release-golang-1.20-openshift-4.15
 
 # OPERATOR_SDK should match the version of operator-sdk version in go.mod
 ENV OPERATOR_SDK_VERSION=v1.21.0 \

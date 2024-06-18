@@ -31,7 +31,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := moqClient.NewSigsClientMoqWithScheme(scheme, buildTestPostgresSnapshotCr())
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestPostgresSnapshotCr())
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -66,7 +66,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
-	if err != nil { //&& !strings.Contains(err.Error(), "timed out") {
+	if err != nil {
 		t.Errorf("Unexpected error performing postgres backup: %v", err)
 	}
 }
@@ -82,7 +82,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := moqClient.NewSigsClientMoqWithScheme(scheme, buildTestRedisSnapshotCR())
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestRedisSnapshotCR())
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
@@ -117,7 +117,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
-	if err != nil { //&& !strings.Contains(err.Error(), "timed out") {
+	if err != nil {
 		t.Errorf("Unexpected error performing postgres backup: %v", err)
 	}
 }
@@ -133,7 +133,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := moqClient.NewSigsClientMoqWithScheme(scheme, buildTestPostgresSnapshotCr())
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestPostgresSnapshotCr())
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -176,7 +176,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 	}
 
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "MOCK FAIL") { // && !strings.Contains(err.Error(), "timed out") {
+	if !strings.Contains(errMsg, "MOCK FAIL") {
 		t.Errorf("Expected error message to contain PostgresSnapshot status message, but got %s", errMsg)
 	}
 }
@@ -192,7 +192,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := moqClient.NewSigsClientMoqWithScheme(scheme, buildTestRedisSnapshotCR())
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestRedisSnapshotCR())
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
@@ -235,7 +235,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	}
 
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "MOCK FAIL") { // && !strings.Contains(err.Error(), "timed out") {
+	if !strings.Contains(errMsg, "MOCK FAIL") {
 		t.Errorf("Expected error message to contain RedisSnapshot status message, but got %s", errMsg)
 	}
 }

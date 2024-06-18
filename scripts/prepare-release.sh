@@ -42,7 +42,7 @@ echo "Using kustomize path: $KUSTOMIZE"
 
 # Path to gofmt
 if [[ -z $GOROOT ]]; then
-  GOFMT="/usr/local/go/bin/gofmt"
+  GOFMT="/usr/bin/gofmt"
 else
   GOFMT="$GOROOT/bin/gofmt"
 fi
