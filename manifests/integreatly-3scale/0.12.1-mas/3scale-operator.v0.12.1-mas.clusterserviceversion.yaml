@@ -555,7 +555,7 @@ spec:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
                       - name: RELATED_IMAGE_BACKEND
-                        value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_3def8e6037e54e6b767ea0dfb7f2a0bb8695d050b3ce140d73246b20b331ebaf
+                        value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_d2e3fe3cfc02d701f5b096eae9d714f0c0988eee9f64cd6aa3f852a56e35159f
                       - name: RELATED_IMAGE_APICAST
                         value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_b3497aeed191b06729e103cecd20705c7050109f2776341a82153c73b4c5adca
                       - name: RELATED_IMAGE_SYSTEM
@@ -1163,7 +1163,7 @@ spec:
       name: 3scale-rhel9-operator-f25512c321c17bb4fecaa8ebba4fcda1faa5cbc47c5c6ba53cc257f0051f1fbc-annotation
     - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:f25512c321c17bb4fecaa8ebba4fcda1faa5cbc47c5c6ba53cc257f0051f1fbc
       name: manager
-    - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:3def8e6037e54e6b767ea0dfb7f2a0bb8695d050b3ce140d73246b20b331ebaf
+    - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:d2e3fe3cfc02d701f5b096eae9d714f0c0988eee9f64cd6aa3f852a56e35159f
       name: backend
     - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:b3497aeed191b06729e103cecd20705c7050109f2776341a82153c73b4c5adca
       name: apicast
