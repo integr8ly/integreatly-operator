@@ -635,12 +635,6 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 			return ctrl.Result{}, merr
 		}
 
-		err = addon.UninstallOperator(context.TODO(), r.Client, installation)
-		if err != nil {
-			merr.Add(err)
-			return ctrl.Result{}, merr
-		}
-
 		log.Info("uninstall completed")
 		return ctrl.Result{}, nil
 	}
