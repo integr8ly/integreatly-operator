@@ -52,9 +52,6 @@ func TestAPIs(t *testing.T) {
 	testEnv = &envtest.Environment{
 		UseExistingCluster:       &useCluster,
 		AttachControlPlaneOutput: true,
-		//Config: &rest.Config{
-		//	TLSClientConfig: rest.TLSClientConfig{Insecure: true},
-		//},
 	}
 
 	var err error

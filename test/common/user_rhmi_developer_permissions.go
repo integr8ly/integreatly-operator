@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -87,7 +86,7 @@ func verifyRHMIDeveloper3ScaleRoutePermissions(t TestingTB, client *resources.Op
 func testManagedApiDeveloperProjects(masterURL string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
 	// five minute time out needed to ensure users have been reconciled by RHMI operator
-	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), time.Second*5, time.Minute*5, true, func(ctx goctx.Context) (done bool, err error) {
 		rhmiDevfoundProjects, err = openshiftClient.ListProjects()
 		if err != nil {
 			return false, fmt.Errorf("error occured while getting user projects : %w", err)

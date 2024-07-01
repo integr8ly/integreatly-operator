@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -134,7 +133,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 }
 
 func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t TestingTB) error {
-	return wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, false, func(ctx2 context.Context) (done bool, err error) {
+	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		keycloakCR, err = getKeycloakCR(ctx.Client, keycloakCR.Name, keycloakCR.Namespace)
 		if err != nil {
 			t.Fatalf("failed to get KeycloakCR : %v", err)
@@ -150,7 +149,7 @@ func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak
 
 func checkSSOReplicasAreReady(dynClient *TestingContext, t TestingTB, replicas int32, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
 
-	err := wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, false, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx goctx.Context) (done bool, err error) {
 
 		statefulSet, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get(goctx.TODO(), "keycloak", metav1.GetOptions{})
 		if err != nil {
