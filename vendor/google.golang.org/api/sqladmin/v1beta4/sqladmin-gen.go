@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -95,7 +95,9 @@ const apiId = "sqladmin:v1beta4"
 const apiName = "sqladmin"
 const apiVersion = "v1beta4"
 const basePath = "https://sqladmin.googleapis.com/"
+const basePathTemplate = "https://sqladmin.UNIVERSE_DOMAIN/"
 const mtlsBasePath = "https://sqladmin.mtls.googleapis.com/"
+const defaultUniverseDomain = "googleapis.com"
 
 // OAuth2 scopes used by this API.
 const (
@@ -116,7 +118,9 @@ func NewService(ctx context.Context, opts ...option.ClientOption) (*Service, err
 	// NOTE: prepend, so we don't override user-specified scopes.
 	opts = append([]option.ClientOption{scopesOption}, opts...)
 	opts = append(opts, internaloption.WithDefaultEndpoint(basePath))
+	opts = append(opts, internaloption.WithDefaultEndpointTemplate(basePathTemplate))
 	opts = append(opts, internaloption.WithDefaultMTLSEndpoint(mtlsBasePath))
+	opts = append(opts, internaloption.WithDefaultUniverseDomain(defaultUniverseDomain))
 	client, endpoint, err := htransport.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -1287,11 +1291,11 @@ type DatabaseInstance struct {
 	// of PSC instance.
 	PscServiceAttachmentLink string `json:"pscServiceAttachmentLink,omitempty"`
 
-	// Region: The geographical region. Can be: * `us-central` (`FIRST_GEN`
-	// instances only) * `us-central1` (`SECOND_GEN` instances only) *
-	// `asia-east1` or `europe-west1`. Defaults to `us-central` or
-	// `us-central1` depending on the instance type. The region cannot be
-	// changed after instance creation.
+	// Region: The geographical region of the Cloud SQL instance. It can be
+	// one of the regions
+	// (https://cloud.google.com/sql/docs/mysql/locations#location-r) where
+	// Cloud SQL operates: For example, `asia-east1`, `europe-west1`, and
+	// `us-central1`. The default value is `us-central1`.
 	Region string `json:"region,omitempty"`
 
 	// ReplicaConfiguration: Configuration specific to failover replicas and
@@ -1338,9 +1342,10 @@ type DatabaseInstance struct {
 	//
 	// Possible values:
 	//   "SQL_NETWORK_ARCHITECTURE_UNSPECIFIED"
-	//   "NEW_NETWORK_ARCHITECTURE" - Instance is a Tenancy Unit (TU)
-	// instance.
-	//   "OLD_NETWORK_ARCHITECTURE" - Instance is an Umbrella instance.
+	//   "NEW_NETWORK_ARCHITECTURE" - The instance uses the new network
+	// architecture.
+	//   "OLD_NETWORK_ARCHITECTURE" - The instance uses the old network
+	// architecture.
 	SqlNetworkArchitecture string `json:"sqlNetworkArchitecture,omitempty"`
 
 	// State: The current serving state of the Cloud SQL instance.
@@ -1946,6 +1951,9 @@ type ExportContextSqlExportOptions struct {
 	// MysqlExportOptions: Options for exporting from MySQL.
 	MysqlExportOptions *ExportContextSqlExportOptionsMysqlExportOptions `json:"mysqlExportOptions,omitempty"`
 
+	// Parallel: Optional. Whether or not the export should be parallel.
+	Parallel bool `json:"parallel,omitempty"`
+
 	// SchemaOnly: Export only schemas.
 	SchemaOnly bool `json:"schemaOnly,omitempty"`
 
@@ -1953,6 +1961,9 @@ type ExportContextSqlExportOptions struct {
 	// database. If you specify tables, specify one and only one database.
 	// For PostgreSQL instances, you can specify only one table.
 	Tables []string `json:"tables,omitempty"`
+
+	// Threads: Optional. The number of threads to use for parallel export.
+	Threads int64 `json:"threads,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "MysqlExportOptions")
 	// to unconditionally include in API requests. By default, fields with
@@ -3009,31 +3020,32 @@ type IpConfiguration struct {
 	// PscConfig: PSC settings for this instance.
 	PscConfig *PscConfig `json:"pscConfig,omitempty"`
 
-	// RequireSsl: Whether SSL/TLS connections over IP are enforced. If set
-	// to false, then allow both non-SSL/non-TLS and SSL/TLS connections.
-	// For SSL/TLS connections, the client certificate won't be verified. If
-	// set to true, then only allow connections encrypted with SSL/TLS and
-	// with valid client certificates. If you want to enforce SSL/TLS
-	// without enforcing the requirement for valid client certificates, then
-	// use the `ssl_mode` flag instead of the legacy `require_ssl` flag.
+	// RequireSsl: Use `ssl_mode` instead for MySQL and PostgreSQL. SQL
+	// Server uses this flag. Whether SSL/TLS connections over IP are
+	// enforced. If set to false, then allow both non-SSL/non-TLS and
+	// SSL/TLS connections. For SSL/TLS connections, the client certificate
+	// won't be verified. If set to true, then only allow connections
+	// encrypted with SSL/TLS and with valid client certificates. If you
+	// want to enforce SSL/TLS without enforcing the requirement for valid
+	// client certificates, then use the `ssl_mode` flag instead of the
+	// legacy `require_ssl` flag.
 	RequireSsl bool `json:"requireSsl,omitempty"`
 
 	// SslMode: Specify how SSL/TLS is enforced in database connections.
-	// This flag is supported only for PostgreSQL. Use the legacy
-	// `require_ssl` flag for enforcing SSL/TLS in MySQL and SQL Server.
-	// But, for PostgreSQL, use the `ssl_mode` flag instead of the legacy
-	// `require_ssl` flag. To avoid the conflict between those flags in
-	// PostgreSQL, only the following value pairs are valid: *
+	// MySQL and PostgreSQL use the `ssl_mode` flag. If you must use the
+	// `require_ssl` flag for backward compatibility, then only the
+	// following value pairs are valid: *
 	// `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` *
 	// `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` *
 	// `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true`
-	// Note that the value of `ssl_mode` gets priority over the value of the
-	// legacy `require_ssl`. For example, for the pair
-	// `ssl_mode=ENCRYPTED_ONLY, require_ssl=false`, the
-	// `ssl_mode=ENCRYPTED_ONLY` means "only accepts SSL connection", while
-	// the `require_ssl=false` means "both non-SSL and SSL connections are
-	// allowed". The database respects `ssl_mode` in this case and only
-	// accepts SSL connections.
+	// The value of `ssl_mode` gets priority over the value of
+	// `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY`
+	// and `require_ssl=false`, the `ssl_mode=ENCRYPTED_ONLY` means only
+	// accept SSL connections, while the `require_ssl=false` means accept
+	// both non-SSL and SSL connections. MySQL and PostgreSQL databases
+	// respect `ssl_mode` in this case and accept only SSL connections. SQL
+	// Server uses the `require_ssl` flag. You can set the value for this
+	// flag to `true` or `false`.
 	//
 	// Possible values:
 	//   "SSL_MODE_UNSPECIFIED" - The SSL mode is unknown.
@@ -3048,7 +3060,13 @@ type IpConfiguration struct {
 	//   "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" - Only allow connections
 	// encrypted with SSL/TLS and with valid client certificates. When this
 	// value is used, the legacy `require_ssl` flag must be true or cleared
-	// to avoid the conflict between values of two flags.
+	// to avoid the conflict between values of two flags. PostgreSQL clients
+	// or users that connect using IAM database authentication must use
+	// either the [Cloud SQL Auth
+	// Proxy](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy)
+	// or [Cloud SQL
+	// Connectors](https://cloud.google.com/sql/docs/postgres/connect-connect
+	// ors) to enforce client identity verification.
 	SslMode string `json:"sslMode,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AllocatedIpRange") to
@@ -3743,8 +3761,8 @@ type PasswordValidationPolicy struct {
 	// numeric, and non-alphanumeric characters.
 	Complexity string `json:"complexity,omitempty"`
 
-	// DisallowCompromisedCredentials: Disallow credentials that have been
-	// previously compromised by a public data breach.
+	// DisallowCompromisedCredentials: This field is deprecated and will be
+	// removed in a future version of the API.
 	DisallowCompromisedCredentials bool `json:"disallowCompromisedCredentials,omitempty"`
 
 	// DisallowUsernameSubstring: Disallow username as a part of the
@@ -4357,6 +4375,25 @@ type SqlExternalSyncSettingError struct {
 	//   "TURN_ON_PITR_AFTER_PROMOTE" - This code instructs customers to
 	// turn on point-in-time recovery manually for the instance after
 	// promoting the Cloud SQL for PostgreSQL instance.
+	//   "INCOMPATIBLE_DATABASE_MINOR_VERSION" - The minor version of
+	// replica database is incompatible with the source.
+	//   "SOURCE_MAX_SUBSCRIPTIONS" - This warning message indicates that
+	// Cloud SQL uses the maximum number of subscriptions to migrate data
+	// from the source to the destination.
+	//   "UNABLE_TO_VERIFY_DEFINERS" - Unable to verify definers on the
+	// source for MySQL.
+	//   "SUBSCRIPTION_CALCULATION_STATUS" - If a time out occurs while the
+	// subscription counts are calculated, then this value is set to 1.
+	// Otherwise, this value is set to 2.
+	//   "PG_SUBSCRIPTION_COUNT" - Count of subscriptions needed to sync
+	// source data for PostgreSQL database.
+	//   "PG_SYNC_PARALLEL_LEVEL" - Final parallel level that is used to do
+	// migration.
+	//   "INSUFFICIENT_DISK_SIZE" - The disk size of the replica instance is
+	// smaller than the data size of the source instance.
+	//   "INSUFFICIENT_MACHINE_TIER" - The data size of the source instance
+	// is greater than 1 TB, the number of cores of the replica instance is
+	// less than 8, and the memory of the replica is less than 32 GB.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Detail") to
@@ -5249,9 +5286,9 @@ type User struct {
 	//   "BUILT_IN" - The database's built-in user type.
 	//   "CLOUD_IAM_USER" - Cloud IAM user.
 	//   "CLOUD_IAM_SERVICE_ACCOUNT" - Cloud IAM service account.
-	//   "CLOUD_IAM_GROUP" - Cloud IAM Group non-login user.
-	//   "CLOUD_IAM_GROUP_USER" - Cloud IAM Group login user.
-	//   "CLOUD_IAM_GROUP_SERVICE_ACCOUNT" - Cloud IAM Group service
+	//   "CLOUD_IAM_GROUP" - Cloud IAM group non-login user.
+	//   "CLOUD_IAM_GROUP_USER" - Cloud IAM group login user.
+	//   "CLOUD_IAM_GROUP_SERVICE_ACCOUNT" - Cloud IAM group service
 	// account.
 	Type string `json:"type,omitempty"`
 

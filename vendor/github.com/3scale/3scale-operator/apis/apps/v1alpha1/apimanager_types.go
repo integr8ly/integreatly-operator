@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/3scale/3scale-operator/apis/apps"
-	"github.com/3scale/3scale-operator/pkg/3scale/amp/product"
 	"github.com/3scale/3scale-operator/pkg/apispkg/common"
 	"github.com/3scale/3scale-operator/version"
 )
@@ -38,14 +37,14 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const (
-	ThreescaleVersionAnnotation = "apps.3scale.net/apimanager-threescale-version"
-	OperatorVersionAnnotation   = "apps.3scale.net/threescale-operator-version"
-	Default3scaleAppLabel       = "3scale-api-management"
+	ThreescaleVersionAnnotation     = "apps.3scale.net/apimanager-threescale-version"
+	OperatorVersionAnnotation       = "apps.3scale.net/threescale-operator-version"
+	Default3scaleAppLabel           = "3scale-api-management"
+	ThreescaleRequirementsConfirmed = "apps.3scale.net/apimanager-confirmed-requirements-version"
 )
 
 const (
 	defaultTenantName                  = "3scale"
-	defaultImageStreamImportInsecure   = false
 	defaultResourceRequirementsEnabled = true
 )
 
@@ -98,7 +97,7 @@ type APIManagerStatus struct {
 	// +patchStrategy=merge
 	Conditions common.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,2,rep,name=conditions"`
 
-	// APIManager Deployment Configs
+	// APIManager Deployments
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Deployments",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
 	Deployments olm.DeploymentStatus `json:"deployments"`
 }
@@ -130,11 +129,11 @@ func (s *APIManagerStatus) Equals(other *APIManagerStatus, logger logr.Logger) b
 // APIManager is the Schema for the apimanagers API
 // +kubebuilder:resource:path=apimanagers,scope=Namespaced
 // +operator-sdk:csv:customresourcedefinitions:displayName="APIManager"
-// +operator-sdk:csv:customresourcedefinitions:resources={{"DeploymentConfig","apps.openshift.io/v1"}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{"Deployment","apps/v1"}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{"ConfigMap","v1"}}
 // +operator-sdk:csv:customresourcedefinitions:resources={{"PersistentVolumeClaim","v1"}}
 // +operator-sdk:csv:customresourcedefinitions:resources={{"Service","v1"}}
 // +operator-sdk:csv:customresourcedefinitions:resources={{"Route","route.openshift.io/v1"}}
-// +operator-sdk:csv:customresourcedefinitions:resources={{"ImageStream","image.openshift.io/v1"}}
 type APIManager struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -149,7 +148,9 @@ type APIManager struct {
 }
 
 const (
-	APIManagerAvailableConditionType common.ConditionType = "Available"
+	APIManagerAvailableConditionType  common.ConditionType = "Available"
+	APIManagerWarningConditionType    common.ConditionType = "Warning"
+	APIManagerPreflightsConditionType common.ConditionType = "Preflights"
 )
 
 type APIManagerCommonSpec struct {
@@ -160,8 +161,6 @@ type APIManagerCommonSpec struct {
 	AppLabel *string `json:"appLabel,omitempty"`
 	// +optional
 	TenantName *string `json:"tenantName,omitempty"`
-	// +optional
-	ImageStreamTagImportInsecure *bool `json:"imageStreamTagImportInsecure,omitempty"`
 	// +optional
 	ResourceRequirementsEnabled *bool `json:"resourceRequirementsEnabled,omitempty"`
 	// +optional
@@ -222,10 +221,18 @@ type ApicastProductionSpec struct {
 	// CustomPolicies specifies an array of defined custome policies to be loaded
 	// +optional
 	CustomPolicies []CustomPolicySpec `json:"customPolicies,omitempty"`
+	// Hpa specifies an array of defined HPA values
+	//+optional
+	Hpa bool `json:"hpa,omitempty"`
 	// OpenTracing contains the OpenTracing integration configuration
 	// with APIcast in the production environment.
+	// Deprecated
 	// +optional
 	OpenTracing *APIcastOpenTracingSpec `json:"openTracing,omitempty"`
+	// OpenTelemetry contains the gateway instrumentation configuration
+	// with APIcast.
+	// +optional
+	OpenTelemetry *OpenTelemetrySpec `json:"openTelemetry,omitempty"`
 	// CustomEnvironments specifies an array of defined custom environments to be loaded
 	// +optional
 	CustomEnvironments []CustomEnvironmentSpec `json:"customEnvironments,omitempty"` // APICAST_ENVIRONMENT
@@ -290,8 +297,13 @@ type ApicastStagingSpec struct {
 	CustomPolicies []CustomPolicySpec `json:"customPolicies,omitempty"`
 	// OpenTracing contains the OpenTracing integration configuration
 	// with APIcast in the staging environment.
+	// Deprecated
 	// +optional
 	OpenTracing *APIcastOpenTracingSpec `json:"openTracing,omitempty"`
+	// OpenTelemetry contains the gateway instrumentation configuration
+	// with APIcast.
+	// +optional
+	OpenTelemetry *OpenTelemetrySpec `json:"openTelemetry,omitempty"`
 	// CustomEnvironments specifies an array of defined custom environments to be loaded
 	// +optional
 	CustomEnvironments []CustomEnvironmentSpec `json:"customEnvironments,omitempty"` // APICAST_ENVIRONMENT
@@ -360,7 +372,6 @@ type BackendSpec struct {
 	RedisLabels map[string]string `json:"redisLabels,omitempty"`
 	// +optional
 	RedisAnnotations map[string]string `json:"redisAnnotations,omitempty"`
-
 	// +optional
 	ListenerSpec *BackendListenerSpec `json:"listenerSpec,omitempty"`
 	// +optional
@@ -385,6 +396,9 @@ type BackendListenerSpec struct {
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
+	// Hpa specifies an array of defined HPA values
+	//+optional
+	Hpa bool `json:"hpa,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// +optional
@@ -404,6 +418,9 @@ type BackendWorkerSpec struct {
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
+	// Hpa specifies an array of defined HPA values
+	//+optional
+	Hpa bool `json:"hpa,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// +optional
@@ -815,6 +832,32 @@ type APIcastOpenTracingSpec struct {
 	TracingConfigSecretRef *v1.LocalObjectReference `json:"tracingConfigSecretRef,omitempty"`
 }
 
+type OpenTelemetrySpec struct {
+	// Enabled controls whether OpenTelemetry integration with APIcast is enabled.
+	// By default it is not enabled.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// TracingConfigSecretRef contains a Secret reference the Opentelemetry configuration.
+	// The configuration file specification is defined in the Nginx instrumentation library repo
+	// https://github.com/open-telemetry/opentelemetry-cpp-contrib/tree/main/instrumentation/nginx
+	// +optional
+	TracingConfigSecretRef *v1.LocalObjectReference `json:"tracingConfigSecretRef,omitempty"`
+
+	// TracingConfigSecretKey contains the key of the secret to select the configuration from.
+	// if unspecified, the first secret key in lexicographical order will be selected.
+	// +optional
+	TracingConfigSecretKey *string `json:"tracingConfigSecretKey,omitempty"`
+}
+
+func (a *APIManager) OpenTelemetryEnabledForStaging() bool {
+	return a.Spec.Apicast != nil && a.Spec.Apicast.StagingSpec != nil && a.Spec.Apicast.StagingSpec.OpenTelemetry != nil && a.Spec.Apicast.StagingSpec.OpenTelemetry.Enabled != nil && *a.Spec.Apicast.StagingSpec.OpenTelemetry.Enabled
+}
+
+func (a *APIManager) OpenTelemetryEnabledForProduction() bool {
+	return a.Spec.Apicast != nil && a.Spec.Apicast.ProductionSpec != nil && a.Spec.Apicast.ProductionSpec.OpenTelemetry != nil && a.Spec.Apicast.ProductionSpec.OpenTelemetry.Enabled != nil && *a.Spec.Apicast.ProductionSpec.OpenTelemetry.Enabled
+}
+
 // SetDefaults sets the default values for the APIManager spec and returns true if the spec was changed
 func (apimanager *APIManager) SetDefaults() (bool, error) {
 	var err error
@@ -844,6 +887,81 @@ func (apimanager *APIManager) SetDefaults() (bool, error) {
 	return changed, err
 }
 
+func (apimanager *APIManager) IsInFreshInstallationScenario() bool {
+	threescaleAnnotationFound := true
+
+	if _, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; ok {
+		threescaleAnnotationFound = false
+	}
+
+	return threescaleAnnotationFound
+}
+
+func (apimanager *APIManager) IsHealthyUpgradeScenario() bool {
+	threescaleAnnotationFound := false
+
+	// is the version annotation present
+	if _, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; ok {
+		threescaleAnnotationFound = true
+	}
+
+	// is the condition set to "available" = "true"
+	conditionAvailable := apimanager.IsExistingInstallationHealthy()
+
+	if threescaleAnnotationFound && conditionAvailable {
+		return true
+	}
+
+	return false
+}
+
+func (apimanager *APIManager) IsExistingInstallationHealthy() bool {
+	// Fetch ready condition
+	availableCondition := apimanager.Status.Conditions.GetCondition(APIManagerAvailableConditionType)
+
+	// return true if the ready condition is set to true
+	if availableCondition != nil && availableCondition.Status == v1.ConditionTrue {
+		return true
+	}
+
+	return false
+}
+
+func (apimanager *APIManager) RequirementsConfirmed(requirementsConfigMapResourceVersion string) bool {
+	if val, ok := apimanager.Annotations[ThreescaleRequirementsConfirmed]; ok && val == requirementsConfigMapResourceVersion {
+		return true
+	}
+
+	return false
+}
+
+func (apimanager *APIManager) RetrieveRHTVersion() string {
+	if val, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; ok && val != "" {
+		return val
+	}
+
+	return ""
+}
+
+func (apimanager *APIManager) IsMultiMinorHopDetected() (bool, error) {
+	var currentlyInstalledVersion string
+	var multiMinorHopDetected bool
+
+	if val, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; ok && val != "" {
+		currentlyInstalledVersion = val
+	}
+
+	if currentlyInstalledVersion != "" {
+		multiMinorHop, err := common.CompareMinorVersions(currentlyInstalledVersion, version.ThreescaleVersionMajorMinor())
+		if err != nil {
+			return true, err
+		}
+		multiMinorHopDetected = multiMinorHop
+	}
+
+	return multiMinorHopDetected, nil
+}
+
 func (apimanager *APIManager) setAPIManagerAnnotationsDefaults() bool {
 	changed := false
 
@@ -857,8 +975,8 @@ func (apimanager *APIManager) setAPIManagerAnnotationsDefaults() bool {
 		changed = true
 	}
 
-	if v, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; !ok || v != product.ThreescaleRelease {
-		apimanager.Annotations[ThreescaleVersionAnnotation] = product.ThreescaleRelease
+	if v, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; !ok || v != version.ThreescaleVersionMajorMinorPatch() {
+		apimanager.Annotations[ThreescaleVersionAnnotation] = version.ThreescaleVersionMajorMinorPatch()
 		changed = true
 	}
 
@@ -941,7 +1059,6 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 
 	tmpDefaultAppLabel := Default3scaleAppLabel
 	tmpDefaultTenantName := defaultTenantName
-	tmpDefaultImageStreamTagImportInsecure := defaultImageStreamImportInsecure
 	tmpDefaultResourceRequirementsEnabled := defaultResourceRequirementsEnabled
 
 	if spec.AppLabel == nil {
@@ -951,11 +1068,6 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 
 	if spec.TenantName == nil {
 		spec.TenantName = &tmpDefaultTenantName
-		changed = true
-	}
-
-	if spec.ImageStreamTagImportInsecure == nil {
-		spec.ImageStreamTagImportInsecure = &tmpDefaultImageStreamTagImportInsecure
 		changed = true
 	}
 
@@ -1240,6 +1352,17 @@ func (apimanager *APIManager) Validate() field.ErrorList {
 				duplicatePolicyMap[customPolicySpec.VersionName()] = 0
 			}
 
+			if apimanager.OpenTelemetryEnabledForProduction() {
+				openTelemetrySpec := apimanager.Spec.Apicast.ProductionSpec.OpenTelemetry
+				if openTelemetrySpec.TracingConfigSecretRef != nil {
+					if openTelemetrySpec.TracingConfigSecretRef.Name == "" {
+						apicastOpenTelemtryTracingFldPath := prodSpecFldPath.Child("openTelemetry")
+						customTracingConfigFldPath := apicastOpenTelemtryTracingFldPath.Child("tracingConfigSecretRef")
+						fieldErrors = append(fieldErrors, field.Invalid(customTracingConfigFldPath, openTelemetrySpec, "custom tracing library secret name is empty"))
+					}
+				}
+			}
+
 			if apimanager.IsAPIcastProductionOpenTracingEnabled() {
 				openTracingConfigSpec := apimanager.Spec.Apicast.ProductionSpec.OpenTracing
 				if openTracingConfigSpec.TracingConfigSecretRef != nil {
@@ -1310,6 +1433,17 @@ func (apimanager *APIManager) Validate() field.ErrorList {
 					break
 				}
 				duplicatePolicyMap[customPolicySpec.VersionName()] = 0
+			}
+
+			if apimanager.OpenTelemetryEnabledForStaging() {
+				openTelemetrySpec := apimanager.Spec.Apicast.StagingSpec.OpenTelemetry
+				if openTelemetrySpec.TracingConfigSecretRef != nil {
+					if openTelemetrySpec.TracingConfigSecretRef.Name == "" {
+						apicastStagingOpenTelemtryTracingFldPath := stagingSpecFldPath.Child("openTelemetry")
+						customTracingConfigFldPath := apicastStagingOpenTelemtryTracingFldPath.Child("tracingConfigSecretRef")
+						fieldErrors = append(fieldErrors, field.Invalid(customTracingConfigFldPath, openTelemetrySpec, "custom tracing library secret name is empty"))
+					}
+				}
 			}
 
 			if apimanager.IsAPIcastStagingOpenTracingEnabled() {

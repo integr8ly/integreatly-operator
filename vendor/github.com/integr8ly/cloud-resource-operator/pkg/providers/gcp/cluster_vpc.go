@@ -9,7 +9,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	utils "k8s.io/utils/pointer"
+	utils "k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -23,7 +23,7 @@ func getClusterVpc(ctx context.Context, c client.Client, networkClient gcpiface.
 	// get networks with a name that matches clusterID
 	networks, err := networkClient.List(ctx, &computepb.ListNetworksRequest{
 		Project: projectID,
-		Filter:  utils.String(fmt.Sprintf("name = \"%s-*\"", clusterID)),
+		Filter:  utils.To(fmt.Sprintf("name = \"%s-*\"", clusterID)),
 	})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting networks from gcp")

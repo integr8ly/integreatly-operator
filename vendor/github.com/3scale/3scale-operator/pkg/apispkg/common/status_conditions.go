@@ -168,6 +168,31 @@ func (conditions Conditions) GetCondition(t ConditionType) *Condition {
 	return nil
 }
 
+// GetConditionByMessage searches the set of conditions for the condition message with the given
+// ConditionType and returns it. If the matching condition is not found,
+// GetCondition returns nil.
+
+func (conditions Conditions) GetConditionByMessage(message string) *Condition {
+	for _, condition := range conditions {
+		if condition.Message == message {
+			return &condition
+		}
+	}
+	return nil
+}
+
+// GetConditionByReason searches the set of conditions for the condition reason with the given
+// ConditionType and returns it. If the matching condition is not found,
+// GetCondition returns nil.
+func (conditions Conditions) GetConditionByReason(reason ConditionReason) *Condition {
+	for _, condition := range conditions {
+		if condition.Reason == reason {
+			return &condition
+		}
+	}
+	return nil
+}
+
 // RemoveCondition removes the condition with the given ConditionType from
 // the conditions set. If no condition with that type is found, RemoveCondition
 // returns without performing any action. If the passed condition type is not
@@ -178,6 +203,40 @@ func (conditions *Conditions) RemoveCondition(t ConditionType) bool {
 	}
 	for i, condition := range *conditions {
 		if condition.Type == t {
+			*conditions = append((*conditions)[:i], (*conditions)[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveConditionByWarning removes the condition with the given Condition message from
+// the conditions set. If no condition with that type is found, RemoveCondition
+// returns without performing any action. If the passed condition type is not
+// found in the set of conditions, RemoveCondition returns false.
+func (conditions *Conditions) RemoveConditionByMessage(message string) bool {
+	if conditions == nil {
+		return false
+	}
+	for i, condition := range *conditions {
+		if condition.Message == message {
+			*conditions = append((*conditions)[:i], (*conditions)[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveConditionByReason removes the condition with the given Condition Reason from
+// the conditions set. If no condition with that type is found, RemoveConditionByReason
+// returns without performing any action. If the passed condition type is not
+// found in the set of conditions, RemoveConditionByReason returns false.
+func (conditions *Conditions) RemoveConditionByReason(reason ConditionReason) bool {
+	if conditions == nil {
+		return false
+	}
+	for i, condition := range *conditions {
+		if condition.Reason == reason {
 			*conditions = append((*conditions)[:i], (*conditions)[i+1:]...)
 			return true
 		}
