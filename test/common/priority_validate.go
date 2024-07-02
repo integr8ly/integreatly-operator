@@ -149,10 +149,6 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		}
 	}
 	for _, d := range priorityDeployments() {
-		// skip  the threescale-operator-controller-manager deployment
-		if strings.Contains(d.Name, "threescale-operator-controller-manager") {
-			continue
-		}
 		// skip the user-sso-operator deployment if multi-tenant installation
 		if d.Name == "rhsso-operator" && strings.HasSuffix(d.Namespace, "user-sso-operator") {
 			if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
