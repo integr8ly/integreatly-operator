@@ -158,7 +158,7 @@ var _ = AfterSuite(func() {
 })
 
 func waitForInstallationStageCompletion(k8sClient client.Client, retryInterval, timeout time.Duration, phase string) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, false, func(ctx context.Context) (done bool, err error) {
 		logrus.Info("Checking installation stage completion")
 
 		installation, err := common.GetRHMI(k8sClient, false)
@@ -189,7 +189,7 @@ func waitForProductDeployment(kubeclient kubernetes.Interface, product, deployme
 	}
 
 	logrus.Infof("namespace %s", namespace)
-	err := wait.Poll(retryInterval, deploymentTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), retryInterval, deploymentTimeout, false, func(ctx context.Context) (done bool, err error) {
 		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
 		if err != nil {
 			if k8serr.IsNotFound(err) {

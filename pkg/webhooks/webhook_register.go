@@ -139,16 +139,7 @@ func (awr AdmissionWebhookRegister) RegisterToBuilder(bldr *builder.WebhookBuild
 	return bldr
 }
 
-// RegisterToServer regsiters the webhook to the path of `awr`
-func (awr AdmissionWebhookRegister) RegisterToServer(scheme *runtime.Scheme, srv *webhook.Server) {
-	err := awr.Hook.InjectScheme(scheme)
-	if err != nil {
-		fmt.Printf("failed to inject scheme into the webhook with error: %v", err)
-		return
-	}
-
-	srv.Register(awr.Path, awr.Hook)
-}
+func (awr AdmissionWebhookRegister) RegisterToServer(scheme *runtime.Scheme, srv *webhook.Server) {}
 
 // GetReconciler creates a reconciler for awr's given Path and Type
 func (awr AdmissionWebhookRegister) GetReconciler(_ *runtime.Scheme) (WebhookReconciler, error) {

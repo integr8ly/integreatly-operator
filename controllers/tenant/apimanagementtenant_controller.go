@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
 	"time"
 )
@@ -119,7 +118,7 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.APIManagementTenant{}).
-		Watches(&source.Kind{Type: &v1alpha1.APIManagementTenant{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&v1alpha1.APIManagementTenant{}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
 

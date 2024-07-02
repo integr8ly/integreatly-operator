@@ -36,7 +36,7 @@ const (
 func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 	// poll to make sure the project is deleted from H30 and H29 before attempting to create again
 	project := &projectv1.Project{}
-	err := wait.Poll(tenantCreatedLoopTimeout, tenantCreatedTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), tenantCreatedLoopTimeout, tenantCreatedTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: projectNamespace, Namespace: projectNamespace}, project)
 		if err != nil {
 			return true, nil
@@ -118,7 +118,7 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get tenantID: %v", err)
 	}
 
-	err = wait.Poll(tenantCreatedLoopTimeout, tenantCreatedTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(goctx.TODO(), tenantCreatedLoopTimeout, tenantCreatedTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		state, err := getTenantState(threescaleClient, tenantId)
 
 		if err != nil {
@@ -188,7 +188,7 @@ func getTenantID(ctx *TestingContext) (int64, error) {
 	var tenantID int64
 	tenantCR := &threescalev1.Tenant{}
 
-	err := wait.Poll(time.Second*5, time.Minute*2, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), time.Second*5, time.Minute*2, false, func(ctx2 goctx.Context) (done bool, err error) {
 		err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: tenantCrName, Namespace: tenantCrNamespace}, tenantCR)
 		if err != nil {
 			return true, err

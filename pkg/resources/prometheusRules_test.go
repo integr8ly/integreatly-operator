@@ -100,9 +100,8 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
-					Name:              "rhoam",
-					Namespace:         "testing-namespaces-test",
-					DeletionTimestamp: now(),
+					Name:      "rhoam",
+					Namespace: "testing-namespaces-test",
 				},
 			},
 			Alerts: alerts,
@@ -163,9 +162,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Name:          "Phase failed deleting alerts due to error from getting alerts",
 			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					DeletionTimestamp: now(),
-				},
+				ObjectMeta: v1.ObjectMeta{},
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
@@ -180,9 +177,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Name:          "Phase failed deleting alerts due to error on deletion",
 			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					DeletionTimestamp: now(),
-				},
+				ObjectMeta: v1.ObjectMeta{},
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
@@ -330,11 +325,6 @@ var (
 		},
 	}
 )
-
-func now() *v1.Time {
-	now := v1.Now()
-	return &now
-}
 
 func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{})

@@ -212,7 +212,7 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 			return fmt.Errorf("error while creating namespace for testing user: %v", err)
 		}
 
-		err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, tenantReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 			// login to cluster
 			if !isClusterLoggedIn {
 				err = loginToCluster(t, tenantClient, rhmi.Spec.MasterURL, testUser)
@@ -307,7 +307,7 @@ func importQuarkusImage(ctx *TestingContext) error {
 
 func createQuarkusDeployment(ctx *TestingContext) error {
 	// Make sure that ImageStream exists before creating deployment
-	err := wait.Poll(pollingTime, resourceReadyTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollingTime, resourceReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		// Get the ImageStream successfully to exit the poll
 		imageStream := &imagev1.ImageStream{
 			ObjectMeta: metav1.ObjectMeta{
@@ -384,7 +384,7 @@ func createQuarkusDeployment(ctx *TestingContext) error {
 
 func createQuarkusService(ctx *TestingContext) error {
 	// Make sure that Deployment exists before creating service
-	err := wait.Poll(pollingTime, resourceReadyTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollingTime, resourceReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		// Get the Deployment successfully to exit the poll
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
@@ -446,7 +446,7 @@ func createQuarkusService(ctx *TestingContext) error {
 
 func createAndVerifyQuarkusRoute(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI) error {
 	// Make sure that Service exists before creating route
-	err := wait.Poll(pollingTime, resourceReadyTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollingTime, resourceReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		// Get the Service successfully to exit the poll
 		service := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
@@ -500,7 +500,7 @@ func createAndVerifyQuarkusRoute(ctx *TestingContext, rhmi *integreatlyv1alpha1.
 	}
 
 	// Verify that the new route was created successfully
-	err = wait.Poll(pollingTime, resourceReadyTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, resourceReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		route := &routev1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quarkusAppName,
@@ -811,7 +811,7 @@ func verifyApiIsWorking(t TestingTB, ctx *TestingContext, tsClient *portaclient.
 		return fmt.Errorf("failed to create http request during endpoint verification, error: %v", err)
 	}
 
-	err = wait.Poll(pollingTime, resourceReadyTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, resourceReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		// Send request, if response code isn't 200 then retry until timeout is reached
 		resp, err := httpClient.Do(req)
 		if err != nil {
@@ -898,7 +898,7 @@ func confirmTenantAccountNotAvailable(t TestingTB, ctx *TestingContext, routingD
 
 	host := fmt.Sprintf("https://%v-admin.%v", testUserForDeletion, routingDomain)
 
-	err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, tenantReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		err = is3scaleLoginFailed(t, host, tenantClient)
 		if err != nil {
 			return false, nil
@@ -933,7 +933,7 @@ func validateTestUser(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI, usern
 	if err != nil {
 		return "", "", fmt.Errorf("error generating random username")
 	}
-	err = wait.Poll(time.Second*1, userReadyTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*1, userReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		for _, account := range accounts.Items {
 			if *account.Element.OrgName == usernameToCheck {
 				usernameToCheck = fmt.Sprintf("%v%02v", DefaultTestUserName, rnd.Int64())
@@ -1023,7 +1023,7 @@ func createTestingUserNamespace(t TestingTB, user string, ctx *TestingContext) (
 
 func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, testUserNamespace string, ctx *TestingContext) error {
 	// Wait until User has finished being created before attempting to create an APIManagementTenant CR
-	err := wait.Poll(pollingTime, userReadyTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollingTime, userReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		// Get User successfully to exit the poll
 		user := &usersv1.User{
 			ObjectMeta: metav1.ObjectMeta{

@@ -41,6 +41,7 @@ type Application struct {
 	PlanID                  int64  `json:"plan_id"`
 	AppName                 string `json:"name"`
 	Description             string `json:"description"`
+	ApplicationId           string `json:"application_id"`
 	ExtraFields             string `json:"extra_fields"`
 	Error                   string `json:"error,omitempty"`
 }
@@ -53,6 +54,23 @@ type ApplicationElem struct {
 // ApplicationList - Holds a list of applications
 type ApplicationList struct {
 	Applications []ApplicationElem `json:"applications"`
+}
+
+// ApplicationKeysElem - Holds a list of applications keys
+type ApplicationKeysElem struct {
+	Keys []ApplicationKeyWrapper `json:"keys"`
+}
+
+// ApplicationKey - Holds a application key
+type ApplicationKeyWrapper struct {
+	Key ApplicationKey `json:"key"`
+}
+
+// ApplicationKey - Holds a application key
+type ApplicationKey struct {
+	Value     string `json:"value"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // ApplicationPlansList - Holds a list of application plans
@@ -358,6 +376,10 @@ type Account struct {
 	SupportEmail string `json:"support_email"`
 	AdminDomain  string `json:"admin_domain"`
 	Domain       string `json:"domain"`
+	// Optional info paramaters
+	FromEmail           string `json:"from_email,omitempty"`
+	FinanceSupportEmail string `json:"finance_support_email,omitempty"`
+	SiteAccessCode      string `json:"site_access_code,omitempty"`
 }
 
 type AccountElem struct {

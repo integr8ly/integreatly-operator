@@ -61,7 +61,8 @@ type deleteRHMIHandler struct {
 }
 
 var _ admission.Handler = &deleteRHMIHandler{}
-var _ admission.DecoderInjector = &deleteRHMIHandler{}
+
+//var _ admission.DecoderInjector = &deleteRHMIHandler{}
 
 func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme) admission.Handler {
 	return &deleteRHMIHandler{

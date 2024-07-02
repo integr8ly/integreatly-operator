@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"strings"
 	"testing"
 	"time"
@@ -11,7 +12,12 @@ import (
 
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	moqClient "github.com/integr8ly/integreatly-operator/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var (
+	fakeResourceVersion = "1000"
 )
 
 // TestAWSSnapshotPostgres tests that the AWSBackupExecutor successfully creates
@@ -25,7 +31,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := utils.NewTestClient(scheme)
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestPostgresSnapshotCr())
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -76,7 +82,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := utils.NewTestClient(scheme)
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestRedisSnapshotCR())
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
@@ -127,7 +133,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := utils.NewTestClient(scheme)
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestPostgresSnapshotCr())
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -186,7 +192,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := utils.NewTestClient(scheme)
+	client := moqClient.NewSigsClientMoqWithSchemeWithStatusSubresource(scheme, buildTestRedisSnapshotCR())
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
@@ -231,5 +237,25 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	errMsg := err.Error()
 	if !strings.Contains(errMsg, "MOCK FAIL") {
 		t.Errorf("Expected error message to contain RedisSnapshot status message, but got %s", errMsg)
+	}
+}
+
+func buildTestPostgresSnapshotCr() *v1alpha1.PostgresSnapshot {
+	return &v1alpha1.PostgresSnapshot{
+		ObjectMeta: controllerruntime.ObjectMeta{
+			Name:            "test",
+			Namespace:       "test",
+			ResourceVersion: fakeResourceVersion,
+		},
+	}
+}
+
+func buildTestRedisSnapshotCR() *v1alpha1.RedisSnapshot {
+	return &v1alpha1.RedisSnapshot{
+		ObjectMeta: controllerruntime.ObjectMeta{
+			Name:            "test",
+			Namespace:       "test",
+			ResourceVersion: fakeResourceVersion,
+		},
 	}
 }

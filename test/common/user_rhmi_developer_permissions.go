@@ -86,7 +86,7 @@ func verifyRHMIDeveloper3ScaleRoutePermissions(t TestingTB, client *resources.Op
 func testManagedApiDeveloperProjects(masterURL string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
 	// five minute time out needed to ensure users have been reconciled by RHMI operator
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), time.Second*5, time.Minute*5, true, func(ctx goctx.Context) (done bool, err error) {
 		rhmiDevfoundProjects, err = openshiftClient.ListProjects()
 		if err != nil {
 			return false, fmt.Errorf("error occured while getting user projects : %w", err)

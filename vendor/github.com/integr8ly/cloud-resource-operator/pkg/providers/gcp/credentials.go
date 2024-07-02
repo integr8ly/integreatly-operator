@@ -69,7 +69,7 @@ func (m *CredentialMinterCredentialManager) ReconcileCredentials(ctx context.Con
 	if err != nil {
 		return nil, nil, errorUtil.Wrapf(err, "failed to reconcile gcp credential request %s", name)
 	}
-	err = wait.PollImmediate(time.Second*5, timeOut, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, timeOut, true, func(ctx2 context.Context) (bool, error) {
 		if err = m.Client.Get(ctx, types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -81,12 +81,8 @@ func (m *CredentialMinterCredentialManager) ReconcileCredentials(ctx context.Con
 	if err != nil {
 		return nil, nil, errorUtil.Wrap(err, "timed out waiting for credential request to become provisioned")
 	}
-	codec, err := v1.NewCodec()
-	if err != nil {
-		return nil, nil, errorUtil.Wrap(err, "failed to create credentials codec")
-	}
 	gcpProvStatus := &v1.GCPProviderStatus{}
-	if err = codec.DecodeProviderSpec(cr.Status.ProviderStatus, gcpProvStatus); err != nil {
+	if err = v1.Codec.DecodeProviderSpec(cr.Status.ProviderStatus, gcpProvStatus); err != nil {
 		return nil, nil, errorUtil.Wrapf(err, "failed to decode credentials request %s", cr.Name)
 	}
 	gcpServiceAccountJson, err := m.reconcileGCPCredentials(ctx, cr)
@@ -102,11 +98,7 @@ func (m *CredentialMinterCredentialManager) ReconcileCredentials(ctx context.Con
 var _ CredentialManager = (*CredentialMinterCredentialManager)(nil)
 
 func (m *CredentialMinterCredentialManager) reconcileCredentialRequest(ctx context.Context, name string, ns string, roles []string) (*v1.CredentialsRequest, error) {
-	codec, err := v1.NewCodec()
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "failed to create provider codec")
-	}
-	providerSpec, err := codec.EncodeProviderSpec(&v1.GCPProviderSpec{
+	providerSpec, err := v1.Codec.EncodeProviderSpec(&v1.GCPProviderSpec{
 		TypeMeta: controllerruntime.TypeMeta{
 			Kind: "GCPProviderSpec",
 		},

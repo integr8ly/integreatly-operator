@@ -15,7 +15,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/timeofday"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utils "k8s.io/utils/pointer"
+	utils "k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -105,11 +105,11 @@ func (p *StrategyProvider) reconcilePostgresStrategy(config string, timeConfig *
 	}
 	hour := int64(timeConfig.MaintenanceStartTime.Time.Hour())
 	if postgresCreateConfig.Instance.Settings.MaintenanceWindow == nil ||
-		utils.Int64Deref(postgresCreateConfig.Instance.Settings.MaintenanceWindow.Day, -1) != day ||
-		utils.Int64Deref(postgresCreateConfig.Instance.Settings.MaintenanceWindow.Hour, -1) != hour {
+		utils.Deref(postgresCreateConfig.Instance.Settings.MaintenanceWindow.Day, -1) != day ||
+		utils.Deref(postgresCreateConfig.Instance.Settings.MaintenanceWindow.Hour, -1) != hour {
 		postgresCreateConfig.Instance.Settings.MaintenanceWindow = &gcpiface.MaintenanceWindow{
-			Day:  utils.Int64(day),
-			Hour: utils.Int64(hour),
+			Day:  utils.To(day),
+			Hour: utils.To(hour),
 		}
 	}
 

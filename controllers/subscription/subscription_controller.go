@@ -180,7 +180,7 @@ func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Req
 		// We need to get the latest InstallPlan to get the CSV in order to set the subscription's Config.Resources
 		// The Config.Resources field needs to be explicitly set because otherwise r.Update will silently set the Config to {} if it's not already set
 		latestInstallPlan := &operatorsv1alpha1.InstallPlan{}
-		err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+		err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, false, func(ctx context.Context) (done bool, err error) {
 			if subscription.Status.InstallPlanRef == nil {
 				log.Info("InstallPlanRef from Subscription is nil, trying again...")
 				return false, nil
@@ -251,7 +251,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
 	latestInstallPlan := &operatorsv1alpha1.InstallPlan{}
-	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx2 context.Context) (done bool, err error) {
 		// gets the subscription with the recreated installplan
 		err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
 		if err != nil {

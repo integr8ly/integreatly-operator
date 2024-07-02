@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"reflect"
 	"sort"
 	"time"
@@ -27,7 +28,6 @@ import (
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	utils "k8s.io/utils/pointer"
 )
 
 const (
@@ -477,10 +477,10 @@ func (p *PostgresProvider) buildCloudSQLCreateStrategy(ctx context.Context, pg *
 		instance.Settings.BackupConfiguration = &gcpiface.BackupConfiguration{}
 	}
 	if instance.Settings.BackupConfiguration.Enabled == nil {
-		instance.Settings.BackupConfiguration.Enabled = utils.Bool(defaultBackupConfigEnabled)
+		instance.Settings.BackupConfiguration.Enabled = ptr.To(defaultBackupConfigEnabled)
 	}
 	if instance.Settings.BackupConfiguration.PointInTimeRecoveryEnabled == nil {
-		instance.Settings.BackupConfiguration.PointInTimeRecoveryEnabled = utils.Bool(defaultPointInTimeRecoveryEnabled)
+		instance.Settings.BackupConfiguration.PointInTimeRecoveryEnabled = ptr.To(defaultPointInTimeRecoveryEnabled)
 	}
 	if instance.Settings.BackupConfiguration.BackupRetentionSettings == nil {
 		instance.Settings.BackupConfiguration.BackupRetentionSettings = &gcpiface.BackupRetentionSettings{}
@@ -495,13 +495,13 @@ func (p *PostgresProvider) buildCloudSQLCreateStrategy(ctx context.Context, pg *
 		instance.Settings.DataDiskSizeGb = defaultDataDiskSizeGb
 	}
 	if instance.Settings.DeletionProtectionEnabled == nil {
-		instance.Settings.DeletionProtectionEnabled = utils.Bool(defaultDeleteProtectionEnabled)
+		instance.Settings.DeletionProtectionEnabled = ptr.To(defaultDeleteProtectionEnabled)
 	}
 	if instance.Settings.IpConfiguration == nil {
 		instance.Settings.IpConfiguration = &gcpiface.IpConfiguration{}
 	}
 	if instance.Settings.IpConfiguration.Ipv4Enabled == nil {
-		instance.Settings.IpConfiguration.Ipv4Enabled = utils.Bool(defaultIPConfigIPV4Enabled)
+		instance.Settings.IpConfiguration.Ipv4Enabled = ptr.To(defaultIPConfigIPV4Enabled)
 	}
 	if instance.Settings.IpConfiguration.AllocatedIpRange == "" {
 		instance.Settings.IpConfiguration.AllocatedIpRange = address.GetName()
