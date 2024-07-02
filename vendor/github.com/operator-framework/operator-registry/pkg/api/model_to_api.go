@@ -52,13 +52,6 @@ func ConvertModelBundleToAPIBundle(b model.Bundle) (*Bundle, error) {
 		}
 	}
 
-	var deprecation *Deprecation
-	if b.Deprecation != nil {
-		deprecation = &Deprecation{
-			Message: b.Deprecation.Message,
-		}
-	}
-
 	apiDeps, err := convertModelPropertiesToAPIDependencies(b.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("convert model properties to api dependencies: %v", err)
@@ -78,7 +71,6 @@ func ConvertModelBundleToAPIBundle(b model.Bundle) (*Bundle, error) {
 		Skips:        b.Skips,
 		CsvJson:      csvJson,
 		Object:       b.Objects,
-		Deprecation:  deprecation,
 	}, nil
 }
 

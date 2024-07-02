@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -39,7 +40,7 @@ func (i *MockImage) unpack(dir string) error {
 		if err := os.MkdirAll(pathDir, 0777); err != nil {
 			return err
 		}
-		return os.WriteFile(path, data, 0666)
+		return ioutil.WriteFile(path, data, 0666)
 	})
 }
 

@@ -16,10 +16,6 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/property"
 )
 
-type Deprecation struct {
-	Message string `json:"message"`
-}
-
 func init() {
 	t := types.NewType("svg", "image/svg+xml")
 	filetype.AddMatcher(t, svg.Is)
@@ -48,7 +44,6 @@ type Package struct {
 	Icon           *Icon
 	DefaultChannel *Channel
 	Channels       map[string]*Channel
-	Deprecation    *Deprecation
 }
 
 func (m *Package) Validate() error {
@@ -89,17 +84,12 @@ func (m *Package) Validate() error {
 	if m.DefaultChannel != nil && !foundDefault {
 		result.subErrors = append(result.subErrors, fmt.Errorf("default channel %q not found in channels list", m.DefaultChannel.Name))
 	}
-
-	if err := m.Deprecation.Validate(); err != nil {
-		result.subErrors = append(result.subErrors, fmt.Errorf("invalid deprecation: %v", err))
-	}
-
 	return result.orNil()
 }
 
 type Icon struct {
-	Data      []byte `json:"base64data"`
-	MediaType string `json:"mediatype"`
+	Data      []byte
+	MediaType string
 }
 
 func (i *Icon) Validate() error {
@@ -141,10 +131,9 @@ func (i *Icon) validateData() error {
 }
 
 type Channel struct {
-	Package     *Package
-	Name        string
-	Bundles     map[string]*Bundle
-	Deprecation *Deprecation
+	Package *Package
+	Name    string
+	Bundles map[string]*Bundle
 	// NOTICE: The field Properties of the type Channel is for internal use only.
 	//   DO NOT use it for any public-facing functionalities.
 	//   This API is in alpha stage and it is subject to change.
@@ -217,11 +206,6 @@ func (c *Channel) Validate() error {
 			result.subErrors = append(result.subErrors, fmt.Errorf("bundle %q not correctly linked to parent channel", b.Name))
 		}
 	}
-
-	if err := c.Deprecation.Validate(); err != nil {
-		result.subErrors = append(result.subErrors, fmt.Errorf("invalid deprecation: %v", err))
-	}
-
 	return result.orNil()
 }
 
@@ -280,7 +264,6 @@ type Bundle struct {
 	SkipRange     string
 	Properties    []property.Property
 	RelatedImages []RelatedImage
-	Deprecation   *Deprecation
 
 	// These fields are present so that we can continue serving
 	// the GRPC API the way packageserver expects us to in a
@@ -333,10 +316,6 @@ func (b *Bundle) Validate() error {
 
 	if b.Image == "" && len(b.Objects) == 0 {
 		result.subErrors = append(result.subErrors, errors.New("bundle image must be set"))
-	}
-
-	if err := b.Deprecation.Validate(); err != nil {
-		result.subErrors = append(result.subErrors, fmt.Errorf("invalid deprecation: %v", err))
 	}
 
 	return result.orNil()
@@ -394,14 +373,4 @@ func (m Model) AddBundle(b Bundle) {
 	if p.DefaultChannel == nil {
 		p.DefaultChannel = b.Channel
 	}
-}
-
-func (d *Deprecation) Validate() error {
-	if d == nil {
-		return nil
-	}
-	if d.Message == "" {
-		return errors.New("message must be set")
-	}
-	return nil
 }

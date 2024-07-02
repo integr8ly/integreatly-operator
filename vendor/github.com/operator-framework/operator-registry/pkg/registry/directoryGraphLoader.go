@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -35,7 +36,7 @@ func (c csvs) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
 // NewPackageGraphLoaderFromDir takes the root directory of the package in the file system.
 func NewPackageGraphLoaderFromDir(packageDir string) (*DirGraphLoader, error) {
-	_, err := os.ReadDir(packageDir)
+	_, err := ioutil.ReadDir(packageDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading from %s directory, %v", packageDir, err)
 	}
@@ -70,7 +71,7 @@ func (g *DirGraphLoader) Generate() (*Package, error) {
 
 // loadBundleCsvPathMap loads the CsvNameAndReplaceMap and SortedCSVs in the Package Struct.
 func (g *DirGraphLoader) loadBundleCsvPathMap() error {
-	bundleDirs, err := os.ReadDir(g.PackageDir)
+	bundleDirs, err := ioutil.ReadDir(g.PackageDir)
 	if err != nil {
 		return fmt.Errorf("error reading from %s directory, %v", g.PackageDir, err)
 	}
@@ -155,7 +156,7 @@ func (g *DirGraphLoader) getChannelNodes(channelHeadCsv string) *map[BundleKey]m
 // parsePackageYAMLFile parses the *.package.yaml file and fills the information in Package including name,
 // defaultchannel, and head of all Channels. It returns parsing error if any.
 func (g *DirGraphLoader) parsePackageYAMLFile() (*Package, error) {
-	files, err := os.ReadDir(g.PackageDir)
+	files, err := ioutil.ReadDir(g.PackageDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading bundle parent directory, %v", err)
 	}

@@ -25,7 +25,7 @@ require (
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/operator-framework/api v0.21.0
 	github.com/operator-framework/operator-lifecycle-manager v0.26.0
-	github.com/operator-framework/operator-registry v1.36.0
+	github.com/operator-framework/operator-registry v1.30.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1
 	github.com/prometheus/client_golang v1.18.0
@@ -66,7 +66,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/distribution/reference v0.6.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -160,9 +159,3 @@ require (
 
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
-
-// Replaces for "image" and "libcontainer" are required to address CVEs Introduced through github.com/operator-framework/operator-registry@v1.36.0
-// Reminder: update the operator-registry and operator-lifecycle-manager on move to Go 1.21 and Go 1.22
-replace github.com/containers/image/v5 => github.com/containers/image/v5 v5.30.1
-
-replace github.com/opencontainers/runc/libcontainer => github.com/opencontainers/runc/libcontainer v1.1.12
