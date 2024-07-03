@@ -565,11 +565,11 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
                         value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
                       - name: RELATED_IMAGE_BACKEND_REDIS
-                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
+                        value: quay.io/integreatly/delorean:rhel8-redis-6_726bc80093a756d382024ac3e214b5dc3ed3dc2ee638f96e0fdead6b8fe2f612
                       - name: RELATED_IMAGE_SYSTEM_REDIS
-                        value: quay.io/integreatly/delorean:rhel8-redis-6_c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
+                        value: quay.io/integreatly/delorean:rhel8-redis-6_726bc80093a756d382024ac3e214b5dc3ed3dc2ee638f96e0fdead6b8fe2f612
                       - name: RELATED_IMAGE_SYSTEM_MYSQL
-                        value: quay.io/integreatly/delorean:rhel8-mysql-80_8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
+                        value: quay.io/integreatly/delorean:rhel8-mysql-80_8b101afa8d7d6ac8a7ff6fde5a8f75721d5f94d2d8ba8b347bffee1b6fc8087b
                       - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
                         value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
                       - name: RELATED_IMAGE_ZYNC_POSTGRESQL
@@ -1173,11 +1173,11 @@ spec:
       name: zync
     - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2
       name: system_memcached
-    - image: registry.redhat.io/rhel8/redis-6@sha256:c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
+    - image: registry.redhat.io/rhel8/redis-6@sha256:726bc80093a756d382024ac3e214b5dc3ed3dc2ee638f96e0fdead6b8fe2f612
       name: backend_redis
-    - image: registry.redhat.io/rhel8/redis-6@sha256:c4a98010f7dd5faec2047bb9803061704233a8efc930be2a02386ac16d062d86
+    - image: registry.redhat.io/rhel8/redis-6@sha256:726bc80093a756d382024ac3e214b5dc3ed3dc2ee638f96e0fdead6b8fe2f612
       name: system_redis
-    - image: registry.redhat.io/rhel8/mysql-80@sha256:8128c6eef59ec9bb13bbaf9b99ad4eea1a6bcb2b06ab89e8f5383a0e49fc0878
+    - image: registry.redhat.io/rhel8/mysql-80@sha256:8b101afa8d7d6ac8a7ff6fde5a8f75721d5f94d2d8ba8b347bffee1b6fc8087b
       name: system_mysql
     - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa
       name: system_postgresql
