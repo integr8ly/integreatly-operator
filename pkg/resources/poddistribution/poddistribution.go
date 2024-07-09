@@ -245,7 +245,7 @@ func forceRebalance(ctx context.Context, client k8sclient.Client, knn *KindNameS
 
 	deletePod(ctx, client, pods[0], knn.Namespace)
 	// The wait prevents version clash errors when updating the controller
-	err := wait.Poll(time.Second*5, time.Second*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Second*5, false, func(ctx2 context.Context) (done bool, err error) {
 		err = updatePodBalanceAttemptsOnKNN(ctx, client, knn)
 		return true, err
 	})

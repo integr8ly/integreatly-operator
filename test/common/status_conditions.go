@@ -32,7 +32,7 @@ func TestStatusConditions(t TestingTB, ctx *TestingContext) {
 func testInitialInstalledHealthyNotDegraded(t TestingTB, ctx *TestingContext) {
 	t.Log("testInstalledHealthyNotDegraded")
 
-	err := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 10*time.Minute, true, func(ctx2 context.Context) (done bool, err error) {
 		addonInstance, err := getAddonInstance(ctx)
 		if err != nil {
 			t.Logf("unable to get addon instance: %v", err)
@@ -80,7 +80,7 @@ func testNotHealthyAndDegraded(t TestingTB, ctx *TestingContext) {
 	// After this test - ensure status is back to normal before progressing to the next test as it could make it flaky
 	defer testInitialInstalledHealthyNotDegraded(t, ctx)
 
-	err := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 10*time.Minute, true, func(ctx2 context.Context) (done bool, err error) {
 		addonInstance, err := getAddonInstance(ctx)
 		if err != nil {
 			t.Logf("unable to get addon instance: %v", err)
@@ -125,7 +125,7 @@ func testHealthyAndDegraded(t TestingTB, ctx *TestingContext) {
 	// delete rhsso operator namespace - not a core component
 	deleteProject(t, ctx.Client, Marin3rOperatorNamespace)
 
-	err := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 10*time.Minute, true, func(ctx2 context.Context) (done bool, err error) {
 		addonInstance, err := getAddonInstance(ctx)
 		if err != nil {
 			t.Logf("unable to get addon instance: %v", err)

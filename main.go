@@ -19,12 +19,15 @@ package main
 import (
 	"flag"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"strings"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/controllers/status"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 
@@ -117,34 +120,30 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
+	// If a watch namespace is detected (i.e. operator is namespace scoped), then pass the NS to cache.Options.DefaultNamespaces
+	// If no watch namespace is detected (i.e. operator is cluster scoped), then pass an empty Cache object
+	// If sandbox then pass an empty Cache object
+	var managerCache = cache.Options{}
+	if watchNamespace != "" && !strings.Contains(watchNamespace, "sandbox") {
+		managerCache = cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				watchNamespace: {},
+			},
+		}
+	}
+
 	var mgr ctrl.Manager
-	if strings.Contains(watchNamespace, "sandbox") || watchNamespace == "" {
-		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-			Scheme:                 scheme,
-			MetricsBindAddress:     metricsAddr,
-			Port:                   9443,
-			HealthProbeBindAddress: probeAddr,
-			LeaderElection:         enableLeaderElection,
-			LeaderElectionID:       "28185cee.integreatly.org",
-		})
-		if err != nil {
-			setupLog.Error(err, "unable to start multitenant manager")
-			os.Exit(1)
-		}
-	} else {
-		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-			Scheme:                 scheme,
-			MetricsBindAddress:     metricsAddr,
-			Port:                   9443,
-			HealthProbeBindAddress: probeAddr,
-			LeaderElection:         enableLeaderElection,
-			LeaderElectionID:       "28185cee.integreatly.org",
-			Namespace:              watchNamespace,
-		})
-		if err != nil {
-			setupLog.Error(err, "unable to start singletenant manager")
-			os.Exit(1)
-		}
+	mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Cache:                  managerCache,
+		Scheme:                 scheme,
+		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "28185cee.integreatly.org",
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
 	}
 
 	if err = rhmicontroller.New(mgr).SetupWithManager(mgr); err != nil {
@@ -247,6 +246,8 @@ func main() {
 
 func setupWebhooks(mgr ctrl.Manager) error {
 
+	decoder := admission.NewDecoder(mgr.GetScheme())
+
 	// Delete webhook for the RHMI CR that uninstalls the operator if there
 	// are no finalizers left
 	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
@@ -259,7 +260,7 @@ func setupWebhooks(mgr ctrl.Manager) error {
 			Type: webhooks.ValidatingType,
 			Path: "/delete-rhmi",
 			Hook: &admission.Webhook{
-				Handler: addon.NewDeleteRHMIHandler(mgr.GetConfig(), mgr.GetScheme()),
+				Handler: addon.NewDeleteRHMIHandler(mgr.GetConfig(), mgr.GetScheme(), decoder),
 			},
 		},
 	})

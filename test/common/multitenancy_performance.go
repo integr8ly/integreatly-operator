@@ -61,7 +61,7 @@ func loginUsersToCluster(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1al
 			return fmt.Errorf("error while creating client for tenant: %v", err)
 		}
 		testUser := fmt.Sprintf("%v%02v", DefaultTestUserName, postfix)
-		err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, tenantReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 			// login to cluster
 			if !isClusterLoggedIn {
 				err = resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", rhmi.Spec.MasterURL),

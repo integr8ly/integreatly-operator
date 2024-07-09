@@ -181,7 +181,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 		t.Skip("Addon custom smtp values are not fully configured. This test is not ok to run.")
 	}
 
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		inst, err = GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Logf("failed to get RHOAM instance %v", err)
@@ -211,7 +211,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 	}
 
 	if !managed {
-		err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 			pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
 			if err != nil || len(pods.Items) == 0 {
 				t.Errorf("couldn't find pods: %v", err)
@@ -291,7 +291,7 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 		t.Skip("Addon custom smtp values are not partial configured. This test is not ok to run.")
 	}
 
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		inst, err = GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Logf("failed to get RHOAM instance %v", err)
@@ -361,7 +361,7 @@ func restartThreeScalePods(t TestingTB, ctx *TestingContext, inst *rhmiv1alpha1.
 }
 
 func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 
 		// get console master url
 		rhmi, err := GetRHMI(ctx.Client, true)
@@ -405,7 +405,7 @@ func removeNamespace(t TestingTB, ctx *TestingContext) error {
 
 func checkSMTPReconciliation(ctx *TestingContext, t TestingTB) error {
 	//Check that the smtp details have reconciled to the 3scale secret
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		threescaleSecret, err := get3scaleSecret(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get threescale secret %v", err)

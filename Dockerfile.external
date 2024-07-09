@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.19 AS builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.20 AS builder
 
 ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
 WORKDIR ${PKG}
@@ -28,14 +28,14 @@ COPY Makefile ./
 # compile test binary
 RUN make test/compile/functional
 
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi9/ubi:latest
 # Install chrome for tests
 COPY test-dependency/*.repo /etc/yum.repos.d/
 COPY build/bin/setup_external.sh ./setup_external.sh
 RUN dnf -y install google-chrome-stable && dnf clean all
 ENV WATCH_NAMESPACE=redhat-rhoam-operator
 RUN mkdir test-run-results && \
-    curl -Ls https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.12.28/openshift-client-linux.tar.gz | tar -zx && \
+    curl -Ls https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.14.28/openshift-client-linux.tar.gz | tar -zx && \
     mv oc /usr/local/bin
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test

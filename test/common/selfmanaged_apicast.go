@@ -212,7 +212,7 @@ func createApicastNamespace(ctx context.Context, client k8sclient.Client) error 
 		log.Error("Error create namespace "+apicastNamespace, err)
 		return err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, false, func(ctx2 context.Context) (done bool, err error) {
 		err = client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 		if err != nil {
 			log.Error("Error get namespace "+ns.Name, err)
@@ -288,7 +288,7 @@ func createAdminPortalCredentialsSecret(ctx context.Context, client k8sclient.Cl
 		log.Error("Error create adminportal-credentials Secret", err)
 		return err
 	}
-	err = wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, true, func(ctx2 context.Context) (bool, error) {
 		err = client.Get(ctx, k8sclient.ObjectKey{Name: adminPortalCredentialsSecret, Namespace: apicastNamespace}, secret)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
@@ -350,7 +350,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 		log.Error("Error create Operator Subscription in "+apicastNamespace+" namespace", err)
 		return err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx context.Context) (done bool, err error) {
 		err = client.Get(context.TODO(), k8sclient.ObjectKey{Name: subscription.Name, Namespace: subscription.Namespace}, subscription)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
@@ -450,7 +450,7 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 		log.Error("Error create Apicast Route", err)
 		return "", err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, true, func(ctx2 context.Context) (done bool, err error) {
 		err = client.Get(ctx, k8sclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route)
 		if err != nil {
 			return false, err
@@ -509,7 +509,7 @@ func validateDeploymentRequest(userKey, routeHost string) (int, error) {
 func validateDeployment(userKey, routeHost string) error {
 	log.Info("Validation of deployment")
 	responseCode := 0
-	err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, true, func(ctx context.Context) (done bool, err error) {
 		responseCode, err = validateDeploymentRequest(userKey, routeHost)
 		if err != nil {
 			return false, err
@@ -703,7 +703,7 @@ func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client, insta
 			return err
 		}
 		//wait for deletion of apicastNamespace
-		err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx2 context.Context) (done bool, err error) {
 			apiCastNsExists, err = checkApicastNamespaceExists(ctx, serverClient)
 			if err != nil {
 				return false, err
@@ -952,7 +952,7 @@ func getRequest(token3scale string, url string) ([]byte, error) {
 
 func waitApiCastDeploymentReady(testingCtx *TestingContext) error {
 	log.Info("Wait APIcast deployment ready")
-	err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, false, func(ctx context.Context) (done bool, err error) {
 		deployment, err := testingCtx.KubeClient.AppsV1().Deployments(apicastNamespace).Get(context.TODO(), apiExampleApicast, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
@@ -979,7 +979,7 @@ func customerLogin(t TestingTB, ctx *TestingContext, installation *integreatlyv1
 	if err != nil {
 		return err
 	}
-	err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), pollingTime, tenantReadyTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		err = resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", installation.Spec.MasterURL),
 			customerAdminUsername, TestingIdpPassword, httpClient, TestingIDPRealm, t)
 		if err != nil {
@@ -1060,7 +1060,7 @@ func serviceCreate(token3scale, url, name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, false, func(ctx context.Context) (done bool, err2 error) {
 		if resp.StatusCode != http.StatusCreated {
 			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
 		}
@@ -1115,7 +1115,7 @@ func backendUsageCreate(token3scale, url, serviceId, backendId string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, false, func(ctx context.Context) (done bool, err2 error) {
 		if resp.StatusCode != http.StatusCreated {
 			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
 		}
@@ -1176,7 +1176,7 @@ func applicationCreate(token3scale, url, accountId, planId, name, description, s
 	if err != nil {
 		return nil, err
 	}
-	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, false, func(ctx context.Context) (done bool, err2 error) {
 		if resp.StatusCode != http.StatusCreated {
 			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
 		}

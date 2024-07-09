@@ -2281,6 +2281,9 @@ func (c *RDS) CreateDBInstanceReadReplicaRequest(input *CreateDBInstanceReadRepl
 //     You attempted to create more tenant databases than are permitted in your
 //     Amazon Web Services account.
 //
+//   - ErrCodeCertificateNotFoundFault "CertificateNotFound"
+//     CertificateIdentifier doesn't refer to an existing certificate.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/rds-2014-10-31/CreateDBInstanceReadReplica
 func (c *RDS) CreateDBInstanceReadReplica(input *CreateDBInstanceReadReplicaInput) (*CreateDBInstanceReadReplicaOutput, error) {
 	req, out := c.CreateDBInstanceReadReplicaRequest(input)
@@ -13996,6 +13999,98 @@ func (c *RDS) ModifyGlobalClusterWithContext(ctx aws.Context, input *ModifyGloba
 	return out, req.Send()
 }
 
+const opModifyIntegration = "ModifyIntegration"
+
+// ModifyIntegrationRequest generates a "aws/request.Request" representing the
+// client's request for the ModifyIntegration operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See ModifyIntegration for more information on using the ModifyIntegration
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//	// Example sending a request using the ModifyIntegrationRequest method.
+//	req, resp := client.ModifyIntegrationRequest(params)
+//
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/rds-2014-10-31/ModifyIntegration
+func (c *RDS) ModifyIntegrationRequest(input *ModifyIntegrationInput) (req *request.Request, output *ModifyIntegrationOutput) {
+	op := &request.Operation{
+		Name:       opModifyIntegration,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &ModifyIntegrationInput{}
+	}
+
+	output = &ModifyIntegrationOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// ModifyIntegration API operation for Amazon Relational Database Service.
+//
+// Modifies a zero-ETL integration with Amazon Redshift.
+//
+// Currently, you can only modify integrations that have Aurora MySQL source
+// DB clusters. Integrations with Aurora PostgreSQL and RDS sources currently
+// don't support modifying the integration.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Relational Database Service's
+// API operation ModifyIntegration for usage and error information.
+//
+// Returned Error Codes:
+//
+//   - ErrCodeIntegrationNotFoundFault "IntegrationNotFoundFault"
+//     The specified integration could not be found.
+//
+//   - ErrCodeInvalidIntegrationStateFault "InvalidIntegrationStateFault"
+//     The integration is in an invalid state and can't perform the requested operation.
+//
+//   - ErrCodeIntegrationConflictOperationFault "IntegrationConflictOperationFault"
+//     A conflicting conditional operation is currently in progress against this
+//     resource. Typically occurs when there are multiple requests being made to
+//     the same resource at the same time, and these requests conflict with each
+//     other.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/rds-2014-10-31/ModifyIntegration
+func (c *RDS) ModifyIntegration(input *ModifyIntegrationInput) (*ModifyIntegrationOutput, error) {
+	req, out := c.ModifyIntegrationRequest(input)
+	return out, req.Send()
+}
+
+// ModifyIntegrationWithContext is the same as ModifyIntegration with the addition of
+// the ability to pass a context and additional request options.
+//
+// See ModifyIntegration for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *RDS) ModifyIntegrationWithContext(ctx aws.Context, input *ModifyIntegrationInput, opts ...request.Option) (*ModifyIntegrationOutput, error) {
+	req, out := c.ModifyIntegrationRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opModifyOptionGroup = "ModifyOptionGroup"
 
 // ModifyOptionGroupRequest generates a "aws/request.Request" representing the
@@ -16108,6 +16203,9 @@ func (c *RDS) RestoreDBInstanceFromDBSnapshotRequest(input *RestoreDBInstanceFro
 //   - ErrCodeDBClusterSnapshotNotFoundFault "DBClusterSnapshotNotFoundFault"
 //     DBClusterSnapshotIdentifier doesn't refer to an existing DB cluster snapshot.
 //
+//   - ErrCodeCertificateNotFoundFault "CertificateNotFound"
+//     CertificateIdentifier doesn't refer to an existing certificate.
+//
 //   - ErrCodeTenantDatabaseQuotaExceededFault "TenantDatabaseQuotaExceeded"
 //     You attempted to create more tenant databases than are permitted in your
 //     Amazon Web Services account.
@@ -16260,6 +16358,9 @@ func (c *RDS) RestoreDBInstanceFromS3Request(input *RestoreDBInstanceFromS3Input
 //   - ErrCodeNetworkTypeNotSupported "NetworkTypeNotSupported"
 //     The network type is invalid for the DB instance. Valid nework type values
 //     are IPV4 and DUAL.
+//
+//   - ErrCodeCertificateNotFoundFault "CertificateNotFound"
+//     CertificateIdentifier doesn't refer to an existing certificate.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/rds-2014-10-31/RestoreDBInstanceFromS3
 func (c *RDS) RestoreDBInstanceFromS3(input *RestoreDBInstanceFromS3Input) (*RestoreDBInstanceFromS3Output, error) {
@@ -16433,6 +16534,9 @@ func (c *RDS) RestoreDBInstanceToPointInTimeRequest(input *RestoreDBInstanceToPo
 //   - ErrCodeTenantDatabaseQuotaExceededFault "TenantDatabaseQuotaExceeded"
 //     You attempted to create more tenant databases than are permitted in your
 //     Amazon Web Services account.
+//
+//   - ErrCodeCertificateNotFoundFault "CertificateNotFound"
+//     CertificateIdentifier doesn't refer to an existing certificate.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/rds-2014-10-31/RestoreDBInstanceToPointInTime
 func (c *RDS) RestoreDBInstanceToPointInTime(input *RestoreDBInstanceToPointInTimeInput) (*RestoreDBInstanceToPointInTimeOutput, error) {
@@ -19534,6 +19638,15 @@ type ClusterPendingModifiedValues struct {
 	// The number of days for which automatic DB snapshots are retained.
 	BackupRetentionPeriod *int64 `type:"integer"`
 
+	// Returns the details of the DB instance’s server certificate.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CertificateDetails *CertificateDetails `type:"structure"`
+
 	// The DBClusterIdentifier value for the DB cluster.
 	DBClusterIdentifier *string `type:"string"`
 
@@ -19589,6 +19702,12 @@ func (s *ClusterPendingModifiedValues) SetAllocatedStorage(v int64) *ClusterPend
 // SetBackupRetentionPeriod sets the BackupRetentionPeriod field's value.
 func (s *ClusterPendingModifiedValues) SetBackupRetentionPeriod(v int64) *ClusterPendingModifiedValues {
 	s.BackupRetentionPeriod = &v
+	return s
+}
+
+// SetCertificateDetails sets the CertificateDetails field's value.
+func (s *ClusterPendingModifiedValues) SetCertificateDetails(v *CertificateDetails) *ClusterPendingModifiedValues {
+	s.CertificateDetails = v
 	return s
 }
 
@@ -21038,8 +21157,15 @@ type CreateCustomDBEngineVersionInput struct {
 	// An optional description of your CEV.
 	Description *string `min:"1" type:"string"`
 
-	// The database engine to use for your custom engine version (CEV). The only
-	// supported value is custom-oracle-ee.
+	// The database engine. RDS Custom for Oracle supports the following values:
+	//
+	//    * custom-oracle-ee
+	//
+	//    * custom-oracle-ee-cdb
+	//
+	//    * custom-oracle-se2
+	//
+	//    * custom-oracle-se2-cdb
 	//
 	// Engine is a required field
 	Engine *string `min:"1" type:"string" required:"true"`
@@ -21370,6 +21496,9 @@ type CreateCustomDBEngineVersionOutput struct {
 	// Amazon Redshift.
 	SupportsIntegrations *bool `type:"boolean"`
 
+	// Indicates whether the DB engine version supports Aurora Limitless Database.
+	SupportsLimitlessDatabase *bool `type:"boolean"`
+
 	// Indicates whether the DB engine version supports forwarding write operations
 	// from reader DB instances to the writer DB instance in the DB cluster. By
 	// default, write operations aren't allowed on reader DB instances.
@@ -21574,6 +21703,12 @@ func (s *CreateCustomDBEngineVersionOutput) SetSupportsGlobalDatabases(v bool) *
 // SetSupportsIntegrations sets the SupportsIntegrations field's value.
 func (s *CreateCustomDBEngineVersionOutput) SetSupportsIntegrations(v bool) *CreateCustomDBEngineVersionOutput {
 	s.SupportsIntegrations = &v
+	return s
+}
+
+// SetSupportsLimitlessDatabase sets the SupportsLimitlessDatabase field's value.
+func (s *CreateCustomDBEngineVersionOutput) SetSupportsLimitlessDatabase(v bool) *CreateCustomDBEngineVersionOutput {
+	s.SupportsLimitlessDatabase = &v
 	return s
 }
 
@@ -21904,6 +22039,15 @@ type CreateDBClusterInput struct {
 	//    * Must be a value from 1 to 35.
 	BackupRetentionPeriod *int64 `type:"integer"`
 
+	// The CA certificate identifier to use for the DB cluster's server certificate.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide.
+	//
+	// Valid for Cluster Type: Multi-AZ DB clusters
+	CACertificateIdentifier *string `type:"string"`
+
 	// The name of the character set (CharacterSet) to associate the DB cluster
 	// with.
 	//
@@ -21923,7 +22067,8 @@ type CreateDBClusterInput struct {
 	//
 	// Constraints:
 	//
-	//    * Must contain from 1 to 63 letters, numbers, or hyphens.
+	//    * Must contain from 1 to 63 (for Aurora DB clusters) or 1 to 52 (for Multi-AZ
+	//    DB clusters) letters, numbers, or hyphens.
 	//
 	//    * First character must be a letter.
 	//
@@ -22111,6 +22256,7 @@ type CreateDBClusterInput struct {
 	// The DB engine mode of the DB cluster, either provisioned or serverless.
 	//
 	// The serverless engine mode only applies for Aurora Serverless v1 DB clusters.
+	// Aurora Serverless v2 DB clusters use the provisioned engine mode.
 	//
 	// For information about limitations and requirements for Serverless DB clusters,
 	// see the following sections in the Amazon Aurora User Guide:
@@ -22540,7 +22686,7 @@ type CreateDBClusterInput struct {
 	//
 	//    * Aurora DB clusters - aurora | aurora-iopt1
 	//
-	//    * Multi-AZ DB clusters - io1
+	//    * Multi-AZ DB clusters - io1 | io2 | gp3
 	//
 	// Default:
 	//
@@ -22625,6 +22771,12 @@ func (s *CreateDBClusterInput) SetBacktrackWindow(v int64) *CreateDBClusterInput
 // SetBackupRetentionPeriod sets the BackupRetentionPeriod field's value.
 func (s *CreateDBClusterInput) SetBackupRetentionPeriod(v int64) *CreateDBClusterInput {
 	s.BackupRetentionPeriod = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *CreateDBClusterInput) SetCACertificateIdentifier(v string) *CreateDBClusterInput {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -23003,7 +23155,7 @@ type CreateDBClusterParameterGroupInput struct {
 	//
 	// RDS for PostgreSQL
 	//
-	// Example: postgres12
+	// Example: postgres13
 	//
 	// To list all of the available parameter group families for a DB engine, use
 	// the following command:
@@ -23274,16 +23426,17 @@ type CreateDBInstanceInput struct {
 	//    * General Purpose (SSD) storage (gp2, gp3): Must be an integer from 40
 	//    to 65536 for RDS Custom for Oracle, 16384 for RDS Custom for SQL Server.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 40 to 65536
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 40 to 65536
 	//    for RDS Custom for Oracle, 16384 for RDS Custom for SQL Server.
 	//
 	// RDS for Db2
 	//
 	// Constraints to the amount of storage for each storage type are the following:
 	//
-	//    * General Purpose (SSD) storage (gp3): Must be an integer from 20 to 64000.
+	//    * General Purpose (SSD) storage (gp3): Must be an integer from 20 to 65536.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 100 to 64000.
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 100 to
+	//    65536.
 	//
 	// RDS for MariaDB
 	//
@@ -23292,7 +23445,8 @@ type CreateDBInstanceInput struct {
 	//    * General Purpose (SSD) storage (gp2, gp3): Must be an integer from 20
 	//    to 65536.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 100 to 65536.
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 100 to
+	//    65536.
 	//
 	//    * Magnetic storage (standard): Must be an integer from 5 to 3072.
 	//
@@ -23303,7 +23457,8 @@ type CreateDBInstanceInput struct {
 	//    * General Purpose (SSD) storage (gp2, gp3): Must be an integer from 20
 	//    to 65536.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 100 to 65536.
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 100 to
+	//    65536.
 	//
 	//    * Magnetic storage (standard): Must be an integer from 5 to 3072.
 	//
@@ -23314,7 +23469,8 @@ type CreateDBInstanceInput struct {
 	//    * General Purpose (SSD) storage (gp2, gp3): Must be an integer from 20
 	//    to 65536.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 100 to 65536.
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 100 to
+	//    65536.
 	//
 	//    * Magnetic storage (standard): Must be an integer from 10 to 3072.
 	//
@@ -23325,7 +23481,8 @@ type CreateDBInstanceInput struct {
 	//    * General Purpose (SSD) storage (gp2, gp3): Must be an integer from 20
 	//    to 65536.
 	//
-	//    * Provisioned IOPS storage (io1): Must be an integer from 100 to 65536.
+	//    * Provisioned IOPS storage (io1, io2): Must be an integer from 100 to
+	//    65536.
 	//
 	//    * Magnetic storage (standard): Must be an integer from 5 to 3072.
 	//
@@ -23337,9 +23494,9 @@ type CreateDBInstanceInput struct {
 	//    Must be an integer from 20 to 16384. Web and Express editions: Must be
 	//    an integer from 20 to 16384.
 	//
-	//    * Provisioned IOPS storage (io1): Enterprise and Standard editions: Must
-	//    be an integer from 100 to 16384. Web and Express editions: Must be an
-	//    integer from 100 to 16384.
+	//    * Provisioned IOPS storage (io1, io2): Enterprise and Standard editions:
+	//    Must be an integer from 100 to 16384. Web and Express editions: Must be
+	//    an integer from 100 to 16384.
 	//
 	//    * Magnetic storage (standard): Enterprise and Standard editions: Must
 	//    be an integer from 20 to 1024. Web and Express editions: Must be an integer
@@ -23546,7 +23703,10 @@ type CreateDBInstanceInput struct {
 	// RDS for Db2
 	//
 	// The name of the database to create when the DB instance is created. If this
-	// parameter isn't specified, no database is created in the DB instance.
+	// parameter isn't specified, no database is created in the DB instance. In
+	// some cases, we recommend that you don't add a database name. For more information,
+	// see Additional considerations (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/db2-db-instance-prereqs.html#db2-prereqs-additional-considerations)
+	// in the Amazon RDS User Guide.
 	//
 	// Constraints:
 	//
@@ -23808,6 +23968,10 @@ type CreateDBInstanceInput struct {
 	//    * custom-oracle-ee (for RDS Custom for Oracle DB instances)
 	//
 	//    * custom-oracle-ee-cdb (for RDS Custom for Oracle DB instances)
+	//
+	//    * custom-oracle-se2 (for RDS Custom for Oracle DB instances)
+	//
+	//    * custom-oracle-se2-cdb (for RDS Custom for Oracle DB instances)
 	//
 	//    * custom-sqlserver-ee (for RDS Custom for SQL Server DB instances)
 	//
@@ -24298,12 +24462,13 @@ type CreateDBInstanceInput struct {
 
 	// The storage type to associate with the DB instance.
 	//
-	// If you specify io1 or gp3, you must also include a value for the Iops parameter.
+	// If you specify io1, io2, or gp3, you must also include a value for the Iops
+	// parameter.
 	//
 	// This setting doesn't apply to Amazon Aurora DB instances. Storage is managed
 	// by the DB cluster.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
 	// Default: io1, if the Iops parameter is specified. Otherwise, gp2.
 	StorageType *string `type:"string"`
@@ -24323,7 +24488,8 @@ type CreateDBInstanceInput struct {
 	TdeCredentialPassword *string `type:"string"`
 
 	// The time zone of the DB instance. The time zone parameter is currently supported
-	// only by Microsoft SQL Server (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_SQLServer.html#SQLServer.Concepts.General.TimeZone).
+	// only by RDS for Db2 (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/db2-time-zone)
+	// and RDS for SQL Server (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_SQLServer.html#SQLServer.Concepts.General.TimeZone).
 	Timezone *string `type:"string"`
 
 	// A list of Amazon EC2 VPC security groups to associate with this DB instance.
@@ -24806,6 +24972,17 @@ type CreateDBInstanceReadReplicaInput struct {
 	//
 	// Example: us-east-1d
 	AvailabilityZone *string `type:"string"`
+
+	// The CA certificate identifier to use for the read replica's server certificate.
+	//
+	// This setting doesn't apply to RDS Custom DB instances.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CACertificateIdentifier *string `type:"string"`
 
 	// Specifies whether to copy all tags from the read replica to snapshots of
 	// the read replica. By default, tags aren't copied.
@@ -25299,9 +25476,10 @@ type CreateDBInstanceReadReplicaInput struct {
 
 	// The storage type to associate with the read replica.
 	//
-	// If you specify io1 or gp3, you must also include a value for the Iops parameter.
+	// If you specify io1, io2, or gp3, you must also include a value for the Iops
+	// parameter.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
 	// Default: io1 if the Iops parameter is specified. Otherwise, gp2.
 	StorageType *string `type:"string"`
@@ -25375,6 +25553,12 @@ func (s *CreateDBInstanceReadReplicaInput) SetAutoMinorVersionUpgrade(v bool) *C
 // SetAvailabilityZone sets the AvailabilityZone field's value.
 func (s *CreateDBInstanceReadReplicaInput) SetAvailabilityZone(v string) *CreateDBInstanceReadReplicaInput {
 	s.AvailabilityZone = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *CreateDBInstanceReadReplicaInput) SetCACertificateIdentifier(v string) *CreateDBInstanceReadReplicaInput {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -26459,7 +26643,7 @@ type CreateDBShardGroupOutput struct {
 	DBClusterIdentifier *string `type:"string"`
 
 	// The name of the DB shard group.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// The Amazon Web Services Region-unique, immutable identifier for the DB shard
 	// group.
@@ -27158,6 +27342,15 @@ type CreateIntegrationInput struct {
 	// You can only include this parameter if you specify the KMSKeyId parameter.
 	AdditionalEncryptionContext map[string]*string `type:"map"`
 
+	// Data filtering options for the integration. For more information, see Data
+	// filtering for Aurora zero-ETL integrations with Amazon Redshift (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/zero-etl.filtering.html).
+	//
+	// Valid for: Integrations with Aurora MySQL source DB clusters only
+	DataFilter *string `min:"1" type:"string"`
+
+	// A description of the integration.
+	Description *string `type:"string"`
+
 	// The name of the integration.
 	//
 	// IntegrationName is a required field
@@ -27204,6 +27397,9 @@ func (s CreateIntegrationInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *CreateIntegrationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateIntegrationInput"}
+	if s.DataFilter != nil && len(*s.DataFilter) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DataFilter", 1))
+	}
 	if s.IntegrationName == nil {
 		invalidParams.Add(request.NewErrParamRequired("IntegrationName"))
 	}
@@ -27232,6 +27428,18 @@ func (s *CreateIntegrationInput) Validate() error {
 // SetAdditionalEncryptionContext sets the AdditionalEncryptionContext field's value.
 func (s *CreateIntegrationInput) SetAdditionalEncryptionContext(v map[string]*string) *CreateIntegrationInput {
 	s.AdditionalEncryptionContext = v
+	return s
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *CreateIntegrationInput) SetDataFilter(v string) *CreateIntegrationInput {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *CreateIntegrationInput) SetDescription(v string) *CreateIntegrationInput {
+	s.Description = &v
 	return s
 }
 
@@ -27277,6 +27485,13 @@ type CreateIntegrationOutput struct {
 	// The time when the integration was created, in Universal Coordinated Time
 	// (UTC).
 	CreateTime *time.Time `type:"timestamp"`
+
+	// Data filters for the integration. These filters determine which tables from
+	// the source database are sent to the target Amazon Redshift data warehouse.
+	DataFilter *string `min:"1" type:"string"`
+
+	// A description of the integration.
+	Description *string `type:"string"`
 
 	// Any errors associated with the integration.
 	Errors []*IntegrationError `locationNameList:"IntegrationError" type:"list"`
@@ -27332,6 +27547,18 @@ func (s *CreateIntegrationOutput) SetAdditionalEncryptionContext(v map[string]*s
 // SetCreateTime sets the CreateTime field's value.
 func (s *CreateIntegrationOutput) SetCreateTime(v time.Time) *CreateIntegrationOutput {
 	s.CreateTime = &v
+	return s
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *CreateIntegrationOutput) SetDataFilter(v string) *CreateIntegrationOutput {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *CreateIntegrationOutput) SetDescription(v string) *CreateIntegrationOutput {
+	s.Description = &v
 	return s
 }
 
@@ -27848,6 +28075,15 @@ type DBCluster struct {
 	// in the Amazon Aurora User Guide.
 	Capacity *int64 `type:"integer"`
 
+	// Returns the details of the DB instance’s server certificate.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CertificateDetails *CertificateDetails `type:"structure"`
+
 	// If present, specifies the name of the character set that this cluster is
 	// associated with.
 	CharacterSetName *string `type:"string"`
@@ -28151,6 +28387,12 @@ type DBCluster struct {
 	// Indicates whether the DB cluster is encrypted.
 	StorageEncrypted *bool `type:"boolean"`
 
+	// The storage throughput for the DB cluster. The throughput is automatically
+	// set based on the IOPS that you provision, and is not configurable.
+	//
+	// This setting is only for non-Aurora Multi-AZ DB clusters.
+	StorageThroughput *int64 `type:"integer"`
+
 	// The storage type associated with the DB cluster.
 	StorageType *string `type:"string"`
 
@@ -28261,6 +28503,12 @@ func (s *DBCluster) SetBackupRetentionPeriod(v int64) *DBCluster {
 // SetCapacity sets the Capacity field's value.
 func (s *DBCluster) SetCapacity(v int64) *DBCluster {
 	s.Capacity = &v
+	return s
+}
+
+// SetCertificateDetails sets the CertificateDetails field's value.
+func (s *DBCluster) SetCertificateDetails(v *CertificateDetails) *DBCluster {
+	s.CertificateDetails = v
 	return s
 }
 
@@ -28624,6 +28872,12 @@ func (s *DBCluster) SetStorageEncrypted(v bool) *DBCluster {
 	return s
 }
 
+// SetStorageThroughput sets the StorageThroughput field's value.
+func (s *DBCluster) SetStorageThroughput(v int64) *DBCluster {
+	s.StorageThroughput = &v
+	return s
+}
+
 // SetStorageType sets the StorageType field's value.
 func (s *DBCluster) SetStorageType(v string) *DBCluster {
 	s.StorageType = &v
@@ -28733,6 +28987,12 @@ type DBClusterAutomatedBackup struct {
 
 	// Indicates whether the source DB cluster is encrypted.
 	StorageEncrypted *bool `type:"boolean"`
+
+	// The storage throughput for the automated backup. The throughput is automatically
+	// set based on the IOPS that you provision, and is not configurable.
+	//
+	// This setting is only for non-Aurora Multi-AZ DB clusters.
+	StorageThroughput *int64 `type:"integer"`
 
 	// The storage type associated with the DB cluster.
 	//
@@ -28890,6 +29150,12 @@ func (s *DBClusterAutomatedBackup) SetStatus(v string) *DBClusterAutomatedBackup
 // SetStorageEncrypted sets the StorageEncrypted field's value.
 func (s *DBClusterAutomatedBackup) SetStorageEncrypted(v bool) *DBClusterAutomatedBackup {
 	s.StorageEncrypted = &v
+	return s
+}
+
+// SetStorageThroughput sets the StorageThroughput field's value.
+func (s *DBClusterAutomatedBackup) SetStorageThroughput(v int64) *DBClusterAutomatedBackup {
+	s.StorageThroughput = &v
 	return s
 }
 
@@ -29402,6 +29668,12 @@ type DBClusterSnapshot struct {
 	// Indicates whether the DB cluster snapshot is encrypted.
 	StorageEncrypted *bool `type:"boolean"`
 
+	// The storage throughput for the DB cluster snapshot. The throughput is automatically
+	// set based on the IOPS that you provision, and is not configurable.
+	//
+	// This setting is only for non-Aurora Multi-AZ DB clusters.
+	StorageThroughput *int64 `type:"integer"`
+
 	// The storage type associated with the DB cluster snapshot.
 	//
 	// This setting is only for Aurora DB clusters.
@@ -29562,6 +29834,12 @@ func (s *DBClusterSnapshot) SetStatus(v string) *DBClusterSnapshot {
 // SetStorageEncrypted sets the StorageEncrypted field's value.
 func (s *DBClusterSnapshot) SetStorageEncrypted(v bool) *DBClusterSnapshot {
 	s.StorageEncrypted = &v
+	return s
+}
+
+// SetStorageThroughput sets the StorageThroughput field's value.
+func (s *DBClusterSnapshot) SetStorageThroughput(v int64) *DBClusterSnapshot {
+	s.StorageThroughput = &v
 	return s
 }
 
@@ -29867,6 +30145,9 @@ type DBEngineVersion struct {
 	// Amazon Redshift.
 	SupportsIntegrations *bool `type:"boolean"`
 
+	// Indicates whether the DB engine version supports Aurora Limitless Database.
+	SupportsLimitlessDatabase *bool `type:"boolean"`
+
 	// Indicates whether the DB engine version supports forwarding write operations
 	// from reader DB instances to the writer DB instance in the DB cluster. By
 	// default, write operations aren't allowed on reader DB instances.
@@ -30071,6 +30352,12 @@ func (s *DBEngineVersion) SetSupportsGlobalDatabases(v bool) *DBEngineVersion {
 // SetSupportsIntegrations sets the SupportsIntegrations field's value.
 func (s *DBEngineVersion) SetSupportsIntegrations(v bool) *DBEngineVersion {
 	s.SupportsIntegrations = &v
+	return s
+}
+
+// SetSupportsLimitlessDatabase sets the SupportsLimitlessDatabase field's value.
+func (s *DBEngineVersion) SetSupportsLimitlessDatabase(v bool) *DBEngineVersion {
+	s.SupportsLimitlessDatabase = &v
 	return s
 }
 
@@ -30536,8 +30823,8 @@ type DBInstance struct {
 	TdeCredentialArn *string `type:"string"`
 
 	// The time zone of the DB instance. In most cases, the Timezone element is
-	// empty. Timezone content appears only for Microsoft SQL Server DB instances
-	// that were created with a time zone specified.
+	// empty. Timezone content appears only for RDS for Db2 and RDS for SQL Server
+	// DB instances that were created with a time zone specified.
 	Timezone *string `type:"string"`
 
 	// The list of Amazon EC2 VPC security groups that the DB instance belongs to.
@@ -32659,7 +32946,7 @@ type DBShardGroup struct {
 	DBClusterIdentifier *string `type:"string"`
 
 	// The name of the DB shard group.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// The Amazon Web Services Region-unique, immutable identifier for the DB shard
 	// group.
@@ -33589,8 +33876,15 @@ func (s *DeleteBlueGreenDeploymentOutput) SetBlueGreenDeployment(v *BlueGreenDep
 type DeleteCustomDBEngineVersionInput struct {
 	_ struct{} `type:"structure"`
 
-	// The database engine. The only supported engines are custom-oracle-ee and
-	// custom-oracle-ee-cdb.
+	// The database engine. RDS Custom for Oracle supports the following values:
+	//
+	//    * custom-oracle-ee
+	//
+	//    * custom-oracle-ee-cdb
+	//
+	//    * custom-oracle-se2
+	//
+	//    * custom-oracle-se2-cdb
 	//
 	// Engine is a required field
 	Engine *string `min:"1" type:"string" required:"true"`
@@ -33777,6 +34071,9 @@ type DeleteCustomDBEngineVersionOutput struct {
 	// Indicates whether the DB engine version supports zero-ETL integrations with
 	// Amazon Redshift.
 	SupportsIntegrations *bool `type:"boolean"`
+
+	// Indicates whether the DB engine version supports Aurora Limitless Database.
+	SupportsLimitlessDatabase *bool `type:"boolean"`
 
 	// Indicates whether the DB engine version supports forwarding write operations
 	// from reader DB instances to the writer DB instance in the DB cluster. By
@@ -33982,6 +34279,12 @@ func (s *DeleteCustomDBEngineVersionOutput) SetSupportsGlobalDatabases(v bool) *
 // SetSupportsIntegrations sets the SupportsIntegrations field's value.
 func (s *DeleteCustomDBEngineVersionOutput) SetSupportsIntegrations(v bool) *DeleteCustomDBEngineVersionOutput {
 	s.SupportsIntegrations = &v
+	return s
+}
+
+// SetSupportsLimitlessDatabase sets the SupportsLimitlessDatabase field's value.
+func (s *DeleteCustomDBEngineVersionOutput) SetSupportsLimitlessDatabase(v bool) *DeleteCustomDBEngineVersionOutput {
+	s.SupportsLimitlessDatabase = &v
 	return s
 }
 
@@ -35134,7 +35437,7 @@ type DeleteDBShardGroupInput struct {
 	// Teh name of the DB shard group to delete.
 	//
 	// DBShardGroupIdentifier is a required field
-	DBShardGroupIdentifier *string `type:"string" required:"true"`
+	DBShardGroupIdentifier *string `min:"1" type:"string" required:"true"`
 }
 
 // String returns the string representation.
@@ -35160,6 +35463,9 @@ func (s *DeleteDBShardGroupInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteDBShardGroupInput"}
 	if s.DBShardGroupIdentifier == nil {
 		invalidParams.Add(request.NewErrParamRequired("DBShardGroupIdentifier"))
+	}
+	if s.DBShardGroupIdentifier != nil && len(*s.DBShardGroupIdentifier) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DBShardGroupIdentifier", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -35194,7 +35500,7 @@ type DeleteDBShardGroupOutput struct {
 	DBClusterIdentifier *string `type:"string"`
 
 	// The name of the DB shard group.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// The Amazon Web Services Region-unique, immutable identifier for the DB shard
 	// group.
@@ -35667,6 +35973,13 @@ type DeleteIntegrationOutput struct {
 	// (UTC).
 	CreateTime *time.Time `type:"timestamp"`
 
+	// Data filters for the integration. These filters determine which tables from
+	// the source database are sent to the target Amazon Redshift data warehouse.
+	DataFilter *string `min:"1" type:"string"`
+
+	// A description of the integration.
+	Description *string `type:"string"`
+
 	// Any errors associated with the integration.
 	Errors []*IntegrationError `locationNameList:"IntegrationError" type:"list"`
 
@@ -35721,6 +36034,18 @@ func (s *DeleteIntegrationOutput) SetAdditionalEncryptionContext(v map[string]*s
 // SetCreateTime sets the CreateTime field's value.
 func (s *DeleteIntegrationOutput) SetCreateTime(v time.Time) *DeleteIntegrationOutput {
 	s.CreateTime = &v
+	return s
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *DeleteIntegrationOutput) SetDataFilter(v string) *DeleteIntegrationOutput {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *DeleteIntegrationOutput) SetDescription(v string) *DeleteIntegrationOutput {
+	s.Description = &v
 	return s
 }
 
@@ -37687,6 +38012,12 @@ type DescribeDBEngineVersionsInput struct {
 	//    * aurora-postgresql
 	//
 	//    * custom-oracle-ee
+	//
+	//    * custom-oracle-ee-cdb
+	//
+	//    * custom-oracle-se2
+	//
+	//    * custom-oracle-se2-cdb
 	//
 	//    * db2-ae
 	//
@@ -39671,7 +40002,7 @@ type DescribeDBShardGroupsInput struct {
 	// Constraints:
 	//
 	//    * If supplied, must match an existing DB shard group identifier.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// A filter that specifies one or more DB shard groups to describe.
 	Filters []*Filter `locationNameList:"Filter" type:"list"`
@@ -39712,6 +40043,9 @@ func (s DescribeDBShardGroupsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DescribeDBShardGroupsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DescribeDBShardGroupsInput"}
+	if s.DBShardGroupIdentifier != nil && len(*s.DBShardGroupIdentifier) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DBShardGroupIdentifier", 1))
+	}
 	if s.MaxRecords != nil && *s.MaxRecords < 20 {
 		invalidParams.Add(request.NewErrParamMinValue("MaxRecords", 20))
 	}
@@ -40599,6 +40933,8 @@ type DescribeEngineDefaultParametersInput struct {
 	//
 	//    * custom-oracle-ee-19
 	//
+	//    * custom-oracle-ee-cdb-19
+	//
 	//    * db2-ae
 	//
 	//    * db2-se
@@ -41404,7 +41740,14 @@ func (s *DescribeExportTasksOutput) SetMarker(v string) *DescribeExportTasksOutp
 type DescribeGlobalClustersInput struct {
 	_ struct{} `type:"structure"`
 
-	// This parameter isn't currently supported.
+	// A filter that specifies one or more global database clusters to describe.
+	// This parameter is case-sensitive.
+	//
+	// Currently, the only supported filter is region.
+	//
+	// If used, the request returns information about any global cluster with at
+	// least one member (primary or secondary) in the specified Amazon Web Services
+	// Regions.
 	Filters []*Filter `locationNameList:"Filter" type:"list"`
 
 	// The user-supplied DB cluster identifier. If this parameter is specified,
@@ -42032,7 +42375,7 @@ type DescribeOrderableDBInstanceOptionsInput struct {
 	// class.
 	DBInstanceClass *string `type:"string"`
 
-	// The name of the engine to describe DB instance options for.
+	// The name of the database engine to describe DB instance options for.
 	//
 	// Valid Values:
 	//
@@ -42041,6 +42384,12 @@ type DescribeOrderableDBInstanceOptionsInput struct {
 	//    * aurora-postgresql
 	//
 	//    * custom-oracle-ee
+	//
+	//    * custom-oracle-ee-cdb
+	//
+	//    * custom-oracle-se2
+	//
+	//    * custom-oracle-se2-cdb
 	//
 	//    * db2-ae
 	//
@@ -42094,7 +42443,7 @@ type DescribeOrderableDBInstanceOptionsInput struct {
 	//
 	// Default: 100
 	//
-	// Constraints: Minimum 20, maximum 10000.
+	// Constraints: Minimum 20, maximum 1000.
 	MaxRecords *int64 `type:"integer"`
 
 	// Specifies whether to show only VPC or non-VPC offerings. RDS Custom supports
@@ -44625,6 +44974,8 @@ func (s *FailoverState) SetToDbClusterArn(v string) *FailoverState {
 //
 //   - DescribeDBRecommendations
 //
+//   - DescribeDBShardGroups
+//
 //   - DescribePendingMaintenanceActions
 type Filter struct {
 	_ struct{} `type:"structure"`
@@ -44942,6 +45293,13 @@ type Integration struct {
 	// (UTC).
 	CreateTime *time.Time `type:"timestamp"`
 
+	// Data filters for the integration. These filters determine which tables from
+	// the source database are sent to the target Amazon Redshift data warehouse.
+	DataFilter *string `min:"1" type:"string"`
+
+	// A description of the integration.
+	Description *string `type:"string"`
+
 	// Any errors associated with the integration.
 	Errors []*IntegrationError `locationNameList:"IntegrationError" type:"list"`
 
@@ -44996,6 +45354,18 @@ func (s *Integration) SetAdditionalEncryptionContext(v map[string]*string) *Inte
 // SetCreateTime sets the CreateTime field's value.
 func (s *Integration) SetCreateTime(v time.Time) *Integration {
 	s.CreateTime = &v
+	return s
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *Integration) SetDataFilter(v string) *Integration {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *Integration) SetDescription(v string) *Integration {
+	s.Description = &v
 	return s
 }
 
@@ -45523,7 +45893,7 @@ type ModifyActivityStreamInput struct {
 	AuditPolicyState *string `type:"string" enum:"AuditPolicyState"`
 
 	// The Amazon Resource Name (ARN) of the RDS for Oracle or Microsoft SQL Server
-	// DB instance. For example, arn:aws:rds:us-east-1:12345667890:instance:my-orcl-db.
+	// DB instance. For example, arn:aws:rds:us-east-1:12345667890:db:my-orcl-db.
 	ResourceArn *string `type:"string"`
 }
 
@@ -45894,7 +46264,15 @@ type ModifyCustomDBEngineVersionInput struct {
 	// An optional description of your CEV.
 	Description *string `min:"1" type:"string"`
 
-	// The DB engine. The only supported values are custom-oracle-ee and custom-oracle-ee-cdb.
+	// The database engine. RDS Custom for Oracle supports the following values:
+	//
+	//    * custom-oracle-ee
+	//
+	//    * custom-oracle-ee-cdb
+	//
+	//    * custom-oracle-se2
+	//
+	//    * custom-oracle-se2-cdb
 	//
 	// Engine is a required field
 	Engine *string `min:"1" type:"string" required:"true"`
@@ -46116,6 +46494,9 @@ type ModifyCustomDBEngineVersionOutput struct {
 	// Amazon Redshift.
 	SupportsIntegrations *bool `type:"boolean"`
 
+	// Indicates whether the DB engine version supports Aurora Limitless Database.
+	SupportsLimitlessDatabase *bool `type:"boolean"`
+
 	// Indicates whether the DB engine version supports forwarding write operations
 	// from reader DB instances to the writer DB instance in the DB cluster. By
 	// default, write operations aren't allowed on reader DB instances.
@@ -46320,6 +46701,12 @@ func (s *ModifyCustomDBEngineVersionOutput) SetSupportsGlobalDatabases(v bool) *
 // SetSupportsIntegrations sets the SupportsIntegrations field's value.
 func (s *ModifyCustomDBEngineVersionOutput) SetSupportsIntegrations(v bool) *ModifyCustomDBEngineVersionOutput {
 	s.SupportsIntegrations = &v
+	return s
+}
+
+// SetSupportsLimitlessDatabase sets the SupportsLimitlessDatabase field's value.
+func (s *ModifyCustomDBEngineVersionOutput) SetSupportsLimitlessDatabase(v bool) *ModifyCustomDBEngineVersionOutput {
+	s.SupportsLimitlessDatabase = &v
 	return s
 }
 
@@ -46650,6 +47037,15 @@ type ModifyDBClusterInput struct {
 	//
 	//    * Must be a value from 1 to 35.
 	BackupRetentionPeriod *int64 `type:"integer"`
+
+	// The CA certificate identifier to use for the DB cluster's server certificate.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide.
+	//
+	// Valid for Cluster Type: Multi-AZ DB clusters
+	CACertificateIdentifier *string `type:"string"`
 
 	// The configuration setting for the log types to be enabled for export to CloudWatch
 	// Logs for a specific DB cluster.
@@ -47128,7 +47524,7 @@ type ModifyDBClusterInput struct {
 	//
 	//    * Aurora DB clusters - aurora | aurora-iopt1
 	//
-	//    * Multi-AZ DB clusters - io1
+	//    * Multi-AZ DB clusters - io1 | io2 | gp3
 	//
 	// Default:
 	//
@@ -47222,6 +47618,12 @@ func (s *ModifyDBClusterInput) SetBacktrackWindow(v int64) *ModifyDBClusterInput
 // SetBackupRetentionPeriod sets the BackupRetentionPeriod field's value.
 func (s *ModifyDBClusterInput) SetBackupRetentionPeriod(v int64) *ModifyDBClusterInput {
 	s.BackupRetentionPeriod = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *ModifyDBClusterInput) SetCACertificateIdentifier(v string) *ModifyDBClusterInput {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -47708,6 +48110,12 @@ type ModifyDBInstanceInput struct {
 	// so that they are 10% greater than the current value.
 	//
 	// For the valid values for allocated storage for each engine, see CreateDBInstance.
+	//
+	// Constraints:
+	//
+	//    * When you increase the allocated storage for a DB instance that uses
+	//    Provisioned IOPS (gp3, io1, or io2 storage type), you must also specify
+	//    the Iops parameter. You can use the current value for Iops.
 	AllocatedStorage *int64 `type:"integer"`
 
 	// Specifies whether major version upgrades are allowed. Changing this parameter
@@ -47951,7 +48359,7 @@ type ModifyDBInstanceInput struct {
 	// Changing the subnet group causes an outage during the change. The change
 	// is applied during the next maintenance window, unless you enable ApplyImmediately.
 	//
-	// This parameter doesn't apply to RDS Custom DB instances.
+	// This setting doesn't apply to RDS Custom DB instances.
 	//
 	// Constraints:
 	//
@@ -47967,6 +48375,11 @@ type ModifyDBInstanceInput struct {
 	// can't be deleted when deletion protection is enabled. By default, deletion
 	// protection isn't enabled. For more information, see Deleting a DB Instance
 	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_DeleteInstance.html).
+	//
+	// This setting doesn't apply to Amazon Aurora DB instances. You can enable
+	// or disable deletion protection for the DB cluster. For more information,
+	// see ModifyDBCluster. DB instances in a DB cluster can be deleted even when
+	// deletion protection is enabled for the DB cluster.
 	DeletionProtection *bool `type:"boolean"`
 
 	// Specifies whether to remove the DB instance from the Active Directory domain.
@@ -48147,6 +48560,9 @@ type ModifyDBInstanceInput struct {
 	//    - The value supplied must be at least 10% greater than the current value.
 	//    Values that are not at least 10% greater than the existing value are rounded
 	//    up so that they are 10% greater than the current value.
+	//
+	//    * When you increase the Provisioned IOPS, you must also specify the AllocatedStorage
+	//    parameter. You can use the current value for AllocatedStorage.
 	//
 	// Default: Uses existing setting
 	Iops *int64 `type:"integer"`
@@ -48546,8 +48962,8 @@ type ModifyDBInstanceInput struct {
 
 	// The storage type to associate with the DB instance.
 	//
-	// If you specify Provisioned IOPS (io1), you must also include a value for
-	// the Iops parameter.
+	// If you specify io1, io2, or gp3 you must also include a value for the Iops
+	// parameter.
 	//
 	// If you choose to migrate your DB instance from using standard storage to
 	// using Provisioned IOPS, or from using Provisioned IOPS to using standard
@@ -48562,7 +48978,7 @@ type ModifyDBInstanceInput struct {
 	// modifying the instance, rebooting the instance, deleting the instance, creating
 	// a read replica for the instance, and creating a DB snapshot of the instance.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
 	// Default: io1, if the Iops parameter is specified. Otherwise, gp2.
 	StorageType *string `type:"string"`
@@ -49615,7 +50031,7 @@ type ModifyDBShardGroupInput struct {
 	// The name of the DB shard group to modify.
 	//
 	// DBShardGroupIdentifier is a required field
-	DBShardGroupIdentifier *string `type:"string" required:"true"`
+	DBShardGroupIdentifier *string `min:"1" type:"string" required:"true"`
 
 	// The maximum capacity of the DB shard group in Aurora capacity units (ACUs).
 	MaxACU *float64 `type:"double"`
@@ -49644,6 +50060,9 @@ func (s *ModifyDBShardGroupInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ModifyDBShardGroupInput"}
 	if s.DBShardGroupIdentifier == nil {
 		invalidParams.Add(request.NewErrParamRequired("DBShardGroupIdentifier"))
+	}
+	if s.DBShardGroupIdentifier != nil && len(*s.DBShardGroupIdentifier) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DBShardGroupIdentifier", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -49684,7 +50103,7 @@ type ModifyDBShardGroupOutput struct {
 	DBClusterIdentifier *string `type:"string"`
 
 	// The name of the DB shard group.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// The Amazon Web Services Region-unique, immutable identifier for the DB shard
 	// group.
@@ -50415,6 +50834,226 @@ func (s ModifyGlobalClusterOutput) GoString() string {
 // SetGlobalCluster sets the GlobalCluster field's value.
 func (s *ModifyGlobalClusterOutput) SetGlobalCluster(v *GlobalCluster) *ModifyGlobalClusterOutput {
 	s.GlobalCluster = v
+	return s
+}
+
+type ModifyIntegrationInput struct {
+	_ struct{} `type:"structure"`
+
+	// A new data filter for the integration. For more information, see Data filtering
+	// for Aurora zero-ETL integrations with Amazon Redshift (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_Zero_ETL_Filtering.html).
+	DataFilter *string `min:"1" type:"string"`
+
+	// A new description for the integration.
+	Description *string `type:"string"`
+
+	// The unique identifier of the integration to modify.
+	//
+	// IntegrationIdentifier is a required field
+	IntegrationIdentifier *string `min:"1" type:"string" required:"true"`
+
+	// A new name for the integration.
+	IntegrationName *string `min:"1" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ModifyIntegrationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ModifyIntegrationInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ModifyIntegrationInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ModifyIntegrationInput"}
+	if s.DataFilter != nil && len(*s.DataFilter) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DataFilter", 1))
+	}
+	if s.IntegrationIdentifier == nil {
+		invalidParams.Add(request.NewErrParamRequired("IntegrationIdentifier"))
+	}
+	if s.IntegrationIdentifier != nil && len(*s.IntegrationIdentifier) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("IntegrationIdentifier", 1))
+	}
+	if s.IntegrationName != nil && len(*s.IntegrationName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("IntegrationName", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *ModifyIntegrationInput) SetDataFilter(v string) *ModifyIntegrationInput {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *ModifyIntegrationInput) SetDescription(v string) *ModifyIntegrationInput {
+	s.Description = &v
+	return s
+}
+
+// SetIntegrationIdentifier sets the IntegrationIdentifier field's value.
+func (s *ModifyIntegrationInput) SetIntegrationIdentifier(v string) *ModifyIntegrationInput {
+	s.IntegrationIdentifier = &v
+	return s
+}
+
+// SetIntegrationName sets the IntegrationName field's value.
+func (s *ModifyIntegrationInput) SetIntegrationName(v string) *ModifyIntegrationInput {
+	s.IntegrationName = &v
+	return s
+}
+
+// A zero-ETL integration with Amazon Redshift.
+type ModifyIntegrationOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The encryption context for the integration. For more information, see Encryption
+	// context (https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context)
+	// in the Amazon Web Services Key Management Service Developer Guide.
+	AdditionalEncryptionContext map[string]*string `type:"map"`
+
+	// The time when the integration was created, in Universal Coordinated Time
+	// (UTC).
+	CreateTime *time.Time `type:"timestamp"`
+
+	// Data filters for the integration. These filters determine which tables from
+	// the source database are sent to the target Amazon Redshift data warehouse.
+	DataFilter *string `min:"1" type:"string"`
+
+	// A description of the integration.
+	Description *string `type:"string"`
+
+	// Any errors associated with the integration.
+	Errors []*IntegrationError `locationNameList:"IntegrationError" type:"list"`
+
+	// The ARN of the integration.
+	IntegrationArn *string `min:"1" type:"string"`
+
+	// The name of the integration.
+	IntegrationName *string `min:"1" type:"string"`
+
+	// The Amazon Web Services Key Management System (Amazon Web Services KMS) key
+	// identifier for the key used to to encrypt the integration.
+	KMSKeyId *string `type:"string"`
+
+	// The Amazon Resource Name (ARN) of the database used as the source for replication.
+	SourceArn *string `min:"1" type:"string"`
+
+	// The current status of the integration.
+	Status *string `type:"string" enum:"IntegrationStatus"`
+
+	// A list of tags. For more information, see Tagging Amazon RDS Resources (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.html)
+	// in the Amazon RDS User Guide.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
+
+	// The ARN of the Redshift data warehouse used as the target for replication.
+	TargetArn *string `min:"20" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ModifyIntegrationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ModifyIntegrationOutput) GoString() string {
+	return s.String()
+}
+
+// SetAdditionalEncryptionContext sets the AdditionalEncryptionContext field's value.
+func (s *ModifyIntegrationOutput) SetAdditionalEncryptionContext(v map[string]*string) *ModifyIntegrationOutput {
+	s.AdditionalEncryptionContext = v
+	return s
+}
+
+// SetCreateTime sets the CreateTime field's value.
+func (s *ModifyIntegrationOutput) SetCreateTime(v time.Time) *ModifyIntegrationOutput {
+	s.CreateTime = &v
+	return s
+}
+
+// SetDataFilter sets the DataFilter field's value.
+func (s *ModifyIntegrationOutput) SetDataFilter(v string) *ModifyIntegrationOutput {
+	s.DataFilter = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *ModifyIntegrationOutput) SetDescription(v string) *ModifyIntegrationOutput {
+	s.Description = &v
+	return s
+}
+
+// SetErrors sets the Errors field's value.
+func (s *ModifyIntegrationOutput) SetErrors(v []*IntegrationError) *ModifyIntegrationOutput {
+	s.Errors = v
+	return s
+}
+
+// SetIntegrationArn sets the IntegrationArn field's value.
+func (s *ModifyIntegrationOutput) SetIntegrationArn(v string) *ModifyIntegrationOutput {
+	s.IntegrationArn = &v
+	return s
+}
+
+// SetIntegrationName sets the IntegrationName field's value.
+func (s *ModifyIntegrationOutput) SetIntegrationName(v string) *ModifyIntegrationOutput {
+	s.IntegrationName = &v
+	return s
+}
+
+// SetKMSKeyId sets the KMSKeyId field's value.
+func (s *ModifyIntegrationOutput) SetKMSKeyId(v string) *ModifyIntegrationOutput {
+	s.KMSKeyId = &v
+	return s
+}
+
+// SetSourceArn sets the SourceArn field's value.
+func (s *ModifyIntegrationOutput) SetSourceArn(v string) *ModifyIntegrationOutput {
+	s.SourceArn = &v
+	return s
+}
+
+// SetStatus sets the Status field's value.
+func (s *ModifyIntegrationOutput) SetStatus(v string) *ModifyIntegrationOutput {
+	s.Status = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *ModifyIntegrationOutput) SetTags(v []*Tag) *ModifyIntegrationOutput {
+	s.Tags = v
+	return s
+}
+
+// SetTargetArn sets the TargetArn field's value.
+func (s *ModifyIntegrationOutput) SetTargetArn(v string) *ModifyIntegrationOutput {
+	s.TargetArn = &v
 	return s
 }
 
@@ -53325,7 +53964,7 @@ type RebootDBShardGroupInput struct {
 	// The name of the DB shard group to reboot.
 	//
 	// DBShardGroupIdentifier is a required field
-	DBShardGroupIdentifier *string `type:"string" required:"true"`
+	DBShardGroupIdentifier *string `min:"1" type:"string" required:"true"`
 }
 
 // String returns the string representation.
@@ -53351,6 +53990,9 @@ func (s *RebootDBShardGroupInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "RebootDBShardGroupInput"}
 	if s.DBShardGroupIdentifier == nil {
 		invalidParams.Add(request.NewErrParamRequired("DBShardGroupIdentifier"))
+	}
+	if s.DBShardGroupIdentifier != nil && len(*s.DBShardGroupIdentifier) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DBShardGroupIdentifier", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -53385,7 +54027,7 @@ type RebootDBShardGroupOutput struct {
 	DBClusterIdentifier *string `type:"string"`
 
 	// The name of the DB shard group.
-	DBShardGroupIdentifier *string `type:"string"`
+	DBShardGroupIdentifier *string `min:"1" type:"string"`
 
 	// The Amazon Web Services Region-unique, immutable identifier for the DB shard
 	// group.
@@ -56741,6 +57383,17 @@ type RestoreDBInstanceFromDBSnapshotInput struct {
 	// in the Amazon RDS User Guide.
 	BackupTarget *string `type:"string"`
 
+	// The CA certificate identifier to use for the DB instance's server certificate.
+	//
+	// This setting doesn't apply to RDS Custom DB instances.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CACertificateIdentifier *string `type:"string"`
+
 	// Specifies whether to copy all tags from the restored DB instance to snapshots
 	// of the DB instance.
 	//
@@ -56772,8 +57425,7 @@ type RestoreDBInstanceFromDBSnapshotInput struct {
 	// This setting is required for RDS Custom.
 	CustomIamInstanceProfile *string `type:"string"`
 
-	// The identifier for the RDS for MySQL Multi-AZ DB cluster snapshot to restore
-	// from.
+	// The identifier for the Multi-AZ DB cluster snapshot to restore from.
 	//
 	// For more information on Multi-AZ DB clusters, see Multi-AZ DB cluster deployments
 	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/multi-az-db-clusters-concepts.html)
@@ -56791,9 +57443,6 @@ type RestoreDBInstanceFromDBSnapshotInput struct {
 	//    the DBClusterSnapshotIdentifier must be the ARN of the shared snapshot.
 	//
 	//    * Can't be the identifier of an Aurora DB cluster snapshot.
-	//
-	//    * Can't be the identifier of an RDS for PostgreSQL Multi-AZ DB cluster
-	//    snapshot.
 	DBClusterSnapshotIdentifier *string `type:"string"`
 
 	// The compute and memory capacity of the Amazon RDS DB instance, for example
@@ -57100,9 +57749,10 @@ type RestoreDBInstanceFromDBSnapshotInput struct {
 
 	// Specifies the storage type to be associated with the DB instance.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
-	// If you specify io1 or gp3, you must also include a value for the Iops parameter.
+	// If you specify io1, io2, or gp3, you must also include a value for the Iops
+	// parameter.
 	//
 	// Default: io1 if the Iops parameter is specified, otherwise gp2
 	StorageType *string `type:"string"`
@@ -57186,6 +57836,12 @@ func (s *RestoreDBInstanceFromDBSnapshotInput) SetAvailabilityZone(v string) *Re
 // SetBackupTarget sets the BackupTarget field's value.
 func (s *RestoreDBInstanceFromDBSnapshotInput) SetBackupTarget(v string) *RestoreDBInstanceFromDBSnapshotInput {
 	s.BackupTarget = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *RestoreDBInstanceFromDBSnapshotInput) SetCACertificateIdentifier(v string) *RestoreDBInstanceFromDBSnapshotInput {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -57476,6 +58132,17 @@ type RestoreDBInstanceFromS3Input struct {
 	// parameter to a positive number enables backups. For more information, see
 	// CreateDBInstance.
 	BackupRetentionPeriod *int64 `type:"integer"`
+
+	// The CA certificate identifier to use for the DB instance's server certificate.
+	//
+	// This setting doesn't apply to RDS Custom DB instances.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CACertificateIdentifier *string `type:"string"`
 
 	// Specifies whether to copy all tags from the DB instance to snapshots of the
 	// DB instance. By default, tags are not copied.
@@ -57854,9 +58521,10 @@ type RestoreDBInstanceFromS3Input struct {
 
 	// Specifies the storage type to be associated with the DB instance.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
-	// If you specify io1 or gp3, you must also include a value for the Iops parameter.
+	// If you specify io1, io2, or gp3, you must also include a value for the Iops
+	// parameter.
 	//
 	// Default: io1 if the Iops parameter is specified; otherwise gp2
 	StorageType *string `type:"string"`
@@ -57944,6 +58612,12 @@ func (s *RestoreDBInstanceFromS3Input) SetAvailabilityZone(v string) *RestoreDBI
 // SetBackupRetentionPeriod sets the BackupRetentionPeriod field's value.
 func (s *RestoreDBInstanceFromS3Input) SetBackupRetentionPeriod(v int64) *RestoreDBInstanceFromS3Input {
 	s.BackupRetentionPeriod = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *RestoreDBInstanceFromS3Input) SetCACertificateIdentifier(v string) *RestoreDBInstanceFromS3Input {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -58298,6 +58972,17 @@ type RestoreDBInstanceToPointInTimeInput struct {
 	// in the Amazon RDS User Guide.
 	BackupTarget *string `type:"string"`
 
+	// The CA certificate identifier to use for the DB instance's server certificate.
+	//
+	// This setting doesn't apply to RDS Custom DB instances.
+	//
+	// For more information, see Using SSL/TLS to encrypt a connection to a DB instance
+	// (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon RDS User Guide and Using SSL/TLS to encrypt a connection to
+	// a DB cluster (https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html)
+	// in the Amazon Aurora User Guide.
+	CACertificateIdentifier *string `type:"string"`
+
 	// Specifies whether to copy all tags from the restored DB instance to snapshots
 	// of the DB instance. By default, tags are not copied.
 	CopyTagsToSnapshot *bool `type:"boolean"`
@@ -58643,14 +59328,14 @@ type RestoreDBInstanceToPointInTimeInput struct {
 
 	// The storage type to associate with the DB instance.
 	//
-	// Valid Values: gp2 | gp3 | io1 | standard
+	// Valid Values: gp2 | gp3 | io1 | io2 | standard
 	//
 	// Default: io1, if the Iops parameter is specified. Otherwise, gp2.
 	//
 	// Constraints:
 	//
-	//    * If you specify io1 or gp3, you must also include a value for the Iops
-	//    parameter.
+	//    * If you specify io1, io2, or gp3, you must also include a value for the
+	//    Iops parameter.
 	StorageType *string `type:"string"`
 
 	// A list of tags. For more information, see Tagging Amazon RDS Resources (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.html)
@@ -58753,6 +59438,12 @@ func (s *RestoreDBInstanceToPointInTimeInput) SetAvailabilityZone(v string) *Res
 // SetBackupTarget sets the BackupTarget field's value.
 func (s *RestoreDBInstanceToPointInTimeInput) SetBackupTarget(v string) *RestoreDBInstanceToPointInTimeInput {
 	s.BackupTarget = &v
+	return s
+}
+
+// SetCACertificateIdentifier sets the CACertificateIdentifier field's value.
+func (s *RestoreDBInstanceToPointInTimeInput) SetCACertificateIdentifier(v string) *RestoreDBInstanceToPointInTimeInput {
+	s.CACertificateIdentifier = &v
 	return s
 }
 
@@ -61678,6 +62369,9 @@ type UpgradeTarget struct {
 	// Amazon Redshift.
 	SupportsIntegrations *bool `type:"boolean"`
 
+	// Indicates whether the DB engine version supports Aurora Limitless Database.
+	SupportsLimitlessDatabase *bool `type:"boolean"`
+
 	// Indicates whether the target engine version supports forwarding write operations
 	// from reader DB instances to the writer DB instance in the DB cluster. By
 	// default, write operations aren't allowed on reader DB instances.
@@ -61759,6 +62453,12 @@ func (s *UpgradeTarget) SetSupportsGlobalDatabases(v bool) *UpgradeTarget {
 // SetSupportsIntegrations sets the SupportsIntegrations field's value.
 func (s *UpgradeTarget) SetSupportsIntegrations(v bool) *UpgradeTarget {
 	s.SupportsIntegrations = &v
+	return s
+}
+
+// SetSupportsLimitlessDatabase sets the SupportsLimitlessDatabase field's value.
+func (s *UpgradeTarget) SetSupportsLimitlessDatabase(v bool) *UpgradeTarget {
+	s.SupportsLimitlessDatabase = &v
 	return s
 }
 
@@ -62020,7 +62720,8 @@ type ValidStorageOptions struct {
 	// 0-0.25.
 	StorageThroughputToIopsRatio []*DoubleRange `locationNameList:"DoubleRange" type:"list"`
 
-	// The valid storage types for your DB instance. For example: gp2, gp3, io1.
+	// The valid storage types for your DB instance. For example: gp2, gp3, io1,
+	// io2.
 	StorageType *string `type:"string"`
 
 	// Indicates whether or not Amazon RDS can automatically scale storage for DB

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -19,7 +20,7 @@ type EnqueueNamespaceFromObject struct{}
 var _ handler.EventHandler = &EnqueueNamespaceFromObject{}
 
 // Create implements EventHandler
-func (e *EnqueueNamespaceFromObject) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueNamespaceFromObject) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	if evt.Object == nil {
 		return
 	}
@@ -28,7 +29,7 @@ func (e *EnqueueNamespaceFromObject) Create(evt event.CreateEvent, q workqueue.R
 }
 
 // Update implements EventHandler
-func (e *EnqueueNamespaceFromObject) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueNamespaceFromObject) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	if evt.ObjectOld != nil {
 		addNamespaceRequest(evt.ObjectOld, q)
 	}
@@ -39,7 +40,7 @@ func (e *EnqueueNamespaceFromObject) Update(evt event.UpdateEvent, q workqueue.R
 }
 
 // Delete implements EventHandler
-func (e *EnqueueNamespaceFromObject) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueNamespaceFromObject) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
 	if evt.Object == nil {
 		return
 	}
@@ -48,7 +49,7 @@ func (e *EnqueueNamespaceFromObject) Delete(evt event.DeleteEvent, q workqueue.R
 }
 
 // Generic implements EventHandler
-func (e *EnqueueNamespaceFromObject) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueNamespaceFromObject) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
 	if evt.Object == nil {
 		return
 	}

@@ -120,7 +120,7 @@ func assertGrafanaLoginAuthorized(t TestingTB, userName string) chromedp.Action 
 	return chromedp.ActionFunc(func(ctx context.Context) error {
 		// Wait a bit to allow page contents to load
 		var html string
-		err := wait.PollImmediate(5*time.Second, 1*time.Minute, func() (done bool, err error) {
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true, func(ctx2 context.Context) (done bool, err error) {
 			html, err = chromeDPGetHtml(ctx)
 			if err != nil {
 				return false, nil

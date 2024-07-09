@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -34,7 +35,7 @@ var (
 )
 
 func TestIntegreatlyStagesStatus(t TestingTB, ctx *TestingContext) {
-	err := wait.PollImmediateInfinite(time.Second*15, func() (bool, error) {
+	err := wait.PollUntilContextCancel(context.TODO(), time.Second*15, true, func(ctx2 context.Context) (bool, error) {
 		done := true
 
 		//get RHMI

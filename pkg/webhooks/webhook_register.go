@@ -16,7 +16,7 @@ import (
 // regstering to the WebhookBuilder or directly to the webhook server.
 type WebhookRegister interface {
 	RegisterToBuilder(blrd *builder.WebhookBuilder) *builder.WebhookBuilder
-	RegisterToServer(scheme *runtime.Scheme, srv *webhook.Server)
+	RegisterToServer(srv webhook.Server)
 
 	GetReconciler(scheme *runtime.Scheme) (WebhookReconciler, error)
 }
@@ -53,7 +53,7 @@ func (vwr ObjectWebhookRegister) RegisterToBuilder(bldr *builder.WebhookBuilder)
 }
 
 // RegisterToServer does nothing, as the register is done by the builder
-func (vwr ObjectWebhookRegister) RegisterToServer(_ *runtime.Scheme, _ *webhook.Server) {}
+func (vwr ObjectWebhookRegister) RegisterToServer(_ webhook.Server) {}
 
 // GetReconciler creates a reconciler according to the implementation of vwr.Object.
 // The object can implement the `Validator` or `Defaulter` interfaces, and if both
@@ -139,14 +139,7 @@ func (awr AdmissionWebhookRegister) RegisterToBuilder(bldr *builder.WebhookBuild
 	return bldr
 }
 
-// RegisterToServer regsiters the webhook to the path of `awr`
-func (awr AdmissionWebhookRegister) RegisterToServer(scheme *runtime.Scheme, srv *webhook.Server) {
-	err := awr.Hook.InjectScheme(scheme)
-	if err != nil {
-		fmt.Printf("failed to inject scheme into the webhook with error: %v", err)
-		return
-	}
-
+func (awr AdmissionWebhookRegister) RegisterToServer(srv webhook.Server) {
 	srv.Register(awr.Path, awr.Hook)
 }
 

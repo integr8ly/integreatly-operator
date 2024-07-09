@@ -256,7 +256,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	// retry the tests every minute for up to 15 minutes
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
-	err = wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), monitoringRetryInterval, monitoringTimeout, false, func(ctx2 context.Context) (done bool, err error) {
 		if newErr := getFiringOrPendingAlerts(t, ctx); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {

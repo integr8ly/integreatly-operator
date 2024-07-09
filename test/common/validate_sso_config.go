@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	"crypto/tls"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/headzoo/surf"
@@ -12,6 +13,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"net/http"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -71,9 +73,12 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 	// Validate RHSSO URL from RHOAM CR
 
 	adminRoute := rhmi.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductRHSSO].Host
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // Note: Use with caution in production
+	}
 	browser := surf.NewBrowser()
 	browser.SetCookieJar(ctx.HttpClient.Jar)
-	browser.SetTransport(ctx.HttpClient.Transport)
+	browser.SetTransport(tr)
 	browser.SetAttribute(brow.FollowRedirects, true)
 
 	t.Log("Checking the link for admin is available")

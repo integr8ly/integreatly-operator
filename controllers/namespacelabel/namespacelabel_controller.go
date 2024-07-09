@@ -34,17 +34,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
@@ -103,7 +101,7 @@ func (r *NamespaceLabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1.Namespace{}, builder.WithPredicates(utils.NamePredicate(r.operatorNamespace))).
 		// Watches ConfigMaps and enqueues requests to their namespace.
 		// Only watches ConfigMaps with the addon name and in the operator namespace
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &EnqueueNamespaceFromObject{}, builder.WithPredicates(
+		Watches(&corev1.ConfigMap{}, &EnqueueNamespaceFromObject{}, builder.WithPredicates(
 			predicate.And(
 				utils.NamespacePredicate(r.operatorNamespace),
 				predicate.Or(

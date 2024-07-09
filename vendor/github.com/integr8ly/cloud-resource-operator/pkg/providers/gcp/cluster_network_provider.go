@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 	"google.golang.org/api/servicenetworking/v1"
-	utils "k8s.io/utils/pointer"
+	utils "k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -329,17 +329,17 @@ func (n *NetworkProvider) createAddressRange(ctx context.Context, clusterVpc *co
 	req := &computepb.InsertGlobalAddressRequest{
 		Project: n.ProjectID,
 		AddressResource: &computepb.Address{
-			AddressType:  utils.String(computepb.Address_INTERNAL.String()),
-			IpVersion:    utils.String(computepb.Address_IPV4.String()),
+			AddressType:  utils.To(computepb.Address_INTERNAL.String()),
+			IpVersion:    utils.To(computepb.Address_IPV4.String()),
 			Name:         &name,
 			Network:      clusterVpc.SelfLink,
-			PrefixLength: utils.Int32(int32(prefixLength)),
-			Purpose:      utils.String(computepb.Address_VPC_PEERING.String()),
+			PrefixLength: utils.To(int32(prefixLength)),
+			Purpose:      utils.To(computepb.Address_VPC_PEERING.String()),
 		},
 	}
 	var msg string
 	if cidrRange.IP != nil {
-		req.AddressResource.Address = utils.String(cidrRange.IP.String())
+		req.AddressResource.Address = utils.To(cidrRange.IP.String())
 		msg = fmt.Sprintf("using cidr %s", cidrRange.String())
 	} else {
 		msg = fmt.Sprintf("using cidr (gcp-generated)/%d", prefixLength)
@@ -376,7 +376,7 @@ func (n *NetworkProvider) deletePeeringConnection(ctx context.Context, clusterVp
 		Project: n.ProjectID,
 		Network: clusterVpc.GetName(),
 		NetworksRemovePeeringRequestResource: &computepb.NetworksRemovePeeringRequest{
-			Name: utils.String(defaultServiceConnectionName),
+			Name: utils.To(defaultServiceConnectionName),
 		},
 	})
 }

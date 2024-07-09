@@ -2,7 +2,6 @@ package common
 
 import (
 	goctx "context"
-
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -150,7 +149,7 @@ func TestNamespaceRestoration(t TestingTB, ctx *TestingContext) {
 
 // Wait for the product stage to be a specific status
 func waitForProductStageStatusInRHMI(t TestingTB, ctx *TestingContext, stage integreatlyv1alpha1.StageName, status integreatlyv1alpha1.StatusPhase) error {
-	err := wait.Poll(stageRetryInterval, stageRestorationTimeOut, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), stageRetryInterval, stageRestorationTimeOut, false, func(ctx2 goctx.Context) (done bool, err error) {
 		rhmi, err := GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Logf("Got an error getting rhmi cr: %v", err)
@@ -191,7 +190,7 @@ func removeKeyCloakFinalizers(ctx *TestingContext, nameSpace string) error {
 
 // Poll removal of all finalizers from KeyCloakClients from a namespace
 func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), finalizerDeletionRetryInterval, finalizerDeletionTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		clients := &keycloakv1alpha1.KeycloakClientList{}
 
 		err = ctx.Client.List(goctx.TODO(), clients, &k8sclient.ListOptions{
@@ -222,7 +221,7 @@ func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error
 
 // Poll removal of all finalizers from KeyCloakRealms from a namespace
 func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), finalizerDeletionRetryInterval, finalizerDeletionTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		realms := &keycloakv1alpha1.KeycloakRealmList{}
 
 		err = ctx.Client.List(goctx.TODO(), realms, &k8sclient.ListOptions{
@@ -253,7 +252,7 @@ func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error 
 
 // Poll removal of all finalizers from KeyCloakUsers from a namespace
 func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), finalizerDeletionRetryInterval, finalizerDeletionTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		users := &keycloakv1alpha1.KeycloakUserList{}
 
 		err = ctx.Client.List(goctx.TODO(), users, &k8sclient.ListOptions{
@@ -284,7 +283,7 @@ func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
 
 // Poll removal of all finalizers from EnvoyConfigRevisions from a namespace
 func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), finalizerDeletionRetryInterval, finalizerDeletionTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		envoyConfigRevisions := &marin3rv1alpha1.EnvoyConfigRevisionList{}
 
 		err = ctx.Client.List(goctx.TODO(), envoyConfigRevisions, &k8sclient.ListOptions{
@@ -322,7 +321,7 @@ func getStagesForInstallType(ctx *TestingContext, installType string) []StageDel
 }
 
 func removeDiscoveryServiceFinalizers(ctx *TestingContext, namespace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(goctx.TODO(), finalizerDeletionRetryInterval, finalizerDeletionTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		discoveryServiceList := &marin3rOperatorv1alpha1.DiscoveryServiceList{}
 
 		err = ctx.Client.List(goctx.TODO(), discoveryServiceList, &k8sclient.ListOptions{

@@ -451,7 +451,7 @@ func (p *BlobStorageProvider) reconcileBucketCreate(ctx context.Context, bs *v1a
 // function to get s3 buckets, used to check/wait on AWS credentials
 func getS3buckets(s3svc s3iface.S3API) ([]*s3.Bucket, error) {
 	var existingBuckets []*s3.Bucket
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx context.Context) (bool, error) {
 		listOutput, err := s3svc.ListBuckets(nil)
 		if err != nil {
 			return false, nil

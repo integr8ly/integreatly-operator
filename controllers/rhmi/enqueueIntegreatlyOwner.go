@@ -1,14 +1,15 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -22,31 +23,31 @@ type EnqueueIntegreatlyOwner struct {
 	log l.Logger
 }
 
-func (e *EnqueueIntegreatlyOwner) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	if req, err := e.getIntegreatlyOwner(evt.ObjectNew); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) getIntegreatlyOwner(object metav1.Object) (reconcile.Request, error) {
+func (e *EnqueueIntegreatlyOwner) getIntegreatlyOwner(object client.Object) (reconcile.Request, error) {
 	typeObj, err := meta.TypeAccessor(object)
 	if err != nil {
 		return reconcile.Request{}, err

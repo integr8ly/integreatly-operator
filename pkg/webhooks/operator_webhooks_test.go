@@ -74,8 +74,32 @@ func TestReconcile(t *testing.T) {
 	}
 
 	rhmi := &v1alpha1.RHMI{}
+	vwconf := &admissionv1.ValidatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test.integreatly.org",
+			Namespace: defaultNamespace,
+		},
+		Webhooks: []admissionv1.ValidatingWebhook{
+			{
+				Name: "test-manual",
+				ClientConfig: admissionv1.WebhookClientConfig{
+					CABundle: []byte("TEST"),
+				},
+				Rules: []admissionv1.RuleWithOperations{
+					{
+						Operations: nil,
+						Rule: admissionv1.Rule{
+							APIGroups:   []string{"example.org"},
+							APIVersions: []string{"v1"},
+							Resources:   []string{"mockvalidator"},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	client := utils.NewTestClient(testScheme, rhmi)
+	client := utils.NewTestClient(testScheme, rhmi, vwconf)
 
 	// Start mock of CA controller
 	done := make(chan struct{})
@@ -193,27 +217,27 @@ type mockValidator struct {
 	Value string
 }
 
-var _ admission.Validator = &mockValidator{}
+var _ admission.CustomValidator = &mockValidator{}
 var _ runtime.Object = &mockValidator{}
 
-func (m *mockValidator) ValidateCreate() error {
+func (m *mockValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	if m.Value == "correct" {
-		return nil
+		return nil, nil
 	}
 
-	return fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
+	return nil, fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
 }
 
-func (m *mockValidator) ValidateUpdate(old runtime.Object) error {
+func (m *mockValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	if m.Value == "correct" {
-		return nil
+		return nil, nil
 	}
 
-	return fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
+	return nil, fmt.Errorf("Unexpected value. Expected correct, got %s", m.Value)
 }
 
-func (m *mockValidator) ValidateDelete() error {
-	return fmt.Errorf("Delete not allowed")
+func (m *mockValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, fmt.Errorf("Delete not allowed")
 }
 
 func (m *mockValidator) DeepCopyObject() runtime.Object {
@@ -303,7 +327,7 @@ func findValidatingWebhookConfig(client k8sclient.Client) (*admissionv1.Validati
 	vwc := &admissionv1.ValidatingWebhookConfiguration{}
 	err := client.Get(
 		context.TODO(),
-		k8sclient.ObjectKey{Name: "test.integreatly.org"},
+		k8sclient.ObjectKey{Name: "test.integreatly.org", Namespace: defaultNamespace},
 		vwc,
 	)
 	if err != nil {
