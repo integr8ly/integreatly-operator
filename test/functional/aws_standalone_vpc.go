@@ -512,12 +512,13 @@ func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, pee
 		clusterRouteTablesError: []error{},
 	}
 
-	// 1 private route per AZ + 1 public route for public cluster
+	// 1 private route table (RT) per AZ + 1 public RT if cluster is public (OSD v4.15-)
+	// 1 private RT per AZ + 1 public RT per AZ if cluster is public (OSD v4.16+)
 	expectedRouteTableCount := len(availableZones)
 	if !privateCluster {
 		expectedRouteTableCount += 1
 	}
-	if len(routeTables) != expectedRouteTableCount {
+	if expectedRouteTableCount <= len(routeTables) && len(routeTables) <= 2*len(availableZones) {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		return newErr
