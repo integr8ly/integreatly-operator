@@ -637,3 +637,10 @@ test/scripts:
 	# Preform a basic check on scripts checking for a non zero exit
 	echo "Running make release/prepare"
 	SEMVER=$(RHOAM_TAG) make release/prepare
+
+RHBK_CUSTOM_IMG ?= 'quay.io/integreatly/rhbk-custom-img:latest'
+RHBK_QUARQUS ?= 'no'
+# Build the bundle image.
+.PHONY: custom-rhbk
+custom-rhbk:
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG) .
