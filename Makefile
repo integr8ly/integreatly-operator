@@ -640,12 +640,6 @@ test/scripts:
 
 # RHBK
 RHBK_CUSTOM_IMG ?= 'quay.io/integreatly/rhbk-custom-img:latest'
-quarqus ?= 'no'
-ifeq (${quarqus}, yes)
-	METRICS_JAR_PATH = "/opt/keycloak/providers"
-else
-	METRICS_JAR_PATH = "/opt/keycloak/standalone/deployments/"
-endif
 .PHONY: custom-rhbk
 custom-rhbk:
-	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG) --build-arg metricsjarpath=$(METRICS_JAR_PATH)  .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG)  .

@@ -2,17 +2,11 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS ubi-minimal
 
 # Download/prepare extentions
 RUN curl -Lso /tmp/authdelay.jar https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.2/authdelay.jar
-RUN curl -Lso /tmp/keycloak-metrics-spi.jar https://github.com/integr8ly/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi.jar
-RUN touch /tmp/keycloak-metrics-spi-2.0.2.jar.dodeploy
-
 
 FROM registry.redhat.io/rhbk/keycloak-rhel9:22-8 as builder
 
 # Add extentions to RHBK
-ARG metricsjarpath
 COPY --from=ubi-minimal /tmp/authdelay.jar /opt/keycloak/providers
-COPY --from=ubi-minimal /tmp/keycloak-metrics-spi.jar $metricsjarpath
-COPY --from=ubi-minimal /tmp/keycloak-metrics-spi-2.0.2.jar.dodeploy $metricsjarpath
 
 # Enable health and metrics support
 ENV KC_HEALTH_ENABLED=true
