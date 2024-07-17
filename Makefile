@@ -638,9 +638,14 @@ test/scripts:
 	echo "Running make release/prepare"
 	SEMVER=$(RHOAM_TAG) make release/prepare
 
+# RHBK
 RHBK_CUSTOM_IMG ?= 'quay.io/integreatly/rhbk-custom-img:latest'
-RHBK_QUARQUS ?= 'no'
-# Build the bundle image.
+quarqus ?= 'no'
+ifeq (${quarqus}, yes)
+	METRICS_JAR_PATH = "/opt/keycloak/providers"
+else
+	METRICS_JAR_PATH = "/opt/keycloak/standalone/deployments/"
+endif
 .PHONY: custom-rhbk
 custom-rhbk:
-	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG) .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG) --build-arg metricsjarpath=$(METRICS_JAR_PATH)  .

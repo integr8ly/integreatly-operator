@@ -8,17 +8,11 @@ RUN touch /tmp/keycloak-metrics-spi-2.0.2.jar.dodeploy
 
 FROM registry.redhat.io/rhbk/keycloak-rhel9:22-8 as builder
 
-ARG RHBK_QUARQUS
-ENV METRICS_SPI_JAR_PATH="/opt/keycloak/standalone/deployments/"
-RUN if  [! -z "RHBK_QUARQUS" ] && [ "RHBK_QUARQUS" == "yes" ]; then \
-        METRICS_SPI_JAR_PATH="/opt/keycloak/providers"; \
-    fi
-
 # Add extentions to RHBK
+ARG metricsjarpath
 COPY --from=ubi-minimal /tmp/authdelay.jar /opt/keycloak/providers
-# COPY ./utils/authdelay.jar /opt/keycloak/providers
-COPY --from=ubi-minimal /tmp/keycloak-metrics-spi.jar $METRICS_SPI_JAR_PATH
-COPY --from=ubi-minimal /tmp/keycloak-metrics-spi-2.0.2.jar.dodeploy $METRICS_SPI_JAR_PATH
+COPY --from=ubi-minimal /tmp/keycloak-metrics-spi.jar $metricsjarpath
+COPY --from=ubi-minimal /tmp/keycloak-metrics-spi-2.0.2.jar.dodeploy $metricsjarpath
 
 # Enable health and metrics support
 ENV KC_HEALTH_ENABLED=true
