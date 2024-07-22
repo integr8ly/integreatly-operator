@@ -518,7 +518,7 @@ func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, pee
 	if !privateCluster {
 		expectedRouteTableCount += 1
 	}
-	if expectedRouteTableCount <= len(routeTables) && len(routeTables) <= 2*len(availableZones) {
+	if expectedRouteTableCount > len(routeTables) || len(routeTables) > 2*len(availableZones) {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		return newErr
