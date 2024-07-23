@@ -239,7 +239,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_c8e6ba8c12dd493ddccdbf17fadf993ca5a60a2482cf45b3623529b81ac9d992
+    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_19d9dd7931a43ede35ea3493b46df8028873b3266c21a7ca6062e50f7845e5bb
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     features.operators.openshift.io/disconnected: "true"
@@ -249,6 +249,7 @@ metadata:
     features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
+    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.16"}]'
     olm.skipRange: '>=0.11.8 <0.12.1'
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
     operators.openshift.io/valid-subscription: '["Red Hat Integration", "Red Hat 3scale API Management"]'
@@ -578,7 +579,7 @@ spec:
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_a688994ea404ce6ce4bb5ec1249f0e779de0d6c187b5078e2ff067e60b50937d
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
                         value: quay.io/integreatly/delorean:3scale-mas-3scale-manticore-search-rhel9_213b850ddc3718e0adc7114d1c5b333b238dc4e35c891f25d101cc64d88f5473
-                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_c8e6ba8c12dd493ddccdbf17fadf993ca5a60a2482cf45b3623529b81ac9d992
+                    image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel9-operator_19d9dd7931a43ede35ea3493b46df8028873b3266c21a7ca6062e50f7845e5bb
                     name: manager
                     ports:
                       - containerPort: 8080
@@ -1159,9 +1160,9 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:c8e6ba8c12dd493ddccdbf17fadf993ca5a60a2482cf45b3623529b81ac9d992
-      name: 3scale-rhel9-operator-c8e6ba8c12dd493ddccdbf17fadf993ca5a60a2482cf45b3623529b81ac9d992-annotation
-    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:c8e6ba8c12dd493ddccdbf17fadf993ca5a60a2482cf45b3623529b81ac9d992
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:19d9dd7931a43ede35ea3493b46df8028873b3266c21a7ca6062e50f7845e5bb
+      name: 3scale-rhel9-operator-19d9dd7931a43ede35ea3493b46df8028873b3266c21a7ca6062e50f7845e5bb-annotation
+    - image: registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:19d9dd7931a43ede35ea3493b46df8028873b3266c21a7ca6062e50f7845e5bb
       name: manager
     - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:d2e3fe3cfc02d701f5b096eae9d714f0c0988eee9f64cd6aa3f852a56e35159f
       name: backend
