@@ -639,7 +639,7 @@ test/scripts:
 	SEMVER=$(RHOAM_TAG) make release/prepare
 
 # RHBK
-RHBK_CUSTOM_IMG ?= 'quay.io/integreatly/rhbk-custom-img:latest'
+RHBK_CUSTOM_IMG ?= 'quay.io/vmogilev_rhmi/rhbk-custom-img:v1'
 .PHONY: custom-rhbk
 custom-rhbk:
 	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f Dockerfile.rhbk -t $(RHBK_CUSTOM_IMG)  .
