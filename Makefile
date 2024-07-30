@@ -330,6 +330,10 @@ create/olm/bundle:
 create/3scale/index:
 	PRODUCT=3scale ./scripts/create-product-index.sh
 
+.PHONY: create/marin3r/index
+create/marin3r/index:
+	PRODUCT=marin3r ./scripts/create-product-index.sh
+
 .PHONY: create/rhsso/index
 create/rhsso/index:
 	PRODUCT=rhsso ./scripts/create-product-index.sh
