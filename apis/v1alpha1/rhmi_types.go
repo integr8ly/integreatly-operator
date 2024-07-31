@@ -67,7 +67,7 @@ var (
 	VersionCloudResources ProductVersion = "1.1.3"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
-	VersionMarin3r        ProductVersion = "0.12.3"
+	VersionMarin3r        ProductVersion = "0.13.0"
 	VersionGrafana        ProductVersion = "9.0.9"
 
 	PreflightInProgress PreflightStatus = ""
@@ -79,7 +79,7 @@ var (
 	OperatorVersionRHSSOUser      OperatorVersion = "7.6.7-1"
 	OperatorVersionCloudResources OperatorVersion = "1.1.3"
 	OperatorVersion3Scale         OperatorVersion = "0.11.8-mas"
-	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
+	OperatorVersionMarin3r        OperatorVersion = "0.13.0"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       = "ProcessingError"

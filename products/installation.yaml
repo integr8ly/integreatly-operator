@@ -67,9 +67,10 @@ products:
         package: rhmi-cloud-resources
         index: quay.io/integreatly/cloud-resource-operator:index-v1.1.3
     marin3r:
-        channel: rhmi
-        installFrom: local
-        manifestsDir: integreatly-marin3r
+        channel: stable
+        installFrom: index
+        package: marin3r-operator
+        index: quay.io/integreatly/marin3r-index:v0.13.0
     rhsso:
         channel: stable
         installFrom: index
