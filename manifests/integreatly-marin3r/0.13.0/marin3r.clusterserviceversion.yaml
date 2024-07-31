@@ -1170,6 +1170,7 @@ spec:
   provider:
     name: Red Hat
   version: 0.13.0
+  replaces: marin3r.v0.12.3
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
