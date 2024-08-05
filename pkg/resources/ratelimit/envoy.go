@@ -9,7 +9,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	appsv1 "github.com/openshift/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
@@ -36,15 +36,15 @@ func NewEnvoyProxyServer(ctx context.Context, client k8sclient.Client, logger l.
 	}
 }
 
-func (envoyProxy *envoyProxyServer) CreateEnvoyProxyContainer(dcName, namespace, envoyNodeID, svcProxyName, svcProxyPortName string, svcProxyPort int) (integreatlyv1alpha1.StatusPhase, error) {
+func (envoyProxy *envoyProxyServer) CreateEnvoyProxyContainer(deploymentName, namespace, envoyNodeID, svcProxyName, svcProxyPortName string, svcProxyPort int) (integreatlyv1alpha1.StatusPhase, error) {
 
 	envoyProxy.log.Infof(
 		"Creating envoy sidecar container for: ",
-		l.Fields{"DeploymentConfig": dcName, "Namespace": namespace},
+		l.Fields{"Deployment": deploymentName, "Namespace": namespace},
 	)
 
 	// patches deployment config to add the sidecar container
-	phase, err := envoyProxy.patchDeploymentConfig(dcName, namespace, envoyNodeID, svcProxyPort)
+	phase, err := envoyProxy.patchDeployment(deploymentName, namespace, envoyNodeID, svcProxyPort)
 	if err != nil {
 		return phase, err
 	}
@@ -58,25 +58,25 @@ func (envoyProxy *envoyProxyServer) CreateEnvoyProxyContainer(dcName, namespace,
 	return phase, nil
 }
 
-func (envoyProxy *envoyProxyServer) patchDeploymentConfig(dcName, namespace, envoyNodeID string, svcProxyPort int) (integreatlyv1alpha1.StatusPhase, error) {
+func (envoyProxy *envoyProxyServer) patchDeployment(deploymentName, namespace, envoyNodeID string, svcProxyPort int) (integreatlyv1alpha1.StatusPhase, error) {
 
-	dc, phase, err := getDeploymentConfig(envoyProxy.ctx, envoyProxy.client, dcName, namespace)
+	deployment, phase, err := getDeployment(envoyProxy.ctx, envoyProxy.client, deploymentName, namespace)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s deploymentconfig on namespace %s : %w", dcName, namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s deployment on namespace %s : %w", deploymentName, namespace, err)
 	}
 	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
 		envoyProxy.log.Infof(
-			"Waiting for deploymentconfig to be available",
-			l.Fields{"DeploymentConfig": dcName},
+			"Waiting for deployment to be available",
+			l.Fields{"Deployment": deploymentName},
 		)
 		return phase, nil
 	}
 
-	if dc.Spec.Template.Labels == nil {
-		dc.Spec.Template.SetLabels(make(map[string]string))
+	if deployment.Spec.Template.Labels == nil {
+		deployment.Spec.Template.SetLabels(make(map[string]string))
 	}
-	if dc.Spec.Template.Annotations == nil {
-		dc.Spec.Template.SetAnnotations(make(map[string]string))
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.SetAnnotations(make(map[string]string))
 	}
 
 	envoyPort := fmt.Sprintf("envoy-https:%s", strconv.Itoa(svcProxyPort))
@@ -90,16 +90,16 @@ func (envoyProxy *envoyProxyServer) patchDeploymentConfig(dcName, namespace, env
 			"marin3r.3scale.net/envoy-api-version": envoy.APIv3.String(),
 		})
 
-	dc.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
-	dc.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = envoyNodeID
-	dc.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
-	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = envoy.APIv3.String()
-	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
-	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
-	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"
+	deployment.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = envoyNodeID
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = envoy.APIv3.String()
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"
 
-	if err := envoyProxy.client.Update(envoyProxy.ctx, dc); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to apply MARIN3R labels to %s deploymentconfig: %v", dcName, err)
+	if err := envoyProxy.client.Update(envoyProxy.ctx, deployment); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to apply MARIN3R labels to %s deployment: %v", deployment, err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -137,10 +137,10 @@ func (envoyProxy *envoyProxyServer) patchService(svcName, namespace, portName st
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getDeploymentConfig(ctx context.Context, client k8sclient.Client, dcName string, dcNamespace string) (*appsv1.DeploymentConfig, integreatlyv1alpha1.StatusPhase, error) {
-	apiCastDeploymentConfig := &appsv1.DeploymentConfig{}
+func getDeployment(ctx context.Context, client k8sclient.Client, deploymentName string, deploymentNamespace string) (*appsv1.Deployment, integreatlyv1alpha1.StatusPhase, error) {
+	apiCastDeployment := &appsv1.Deployment{}
 
-	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: dcNamespace}, apiCastDeploymentConfig)
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: deploymentName, Namespace: deploymentNamespace}, apiCastDeployment)
 
 	if err != nil {
 		if k8serr.IsNotFound(err) {
@@ -148,7 +148,7 @@ func getDeploymentConfig(ctx context.Context, client k8sclient.Client, dcName st
 		}
 		return nil, integreatlyv1alpha1.PhaseFailed, err
 	}
-	return apiCastDeploymentConfig, integreatlyv1alpha1.PhaseInProgress, nil
+	return apiCastDeployment, integreatlyv1alpha1.PhaseInProgress, nil
 }
 
 func getService(ctx context.Context, client k8sclient.Client, svcName string, svcNamespace string) (*corev1.Service, integreatlyv1alpha1.StatusPhase, error) {

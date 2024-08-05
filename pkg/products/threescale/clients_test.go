@@ -14,10 +14,10 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
@@ -58,7 +58,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 	return sigsFakeClient
 }
 
-func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Client.AppsV1Interface {
+func getAppsV1Client(appsv1PreReqs map[string]*appsv1.Deployment) appsv1Client.AppsV1Interface {
 	fakeAppsv1 := fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1()
 
 	// Remove the generic reactor
@@ -66,12 +66,12 @@ func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Cl
 
 	// The default NewSimpleClientset implementation does not handle 'instantiate' invocations correctly.
 	// This implementation updates the status.latestVersion to record the action.
-	fakeAppsv1.(*fakeappsv1TypedClient.FakeAppsV1).Fake.PrependReactor("create", "deploymentconfigs", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+	fakeAppsv1.(*fakeappsv1TypedClient.FakeAppsV1).Fake.PrependReactor("create", "deployments", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		switch action := action.(type) {
 		case testing.CreateActionImpl:
 			if action.Subresource == "instantiate" {
 				dc := appsv1PreReqs[action.Name]
-				dc.Status.LatestVersion = dc.Status.LatestVersion + 1
+				dc.Status.ObservedGeneration = dc.Status.ObservedGeneration + 1
 			}
 		}
 
@@ -79,7 +79,7 @@ func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Cl
 	})
 
 	// Add our own simple get
-	fakeAppsv1.(*fakeappsv1TypedClient.FakeAppsV1).Fake.PrependReactor("get", "deploymentconfigs", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+	fakeAppsv1.(*fakeappsv1TypedClient.FakeAppsV1).Fake.PrependReactor("get", "deployments", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		switch action := action.(type) {
 		case testing.GetActionImpl:
 			return true, appsv1PreReqs[action.Name], nil

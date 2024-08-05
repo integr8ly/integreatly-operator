@@ -4,19 +4,19 @@ import (
 	goctx "context"
 	"fmt"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/utils"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"golang.org/x/net/context"
+	appsv1 "k8s.io/api/apps/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -224,7 +224,7 @@ func checkDeploymentPods(t TestingTB, pods *corev1.PodList, product Product, nam
 	}
 }
 
-func checkDeploymentConfigPods(t TestingTB, pods *corev1.PodList, product Product, namespace Namespace, deploymentConfig *appsv1.DeploymentConfig) {
+func checkDeploymentConfigPods(t TestingTB, pods *corev1.PodList, product Product, namespace Namespace, deploymentConfig *appsv1.Deployment) {
 	if int32(len(pods.Items)) < product.ExpectedReplicas {
 		t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
 			product.Name,
@@ -264,7 +264,7 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 	for _, namespace := range deploymentConfigs {
 		for _, product := range namespace.Products {
 
-			deploymentConfig := &appsv1.DeploymentConfig{
+			deploymentConfig := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      product.Name,
 					Namespace: namespace.Name,
