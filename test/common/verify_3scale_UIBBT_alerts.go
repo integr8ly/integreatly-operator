@@ -4,7 +4,7 @@ import (
 	"context"
 	goctx "context"
 	"fmt"
-	openshiftappsv1 "github.com/openshift/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -188,7 +188,7 @@ func isThreeScaleUIBBTAlertFiring(ctx *TestingContext, t TestingTB) (bool, error
 
 func scaleDeploymentsConfig(t TestingTB, name string, namespace string, replicas int32, client k8sclient.Client) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deploymentConfig := &openshiftappsv1.DeploymentConfig{
+		deploymentConfig := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
@@ -199,7 +199,7 @@ func scaleDeploymentsConfig(t TestingTB, name string, namespace string, replicas
 			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
 		}
 
-		deploymentConfig.Spec.Replicas = replicas
+		deploymentConfig.Spec.Replicas = &replicas
 
 		t.Logf("Scaling deployment config")
 

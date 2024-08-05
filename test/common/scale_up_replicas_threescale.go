@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	appsv1 "github.com/openshift/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -246,7 +246,7 @@ func check3ScaleReplicasAreReady(ctx *TestingContext, t TestingTB, replicas map[
 	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 
 		for name, replicasID := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
+			deploymentConfig := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
 
 			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deploymentConfig)
 			if err != nil {

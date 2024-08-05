@@ -44,11 +44,10 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
-	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -516,7 +515,6 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
@@ -557,7 +555,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		productConfig *quota.ProductConfigMock
@@ -826,7 +823,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
@@ -916,7 +912,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 	}
 }
 
-func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
+func TestReconciler_ensureDeploymentsReady(t *testing.T) {
 	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
@@ -948,7 +944,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test - Unable to get deployment config - PhaseFailed",
+			name: "Test - Unable to get deployment - PhaseFailed",
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
@@ -960,7 +956,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Test - Deployment config has a 'False' condition - Rollout success - PhaseCreatingComponents",
+			name: "Test - Deployment has a 'False' condition - Rollout success - PhaseCreatingComponents",
 			fields: fields{
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": defaultInstallationNamespace,
@@ -971,7 +967,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: utils.NewTestClient(scheme,
-					&openshiftappsv1.DeploymentConfig{
+					&appsv1.Deployment{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
 							Namespace: defaultInstallationNamespace,
@@ -979,8 +975,8 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 								"app": "apicast-production",
 							},
 						},
-						Status: openshiftappsv1.DeploymentConfigStatus{
-							Conditions: []openshiftappsv1.DeploymentCondition{
+						Status: appsv1.DeploymentStatus{
+							Conditions: []appsv1.DeploymentCondition{
 								{
 									Status: corev1.ConditionFalse,
 								},
@@ -1000,7 +996,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: utils.NewTestClient(scheme,
-					&openshiftappsv1.DeploymentConfig{
+					&appsv1.Deployment{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
 							Namespace: defaultInstallationNamespace,
@@ -1008,8 +1004,8 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 								"app": "apicast-production",
 							},
 						},
-						Status: openshiftappsv1.DeploymentConfigStatus{
-							Conditions: []openshiftappsv1.DeploymentCondition{
+						Status: appsv1.DeploymentStatus{
+							Conditions: []appsv1.DeploymentCondition{
 								{
 									Status: corev1.ConditionUnknown,
 								},
@@ -1030,7 +1026,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: utils.NewTestClient(scheme,
-					&openshiftappsv1.DeploymentConfig{
+					&appsv1.Deployment{
 						TypeMeta: metav1.TypeMeta{},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
@@ -1039,8 +1035,8 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 								"app": "apicast-production",
 							},
 						},
-						Status: openshiftappsv1.DeploymentConfigStatus{
-							Conditions: []openshiftappsv1.DeploymentCondition{
+						Status: appsv1.DeploymentStatus{
+							Conditions: []appsv1.DeploymentCondition{
 								{
 									Status: corev1.ConditionTrue,
 								},
@@ -1063,7 +1059,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: utils.NewTestClient(scheme,
-					&openshiftappsv1.DeploymentConfig{
+					&appsv1.Deployment{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
 							Namespace: defaultInstallationNamespace,
@@ -1071,8 +1067,8 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 								"app": "apicast-production",
 							},
 						},
-						Status: openshiftappsv1.DeploymentConfigStatus{
-							Conditions: []openshiftappsv1.DeploymentCondition{
+						Status: appsv1.DeploymentStatus{
+							Conditions: []appsv1.DeploymentCondition{
 								{
 									Status: corev1.ConditionTrue,
 								},
@@ -1105,14 +1101,13 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 				log:           tt.fields.log,
 			}
-			got, err := r.ensureDeploymentConfigsReady(tt.args.ctx, tt.args.serverClient, tt.args.productNamespace)
+			got, err := r.ensureDeploymentsReady(tt.args.ctx, tt.args.serverClient, tt.args.productNamespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ensureDeploymentConfigsReady() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1136,7 +1131,6 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -1335,7 +1329,6 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -1363,7 +1356,6 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -1512,7 +1504,6 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -1543,7 +1534,6 @@ func TestReconciler_getUserDiff(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -1818,7 +1808,6 @@ func TestReconciler_getUserDiff(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -1851,7 +1840,6 @@ func TestReconciler_findCustomDomainCr(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -1916,7 +1904,6 @@ func TestReconciler_findCustomDomainCr(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -1942,7 +1929,6 @@ func TestReconciler_useCustomDomain(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -1984,7 +1970,6 @@ func TestReconciler_useCustomDomain(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -2010,7 +1995,6 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -2136,7 +2120,6 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -2242,7 +2225,6 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 	}
@@ -2270,7 +2252,6 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				mpm:           nil,
 				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
-				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
 			},
@@ -2293,7 +2274,6 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				mpm:           nil,
 				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
-				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
 			},
@@ -2316,7 +2296,6 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
@@ -2446,7 +2425,6 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 				mpm:           nil,
 				installation:  getTestInstallation("multitenant-managed-api"),
 				tsClient:      nil,
-				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
 			}
@@ -2533,7 +2511,6 @@ func TestReconciler_removeTenantAccountPassword(t *testing.T) {
 				mpm:           nil,
 				installation:  getTestInstallation("multitenant-managed-api"),
 				tsClient:      nil,
-				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
 			}
@@ -2620,7 +2597,6 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -2931,7 +2907,6 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -3238,7 +3213,6 @@ func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -3292,7 +3266,6 @@ func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -3329,7 +3302,6 @@ func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -3371,7 +3343,6 @@ func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -3397,7 +3368,6 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -3471,7 +3441,6 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -3492,7 +3461,6 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -3500,10 +3468,10 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 		log           l.Logger
 	}
 	type args struct {
-		ctx          context.Context
-		serverClient k8sclient.Client
-		dcName       string
-		updateFn     func(dc *openshiftappsv1.DeploymentConfig, value string) bool
+		ctx            context.Context
+		serverClient   k8sclient.Client
+		deploymentName string
+		updateFn       func(deployment *appsv1.Deployment, value string) bool
 	}
 
 	tests := []struct {
@@ -3518,7 +3486,7 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 			name:        "Error getting existing SMTP from Address",
 			want:        integreatlyv1alpha1.PhaseFailed,
 			wantErr:     true,
-			errContains: "deploymentconfigs.apps.openshift.io \"\" not found",
+			errContains: "deployments.apps \"\" not found",
 			args: args{
 				ctx: context.TODO(),
 				serverClient: fake.NewClientBuilder().WithRuntimeObjects(&corev1.Secret{
@@ -3543,18 +3511,17 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": defaultInstallationNamespace,
 				}),
-				appsv1Client: fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1(),
 			},
 		},
 		{
-			name:        "Error Getting deployment config",
+			name:        "Error Getting deployment",
 			want:        integreatlyv1alpha1.PhaseFailed,
 			wantErr:     true,
 			errContains: "\"system-app\" not found",
 			args: args{
-				ctx:          context.TODO(),
-				dcName:       "system-app",
-				serverClient: fake.NewClientBuilder().Build(),
+				ctx:            context.TODO(),
+				deploymentName: "system-app",
+				serverClient:   fake.NewClientBuilder().Build(),
 			},
 			fields: fields{
 				installation:  &integreatlyv1alpha1.RHMI{},
@@ -3563,8 +3530,6 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": defaultInstallationNamespace,
 				}),
-
-				appsv1Client: fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1(),
 			},
 		},
 	}
@@ -3576,7 +3541,6 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -3584,7 +3548,7 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				log:           tt.fields.log,
 			}
 			t.Setenv("ALERT_SMTP_FROM", "envar@smtp.com")
-			got, err := r.reconcileDcEnvarEmailAddress(tt.args.ctx, tt.args.serverClient, tt.args.dcName, tt.args.updateFn)
+			got, err := r.reconcileDeploymentEnvarEmailAddress(tt.args.ctx, tt.args.serverClient, tt.args.deploymentName, tt.args.updateFn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileDcEnvarEmailAddress() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -3602,7 +3566,7 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 
 func Test_updateContainerSupportEmail(t *testing.T) {
 	type args struct {
-		dc                      *openshiftappsv1.DeploymentConfig
+		deployment              *appsv1.Deployment
 		existingSMTPFromAddress string
 		envar                   string
 	}
@@ -3619,9 +3583,9 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 			args: args{
 				envar:                   "SUPPORT_EMAIL",
 				existingSMTPFromAddress: "test@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3646,9 +3610,9 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 			args: args{
 				envar:                   "SUPPORT_EMAIL",
 				existingSMTPFromAddress: "test@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3673,9 +3637,9 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 			args: args{
 				envar:                   "SUPPORT_EMAIL",
 				existingSMTPFromAddress: "test@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3700,9 +3664,9 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 			args: args{
 				envar:                   "SUPPORT_EMAIL",
 				existingSMTPFromAddress: "test@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3739,12 +3703,12 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := updateContainerSupportEmail(tt.args.dc, tt.args.existingSMTPFromAddress, tt.args.envar); got != tt.want {
+			if got := updateContainerSupportEmail(tt.args.deployment, tt.args.existingSMTPFromAddress, tt.args.envar); got != tt.want {
 				t.Errorf("updateContainerSupportEmail() = %v, want %v", got, tt.want)
 			}
 
 			finds := 0
-			for _, container := range tt.args.dc.Spec.Template.Spec.Containers {
+			for _, container := range tt.args.deployment.Spec.Template.Spec.Containers {
 				for _, envar := range container.Env {
 					if envar.Name == "SUPPORT_EMAIL" {
 						if envar.Value != tt.args.existingSMTPFromAddress {
@@ -3765,8 +3729,8 @@ func Test_updateContainerSupportEmail(t *testing.T) {
 
 func Test_updateSystemAppAddresses(t *testing.T) {
 	type args struct {
-		dc    *openshiftappsv1.DeploymentConfig
-		value string
+		deployment *appsv1.Deployment
+		value      string
 	}
 	tests := []struct {
 		name string
@@ -3774,13 +3738,13 @@ func Test_updateSystemAppAddresses(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "DC was updated",
+			name: "deployment was updated",
 			want: true,
 			args: args{
 				value: "update@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3799,13 +3763,13 @@ func Test_updateSystemAppAddresses(t *testing.T) {
 			},
 		},
 		{
-			name: "DC was not updated",
+			name: "deployment was not updated",
 			want: false,
 			args: args{
 				value: "no-update@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3826,7 +3790,7 @@ func Test_updateSystemAppAddresses(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := updateSystemAppAddresses(tt.args.dc, tt.args.value); got != tt.want {
+			if got := updateSystemAppAddresses(tt.args.deployment, tt.args.value); got != tt.want {
 				t.Errorf("updateSystemAppAddresses() = %v, want %v", got, tt.want)
 			}
 		})
@@ -3835,8 +3799,8 @@ func Test_updateSystemAppAddresses(t *testing.T) {
 
 func Test_updateSystemSidekiqAddresses(t *testing.T) {
 	type args struct {
-		dc    *openshiftappsv1.DeploymentConfig
-		value string
+		deployment *appsv1.Deployment
+		value      string
 	}
 	tests := []struct {
 		name string
@@ -3848,9 +3812,9 @@ func Test_updateSystemSidekiqAddresses(t *testing.T) {
 			want: false,
 			args: args{
 				value: "no-update@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3877,9 +3841,9 @@ func Test_updateSystemSidekiqAddresses(t *testing.T) {
 			want: true,
 			args: args{
 				value: "no-update@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3906,9 +3870,9 @@ func Test_updateSystemSidekiqAddresses(t *testing.T) {
 			want: true,
 			args: args{
 				value: "no-update@example.com",
-				dc: &openshiftappsv1.DeploymentConfig{
-					Spec: openshiftappsv1.DeploymentConfigSpec{
-						Template: &corev1.PodTemplateSpec{
+				deployment: &appsv1.Deployment{
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
 							Spec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									{
@@ -3933,7 +3897,7 @@ func Test_updateSystemSidekiqAddresses(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := updateSystemSidekiqAddresses(tt.args.dc, tt.args.value); got != tt.want {
+			if got := updateSystemSidekiqAddresses(tt.args.deployment, tt.args.value); got != tt.want {
 				t.Errorf("updateSystemSidekiqAddresses() = %v, want %v", got, tt.want)
 			}
 		})
@@ -3969,7 +3933,6 @@ func TestReconciler_getKeycloakUserFromAccount(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -4041,7 +4004,6 @@ func TestReconciler_getKeycloakUserFromAccount(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -4082,7 +4044,6 @@ func TestReconciler_getKeycloakClientFromAccount(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -4154,7 +4115,6 @@ func TestReconciler_getKeycloakClientFromAccount(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -4185,7 +4145,6 @@ func TestReconciler_reconcileDashboardLink(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -4246,7 +4205,6 @@ func TestReconciler_reconcileDashboardLink(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
@@ -4273,7 +4231,6 @@ func TestReconciler_deleteConsoleLink(t *testing.T) {
 		mpm           marketplace.MarketplaceInterface
 		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
-		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
 		extraParams   map[string]string
@@ -4321,7 +4278,7 @@ func TestReconciler_deleteConsoleLink(t *testing.T) {
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
-				appsv1Client:  tt.fields.appsv1Client,
+
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 				extraParams:   tt.fields.extraParams,
