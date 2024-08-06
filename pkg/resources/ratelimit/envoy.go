@@ -43,7 +43,7 @@ func (envoyProxy *envoyProxyServer) CreateEnvoyProxyContainer(deploymentName, na
 		l.Fields{"Deployment": deploymentName, "Namespace": namespace},
 	)
 
-	// patches deployment config to add the sidecar container
+	// patches deployment to add the sidecar container
 	phase, err := envoyProxy.patchDeployment(deploymentName, namespace, envoyNodeID, svcProxyPort)
 	if err != nil {
 		return phase, err
