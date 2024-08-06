@@ -221,7 +221,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	endTime = startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
 
 	threescalePods := &v1.PodList{}
-	selector, err := labels.Parse("deploymentConfig=backend-listener")
+	selector, err := labels.Parse("deployment=backend-listener")
 	if err != nil {
 		t.Fatal(err)
 	}

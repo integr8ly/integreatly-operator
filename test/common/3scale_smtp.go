@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	appsv1 "github.com/openshift/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	k8sv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
@@ -338,9 +338,9 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 func restartThreeScalePods(t TestingTB, ctx *TestingContext, inst *rhmiv1alpha1.RHMI) {
 	// Scale down system-app and system-sidekiq in order to load new smtp config
 	t.Log("Redeploy 3Scale pods")
-	for _, dc := range []string{"system-app", "system-sidekiq"} {
-		t.Logf("Scaling down dc '%s' to 0 replicas in '%s' namespace", dc, threescaleNamespace)
-		scaleDeploymentConfig(t, dc, threescaleNamespace, 0, ctx.Client)
+	for _, deployment := range []string{"system-app", "system-sidekiq"} {
+		t.Logf("Scaling down deployment '%s' to 0 replicas in '%s' namespace", deployment, threescaleNamespace)
+		scale3scaleDeployment(t, deployment, threescaleNamespace, 0, ctx.Client)
 	}
 
 	t.Log("Checking pods are ready")
@@ -754,21 +754,21 @@ func createNamespace(ctx *TestingContext, t TestingTB) error {
 	return nil
 }
 
-func scaleDeploymentConfig(t TestingTB, name string, namespace string, replicas int32, client k8sclient.Client) {
+func scale3scaleDeployment(t TestingTB, name string, namespace string, replicas int32, client k8sclient.Client) {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deploymentConfig := &appsv1.DeploymentConfig{
+		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
 			},
 		}
-		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
+		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deployment)
 		if getErr != nil {
-			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
+			return fmt.Errorf("failed to get deployment %s in namespace %s with error: %s", name, namespace, getErr)
 		}
 
-		deploymentConfig.Spec.Replicas = replicas
-		updateErr := client.Update(goctx.TODO(), deploymentConfig)
+		deployment.Spec.Replicas = &replicas
+		updateErr := client.Update(goctx.TODO(), deployment)
 		return updateErr
 	})
 	if retryErr != nil {

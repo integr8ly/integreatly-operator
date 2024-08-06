@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	appsv1 "github.com/openshift/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +24,7 @@ var (
 )
 
 var (
-	threeScaleDeploymentConfigs = map[string]string{
+	threeScaleDeployments = map[string]string{
 		"apicast-production": "apicastProd",
 		"apicast-staging":    "apicastStage",
 		"backend-cron":       "backendCron",
@@ -245,16 +245,16 @@ func check3ScaleReplicasAreReady(ctx *TestingContext, t TestingTB, replicas map[
 
 	return wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 
-		for name, replicasID := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
+		for name, replicasID := range threeScaleDeployments {
+			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
 
-			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deploymentConfig)
+			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deployment)
 			if err != nil {
-				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
+				t.Errorf("failed to get Deployment %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
 			}
 
-			if deploymentConfig.Status.ReadyReplicas != int32(replicas[replicasID]) || deploymentConfig.Status.UnavailableReplicas != 0 {
-				t.Logf("%s replicas ready %v, expected %v, unavailable replicas %v ", name, deploymentConfig.Status.ReadyReplicas, replicas[replicasID], deploymentConfig.Status.UnavailableReplicas)
+			if deployment.Status.ReadyReplicas != int32(replicas[replicasID]) || deployment.Status.UnavailableReplicas != 0 {
+				t.Logf("%s replicas ready %v, expected %v, unavailable replicas %v ", name, deployment.Status.ReadyReplicas, replicas[replicasID], deployment.Status.UnavailableReplicas)
 				return false, nil
 			}
 		}

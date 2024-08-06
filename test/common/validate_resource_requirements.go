@@ -28,9 +28,9 @@ var (
 	}
 	productsToTest = map[v1alpha1.ProductName]map[string]string{
 		v1alpha1.Product3Scale: {
-			quota.BackendListenerName:   "deploymentconfig=backend-listener",
-			quota.BackendWorkerName:     "deploymentconfig=backend-worker",
-			quota.ApicastProductionName: "deploymentconfig=apicast-production",
+			quota.BackendListenerName:   "deployment=backend-listener",
+			quota.BackendWorkerName:     "deployment=backend-worker",
+			quota.ApicastProductionName: "deployment=apicast-production",
 			"namespace":                 ThreeScaleProductNamespace,
 		},
 		v1alpha1.ProductRHSSOUser: {

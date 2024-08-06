@@ -8,15 +8,15 @@ import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	apiMachineryTypes "k8s.io/apimachinery/pkg/types"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -26,7 +26,6 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	fakeSigsClient := t.fields.sigsClient
 	installationCR := t.args.installation
 	fakeThreeScaleClient := t.fields.threeScaleClient
-	fakeAppsV1Client := t.fields.appsv1Client
 	configManager := t.fields.fakeConfig
 
 	tsConfig, err := configManager.ReadThreeScale()
@@ -126,19 +125,24 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 		}
 	}
 
-	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
-	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(context.TODO(), "system-app", metav1.GetOptions{})
+	// system-app and system-sidekiq deployments should have been rolled out on first reconcile.
+	systemAppDeployment := &appsv1.Deployment{}
+	err = fakeSigsClient.Get(ctx, apiMachineryTypes.NamespacedName{Namespace: tsConfig.GetNamespace(), Name: "system-app"}, systemAppDeployment)
 	if err != nil {
-		return fmt.Errorf("error getting deplymentconfig: %v", err)
+		return fmt.Errorf("error getting deplyment: %v", err)
 	}
-	if sa.Status.LatestVersion == 1 {
+
+	if systemAppDeployment.Status.ObservedGeneration == 1 {
 		return fmt.Errorf("system-app was not rolled out")
 	}
-	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(context.TODO(), "system-sidekiq", metav1.GetOptions{})
+
+	systemSidekiqDeployment := &appsv1.Deployment{}
+	err = fakeSigsClient.Get(ctx, apiMachineryTypes.NamespacedName{Namespace: tsConfig.GetNamespace(), Name: "system-sidekiq"}, systemSidekiqDeployment)
 	if err != nil {
-		return fmt.Errorf("error getting deplymentconfig: %v", err)
+		return fmt.Errorf("error getting deplyment: %v", err)
 	}
-	if ssk.Status.LatestVersion == 1 {
+
+	if systemSidekiqDeployment.Status.ObservedGeneration == 1 {
 		return fmt.Errorf("system-sidekiq was not rolled out")
 	}
 

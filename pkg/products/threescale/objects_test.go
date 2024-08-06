@@ -15,10 +15,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	appsv1 "github.com/openshift/api/apps/v1"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	v12 "github.com/openshift/api/config/v1"
@@ -172,12 +172,12 @@ var testDedicatedAdminsGroup = &usersv1.Group{
 	},
 }
 
-var systemApp = appsv1.DeploymentConfig{
+var systemApp = appsv1.Deployment{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-app",
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
@@ -192,17 +192,17 @@ var systemApp = appsv1.DeploymentConfig{
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{
-		LatestVersion: 1,
+	Status: appsv1.DeploymentStatus{
+		ObservedGeneration: 1,
 	},
 }
 
-var systemSidekiq = appsv1.DeploymentConfig{
+var systemSidekiq = appsv1.Deployment{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-sidekiq",
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
@@ -217,12 +217,12 @@ var systemSidekiq = appsv1.DeploymentConfig{
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{
-		LatestVersion: 1,
+	Status: appsv1.DeploymentStatus{
+		ObservedGeneration: 1,
 	},
 }
 
-var successfulTestAppsV1Objects = map[string]*appsv1.DeploymentConfig{
+var successfulTestAppsV1Objects = map[string]*appsv1.Deployment{
 	systemApp.Name:         &systemApp,
 	systemSidekiq.Name:     &systemSidekiq,
 	apicastProduction.Name: apicastProduction,
@@ -518,7 +518,7 @@ var operatorNS = &corev1.Namespace{
 	},
 }
 
-var apicastProduction = &appsv1.DeploymentConfig{
+var apicastProduction = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "apicast-production",
@@ -527,18 +527,18 @@ var apicastProduction = &appsv1.DeploymentConfig{
 			"app": "apicast-production",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var apicastStaging = &appsv1.DeploymentConfig{
+var apicastStaging = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "apicast-staging",
@@ -547,18 +547,18 @@ var apicastStaging = &appsv1.DeploymentConfig{
 			"app": "apicast-staging",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var backendCron = &appsv1.DeploymentConfig{
+var backendCron = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "backend-cron",
@@ -567,18 +567,18 @@ var backendCron = &appsv1.DeploymentConfig{
 			"app": "backend-cron",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var backendListener = &appsv1.DeploymentConfig{
+var backendListener = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "backend-listener",
@@ -587,18 +587,18 @@ var backendListener = &appsv1.DeploymentConfig{
 			"app": "backend-listener",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var backendWorker = &appsv1.DeploymentConfig{
+var backendWorker = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "backend-worker",
@@ -607,18 +607,18 @@ var backendWorker = &appsv1.DeploymentConfig{
 			"app": "backend-worker",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var systemAppDep = &appsv1.DeploymentConfig{
+var systemAppDep = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "system-app",
@@ -627,18 +627,18 @@ var systemAppDep = &appsv1.DeploymentConfig{
 			"app": "system-app",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var systemMemcache = &appsv1.DeploymentConfig{
+var systemMemcache = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "system-memcache",
@@ -647,18 +647,18 @@ var systemMemcache = &appsv1.DeploymentConfig{
 			"app": "system-memcache",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var systemSidekiqDep = &appsv1.DeploymentConfig{
+var systemSidekiqDep = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "system-sidekiq",
@@ -667,18 +667,18 @@ var systemSidekiqDep = &appsv1.DeploymentConfig{
 			"app": "system-sidekiq",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var systemSearchd = &appsv1.DeploymentConfig{
+var systemSearchd = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "system-searchd",
@@ -687,18 +687,18 @@ var systemSearchd = &appsv1.DeploymentConfig{
 			"app": "system-searchd",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var zync = &appsv1.DeploymentConfig{
+var zync = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "zync",
@@ -707,18 +707,18 @@ var zync = &appsv1.DeploymentConfig{
 			"app": "zync",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var zyncDatabase = &appsv1.DeploymentConfig{
+var zyncDatabase = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "zync-database",
@@ -727,18 +727,18 @@ var zyncDatabase = &appsv1.DeploymentConfig{
 			"app": "zync-database",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
-var zyncQue = &appsv1.DeploymentConfig{
+var zyncQue = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "zync-que",
@@ -747,15 +747,15 @@ var zyncQue = &appsv1.DeploymentConfig{
 			"app": "zync-que",
 		},
 	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
+	Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: corev1.PodSpec{
 				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 	},
-	Status: appsv1.DeploymentConfigStatus{},
+	Status: appsv1.DeploymentStatus{},
 }
 
 var threescale = &threescalev1.APIManager{
@@ -997,7 +997,7 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 						Name:      "system-app-1-abcde",
 						Namespace: "3scale",
 						Labels: map[string]string{
-							"deploymentConfig": "system-app",
+							"deployment": "system-app",
 						},
 					},
 					Status: corev1.PodStatus{
