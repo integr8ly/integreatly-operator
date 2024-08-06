@@ -11,7 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/utils"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"golang.org/x/net/context"
-	appsv1 "k8s.io/api/apps/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +23,7 @@ import (
 var (
 	commonApiDeploymentsList = []string{
 		"threeScaleDeployment",
+		"threeScaleProductDeployment",
 		"cloudResourceOperatorDeployment",
 		"observabilityDeployment",
 		"rhssoOperatorDeployment",
@@ -74,7 +74,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "marin3r-controller-webhook", ExpectedReplicas: 2},
 			},
 		},
-		"threeScaleDeploymentConfig": {
+		"threeScaleProductDeployment": {
 			Name: NamespacePrefix + "3scale",
 			Products: []Product{
 				{Name: "apicast-production", ExpectedReplicas: int32(replicas["apicastProd"])},
@@ -182,7 +182,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				continue
 			}
 
-			if deployment.Status.Replicas < product.ExpectedReplicas {
+			if deployment.Status.ReadyReplicas < product.ExpectedReplicas {
 				t.Errorf("Deployment %s in namespace %s doesn't match the number of expected replicas. Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -191,47 +191,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				)
 				continue
 			}
-
-			pods := &corev1.PodList{}
-			err = ctx.Client.List(context.TODO(), pods, GetListOptions(Marin3rProductNamespace, "app=ratelimit")...)
-			if err != nil {
-				t.Fatalf("failed to get pods for Ratelimit: %v", err)
-			}
-			checkDeploymentPods(t, pods, product, namespace, deployment)
-			// Verify that the expected replicas are also available, means they are up and running and consumable by users
-			if deployment.Status.AvailableReplicas < product.ExpectedReplicas {
-				t.Errorf("Deployment %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
-					product.Name,
-					namespace.Name,
-					deployment.Status.AvailableReplicas,
-					product.ExpectedReplicas,
-				)
-				continue
-
-			}
 		}
-	}
-}
-
-func checkDeploymentPods(t TestingTB, pods *corev1.PodList, product Product, namespace Namespace, deployment *k8sappsv1.Deployment) {
-	if int32(len(pods.Items)) < product.ExpectedReplicas {
-		t.Errorf("Deployment %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
-			product.Name,
-			namespace.Name,
-			deployment.Status.AvailableReplicas,
-			product.ExpectedReplicas,
-		)
-	}
-}
-
-func checkDeploymentConfigPods(t TestingTB, pods *corev1.PodList, product Product, namespace Namespace, deploymentConfig *appsv1.Deployment) {
-	if int32(len(pods.Items)) < product.ExpectedReplicas {
-		t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
-			product.Name,
-			namespace.Name,
-			deploymentConfig.Status.AvailableReplicas,
-			product.ExpectedReplicas,
-		)
 	}
 }
 
@@ -253,69 +213,9 @@ func getDeployments(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingCon
 	}
 }
 
-func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
-	rhmi, err := GetRHMI(ctx.Client, true)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
-	}
-
-	deploymentConfigs := getDeploymentConfigs(rhmi, t, ctx)
-
-	for _, namespace := range deploymentConfigs {
-		for _, product := range namespace.Products {
-
-			deploymentConfig := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      product.Name,
-					Namespace: namespace.Name,
-				},
-			}
-			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: product.Name, Namespace: namespace.Name}, deploymentConfig)
-			if err != nil {
-				t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", product.Name, namespace.Name, err)
-				continue
-			}
-
-			if deploymentConfig.Status.Replicas < product.ExpectedReplicas {
-				t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected replicas. Replicas: %v / Expected Replicas: %v",
-					product.Name,
-					namespace.Name,
-					deploymentConfig.Status.Replicas,
-					product.ExpectedReplicas,
-				)
-				continue
-			}
-			if product.Name == "apicast-production" {
-				pods := &corev1.PodList{}
-				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=apicast-production")...)
-				if err != nil {
-					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-				}
-				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-			} else if product.Name == "backend-listener" {
-				pods := &corev1.PodList{}
-				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentConfig=backend-listener")...)
-				if err != nil {
-					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-				}
-				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-			} else if product.Name == "backend-worker" {
-				pods := &corev1.PodList{}
-				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=backend-worker")...)
-				if err != nil {
-					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-				}
-				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-			}
-		}
-	}
-}
-
-func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingContext) []Namespace {
+func getThreescaleProductDeployment(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingContext) []Namespace {
 	return []Namespace{
-		getDeploymentConfiguration("threeScaleDeploymentConfig", inst, t, ctx),
+		getDeploymentConfiguration("threeScaleProductDeployment", inst, t, ctx),
 	}
 }
 

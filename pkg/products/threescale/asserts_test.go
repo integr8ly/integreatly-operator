@@ -125,7 +125,7 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 		}
 	}
 
-	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
+	// system-app and system-sidekiq deployments should have been rolled out on first reconcile.
 	systemAppDeployment := &appsv1.Deployment{}
 	err = fakeSigsClient.Get(ctx, apiMachineryTypes.NamespacedName{Namespace: tsConfig.GetNamespace(), Name: "system-app"}, systemAppDeployment)
 	if err != nil {
