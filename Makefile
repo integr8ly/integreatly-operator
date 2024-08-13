@@ -1,13 +1,13 @@
 include ./make/*.mk
 
-ORG ?= integreatly
+ORG ?= vmogilev_rhmi
 
 CONFIG_IMAGE ?= 'quay.io/integreatly/managed-api-service-config:latest'
 
 REG=quay.io
 SHELL=/bin/bash
 
-PKG=github.com/integr8ly/integreatly-operator
+PKG=github.com/vmogilev_rhm/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)

@@ -160,3 +160,6 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202108310919
 
 // Required to fix critical CVE. But it uses go 1.21.0 !
 replace github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.27.0
+
+//TODO TMP
+replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20240814075250-d640e02b6226

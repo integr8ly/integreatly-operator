@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/vmogilev_rhmi/managed-api-service:1.41.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.15"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -63,8 +63,8 @@ metadata:
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:4f807ee6e885e966853f70e1c40bbc179dc1f994b401ac868b7f2b921f9d17a0",
           "system_searchd": "registry.redhat.io/3scale-mas/searchd-rhel7@sha256:1426e4bd4aa0eb28b479900ffc02621203886280d24997cd11818387ff30d9df"
         },
-        "cloud-resource-operator.v1.1.3": {
-          "cloud-resources.v1.1.3": "quay.io/integreatly/cloud-resource-operator:v1.1.3"
+        "cloud-resource-operator.v1.1.4": {
+          "cloud-resources.v1.1.4": "quay.io/vmogilev_rhmi/cloud-resource-operator:v1.1.4"
         },
         "marin3r.v0.11.0": {
           "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
@@ -663,7 +663,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/vmogilev_rhmi/managed-api-service:1.41.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:

@@ -172,3 +172,6 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202108310919
 
 // Required to import parent module - cannot import remotely as parent module was importing test directoy
 replace github.com/integr8ly/integreatly-operator => ../
+
+//TODO TMP
+replace github.com/integr8ly/cloud-resource-operator => ../../cloud-resource-operator

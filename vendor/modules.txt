@@ -615,7 +615,7 @@ github.com/hashicorp/go-version
 # github.com/imdario/mergo v0.3.16
 ## explicit; go 1.13
 github.com/imdario/mergo
-# github.com/integr8ly/cloud-resource-operator v1.1.4-0.20240702122756-a7744fd089c0
+# github.com/integr8ly/cloud-resource-operator v1.1.4-0.20240702122756-a7744fd089c0 => github.com/valerymo/cloud-resource-operator v0.25.1-0.20240814075250-d640e02b6226
 ## explicit; go 1.20
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types
@@ -1572,3 +1572,4 @@ sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.27.0
+# github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20240814075250-d640e02b6226
