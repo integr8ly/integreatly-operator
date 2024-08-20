@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM registry.redhat.io/ubi8/go-toolset:1.20.12-5 AS builder
+FROM registry.redhat.io/ubi9/go-toolset:1.20.12 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -22,7 +22,7 @@ COPY utils/ utils/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o rhmi-operator main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ENV OPERATOR=/usr/local/bin/rhmi-operator \
     USER_UID=1001 \
