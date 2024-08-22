@@ -336,8 +336,8 @@ github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJ
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=
 github.com/imdario/mergo v0.3.16/go.mod h1:WBLT9ZmE3lPoWsEzCh9LPo3TiwVN+ZKEjmz+hD27ysY=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
-github.com/integr8ly/cloud-resource-operator v1.1.4-0.20240702122756-a7744fd089c0 h1:BT2eHLbtJkrY66lUwHsz3wbInE3n0jUrUtcK0yJKEWk=
-github.com/integr8ly/cloud-resource-operator v1.1.4-0.20240702122756-a7744fd089c0/go.mod h1:cNaV70qpD7I4qY3nak3wKe9460F66GOjXhL7L6z80ng=
+github.com/integr8ly/cloud-resource-operator v1.1.4 h1:QZ+SlSgihB7oYI40DXABgvjRtgkxasmjC4pLhNEPx94=
+github.com/integr8ly/cloud-resource-operator v1.1.4/go.mod h1:cNaV70qpD7I4qY3nak3wKe9460F66GOjXhL7L6z80ng=
 github.com/integr8ly/keycloak-client v0.1.14 h1:WfjOaAxk4yjG+wF80/AT8LJi1RhDAm9tUbSB+lB1sQ0=
 github.com/integr8ly/keycloak-client v0.1.14/go.mod h1:b4x7gwWAkJw7qIhTWRsD/upu5eaUKbWIosmizFGFu/E=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
