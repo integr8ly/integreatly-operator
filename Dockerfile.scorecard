@@ -19,7 +19,7 @@ COPY test/scorecard ./test/scorecard
 # Build
 RUN GOOS=linux GOARCH=amd64 make scorecard/compile
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 #  kubectl 1.18
 RUN curl -Lso /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl

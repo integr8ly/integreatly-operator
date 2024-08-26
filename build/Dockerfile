@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ENV OPERATOR=/usr/local/bin/rhmi-operator \
     USER_UID=1001 \
