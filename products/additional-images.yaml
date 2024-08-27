@@ -5,7 +5,7 @@
 
 ratelimit:
   - name: 3scale-openshift-service-mesh
-    url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.9-2"
+    url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.3-8"
 limitador:
   - name: marin3r-limitador
     url: "quay.io/kuadrant/limitador:v1.3.0"
