@@ -67,16 +67,16 @@ metadata:
           "cloud-resources.v1.1.4": "quay.io/integreatly/cloud-resource-operator:v1.1.4"
         },
         "marin3r.v0.11.0": {
-          "marin3r.v0.12.3": "quay.io/3scale/marin3r:v0.12.3"
+          "marin3r.v0.13.1": "quay.io/3scale/marin3r:v0.13.1"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.7-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
-          "sso7-rhel8-operator-711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:711f12fe68c345c8753b39f68ff0ba71f5c209b9a466ef98feffbcadb531b545",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:21033463e761a6ff142551fa93ec20196ad46f18b0dc4a0c692866d4410c64ce",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:21033463e761a6ff142551fa93ec20196ad46f18b0dc4a0c692866d4410c64ce",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:c9634cf64e2b0c3a7e8314b870dba12bb6a370b44545f9347ca577f7a5a13103",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:c9634cf64e2b0c3a7e8314b870dba12bb6a370b44545f9347ca577f7a5a13103"
+          "rhsso-operator.7.6.9-opr-002": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
+          "sso7-rhel8-operator-3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:0b926fc9eae775425faa1ab9709a36fdac15afe4bfe523720e17ecf5df45bb28",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:0b926fc9eae775425faa1ab9709a36fdac15afe4bfe523720e17ecf5df45bb28",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:be49c4d5288bdcb3da6bbcf0155314ec3dd3a89b29ccaaafc3345f9f6e86e86a",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:be49c4d5288bdcb3da6bbcf0155314ec3dd3a89b29ccaaafc3345f9f6e86e86a"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.3-8"
@@ -85,13 +85,12 @@ metadata:
           "marin3r-limitador": "quay.io/kuadrant/limitador:v1.3.0"
         },
         "grafana": {
-          "grafana": "registry.redhat.io/rhel9/grafana@sha256:8ae4e07283e61f8bda7c5b621ded8928fd00a774986027c5bd87ed9d5bc14c02"
+          "grafana": "registry.redhat.io/rhel9/grafana@sha256:31cac5b19c9709d9d7aa00b10858a5f1c0e2badd7b9fdf9b6772e47c87e4cc16"
         },
         "grafana-ose-oauth-proxy": {
-          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:6331f77131cd2ecfba7cbbdf5ade042cc0ed724fda939755384bc21d234b765e"
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:cdd63d660b8a629cbca27269b8c9e6ea76ece2b257a8f29a35610f822941b2db"
         }
       }
-    serviceAffecting: "true"
   name: managed-api-service.v1.41.0
   namespace: placeholder
 spec:
@@ -487,6 +486,12 @@ spec:
                 - get
                 - list
                 - watch
+            - apiGroups:
+                - operator.openshift.io
+              resources:
+                - ingresscontrollers
+              verbs:
+                - list
             - apiGroups:
                 - operators.coreos.com
               resourceNames:
