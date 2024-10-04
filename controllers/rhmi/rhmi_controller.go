@@ -237,6 +237,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list
 
+// +kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=list
+
 // +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
 
 // +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list;delete

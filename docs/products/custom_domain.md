@@ -27,43 +27,52 @@ Values of the certificate can be examined as follows.
 openssl x509 -noout -text -in rhmi.me.crt
 ```
 
-The certificate is  added to a namespace on the cluster.
+The certificate is  added to an openshift-ingress namespace on the cluster.
 ```shell
-oc new-project certs
-oc create secret tls rhmi-me-tls --cert=rhmi.me.crt --key=rhmi.me.key -n certs
+oc create secret tls rhmi-me-tls --cert=rhmi.me.crt --key=rhmi.me.key -n openshift-ingress
 ```
 
-On the cluster a Custom Domain CR needs to be created.
-More information about the Custom Domain CR can be found in the [Openshift documentation](https://docs.openshift.com/dedicated/applications/deployments/osd-config-custom-domains-applications.html).
+On the cluster a IngressController CR needs to be created.
 ```shell
 oc apply -f - <<EOF                                                             
 ---             
-apiVersion: managed.openshift.io/v1alpha1
-kind: CustomDomain
+apiVersion: operator.openshift.io/v1
+kind: IngressController
 metadata:
-  name: customdomain1
+  name: custom-domain
+  namespace: openshift-ingress-operator
 spec:
-  domain: apps.rhmi.me 
-  scope: External
-  certificate:
+  domain: apps.rhmi.me
+  tuningOptions:
+    reloadInterval: 0s
+  clientTLS:
+    clientCA:
+      name: ''
+    clientCertificatePolicy: ''
+  unsupportedConfigOverrides: null
+  defaultCertificate:
     name: rhmi-me-tls
-    namespace: certs
+  httpErrorCodePages:
+    name: ''
+  replicas: 2
+  httpEmptyRequestsPolicy: Respond
+  endpointPublishingStrategy:
+    loadBalancer:
+      dnsManagementPolicy: Managed
+      providerParameters:
+        aws:
+          type: Classic
+        type: AWS
+      scope: External
+    type: LoadBalancerService
+  httpCompression: {}
 EOF
 ```
 
-Once the Custom Domain CR is in a ready state there will be an endpoint value that is required by the CNAME record.
+Once the IngressController CR is in a ready state navigate to the openshift-ingress services and find the router-custom-domain service.
+From this service, copy the locaction endpoint.
 
-Checking the state of the Custom Domain CR.
-```shell
-oc get CustomDomain customdomain1 -o jsonpath='{.status.state}{"\n"}'
-```
-
-Getting the endpoint URL from the Custom Domain CR.
-```shell
-oc get CustomDomain customdomain1 -o jsonpath='{.status.endpoint}{"\n"}'
-```
-
-The endpoint URL will need to be added to a CNAME record for the domain in question.
+The location value will need to be added to a CNAME record for the domain in question.
 Team leads should be able to help get access to the required resources.
 This guide does not cover the steps required to configure the CNAME record in the DNS configuration.
 

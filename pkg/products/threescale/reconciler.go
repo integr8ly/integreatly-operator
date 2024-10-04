@@ -278,15 +278,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	if customDomainActive {
-		phase, err = r.findCustomDomainCr(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			errorMessage := "finding CustomDomain CR failed"
+		customDomainPhase, customDomainErr := r.findCustomDomainCr(ctx, serverClient)
+		ingressControllerPhase, ingressControllerErr := r.findIngressControllerCr(ctx, serverClient)
+
+		// If both custom domain and ingress controller have errors, prioritize ingress controller error
+		if customDomainErr != nil && ingressControllerErr != nil {
+			errorMessage := "Both CustomDomain and IngressController CRs failed to be found or are in unexpected state"
+			r.log.Error(errorMessage, ingressControllerErr)
+			events.HandleError(r.recorder, installation, ingressControllerPhase, errorMessage, ingressControllerErr)
+			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, ingressControllerErr)
+			return ingressControllerPhase, ingressControllerErr
+		}
+
+		// If both are found but neither are in the completed phase, report an error
+		if customDomainPhase != integreatlyv1alpha1.PhaseCompleted && ingressControllerPhase != integreatlyv1alpha1.PhaseCompleted {
+			errorMessage := "CustomDomain or IngressController CR is not in a completed phase"
+			err := fmt.Errorf(errorMessage)
 			r.log.Error(errorMessage, err)
 			events.HandleError(r.recorder, installation, phase, errorMessage, err)
 			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 			return phase, err
 		}
-		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
+
+		// If no errors occurred, proceed with updating the metrics and let the reconciler continue
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, nil)
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -3192,6 +3207,14 @@ func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8scli
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
+}
+
+func (r *Reconciler) findIngressControllerCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	ok, err := customDomain.HasValidIngressControllerCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
+	if ok {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding IngressController CR failed: %v", err)
 }
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

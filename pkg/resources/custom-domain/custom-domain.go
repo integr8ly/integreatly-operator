@@ -10,6 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	ingressController "github.com/openshift/api/operator/v1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,6 +81,34 @@ func HasValidCustomDomainCR(ctx context.Context, serverClient client.Client, dom
 	}
 
 	return false, fmt.Errorf("no custom domain CR found for: \"%s\"", domain)
+}
+
+func HasValidIngressControllerCR(ctx context.Context, serverClient client.Client, domain string) (bool, error) {
+	ok := IsValidDomain(domain)
+	if !ok {
+		return false, fmt.Errorf("invalid domain string passed: \"%s\"", domain)
+	}
+
+	ingressControllers := &ingressController.IngressControllerList{}
+
+	err := serverClient.List(ctx, ingressControllers)
+	if err != nil {
+		return false, err
+	}
+
+	for _, item := range ingressControllers.Items {
+		if item.Spec.Domain == domain {
+			for _, condition := range item.Status.Conditions {
+				if condition.Type == "Available" && condition.Status == "True" {
+					return true, nil
+				}
+			}
+
+			return false, fmt.Errorf("ingress controller CR in failing state for: \"%s\"", domain)
+		}
+	}
+
+	return false, fmt.Errorf("no ingress controller CR found for: \"%s\"", domain)
 }
 
 func UpdateErrorAndCustomDomainMetric(installation *v1alpha1.RHMI, active bool, err error) {
