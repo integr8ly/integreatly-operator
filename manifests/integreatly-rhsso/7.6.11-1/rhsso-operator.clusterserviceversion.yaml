@@ -382,7 +382,7 @@ spec:
   provider:
     name: Red Hat
   version: 7.6.11-opr-001
-  replaces: rhsso-operator.7.6.10-opr-001
+  replaces: rhsso-operator.7.6.9-opr-002
   skips:
   - rhsso-operator.7.6.0-opr-001
   relatedImages:
