@@ -5,6 +5,7 @@ import (
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -93,6 +94,31 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		if sub.Spec.Config.Resources == nil {
 			sub.Spec.Config.Resources = &corev1.ResourceRequirements{}
 		}
+
+		if t.SubscriptionName == constants.ThreeScaleSubscriptionName {
+			preflightsSkipEnvVar := corev1.EnvVar{
+				Name:  "PREFLIGHT_CHECKS_BYPASS",
+				Value: "true",
+			}
+
+			if sub.Spec.Config.Env == nil {
+				sub.Spec.Config.Env = []corev1.EnvVar{}
+			}
+
+			var exists bool
+			for i, env := range sub.Spec.Config.Env {
+				if env.Name == preflightsSkipEnvVar.Name {
+					sub.Spec.Config.Env[i].Value = preflightsSkipEnvVar.Value
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				sub.Spec.Config.Env = append(sub.Spec.Config.Env, preflightsSkipEnvVar)
+			}
+		}
+
 		return nil
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
