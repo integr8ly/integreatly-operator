@@ -10,7 +10,7 @@ metadata:
     containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.1.0
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.13"}]'
+    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.17"}]'
     support: RHOAM
   name: managed-api-service.v1.37.0
   namespace: placeholder
