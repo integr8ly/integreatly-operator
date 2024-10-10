@@ -69,7 +69,7 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 	err = scaleDeployments(context.TODO(), t, client, ThreeScaleProductNamespace, "system-app", 0)
 
 	defer func() {
-		err = scaleDeployments(context.TODO(), t, client, ThreeScaleProductNamespace, "system-app", 1)
+		err = scaleDeployments(context.TODO(), t, client, ThreeScaleProductNamespace, "system-app", 3)
 		if err != nil {
 			t.Logf("Failed to scale up system-app: %v", err)
 		}

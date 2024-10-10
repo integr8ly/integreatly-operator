@@ -63,7 +63,7 @@ var (
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
-	Version3Scale         ProductVersion = "2.13.0"
+	Version3Scale         ProductVersion = "2.15.0"
 	VersionCloudResources ProductVersion = "1.1.4"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
@@ -78,7 +78,7 @@ var (
 	OperatorVersionRHSSO          OperatorVersion = "7.6.9-3"
 	OperatorVersionRHSSOUser      OperatorVersion = "7.6.9-3"
 	OperatorVersionCloudResources OperatorVersion = "1.1.4"
-	OperatorVersion3Scale         OperatorVersion = "0.11.8-mas"
+	OperatorVersion3Scale         OperatorVersion = "0.12.1-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.13.1"
 
 	// Event reasons to be used when emitting events
