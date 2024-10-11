@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -28,8 +27,40 @@ func priorityStatefulSets(installType string) []CustomResource {
 	}
 }
 
-func priorityDeploymentConfigs() []CustomResource {
+func priorityDeployments() []CustomResource {
 	return []CustomResource{
+		{
+			Namespace: NamespacePrefix + "3scale",
+			Name:      "marin3r-instance",
+		},
+		{
+			Namespace: NamespacePrefix + "3scale-operator",
+			Name:      "threescale-operator-controller-manager-v2",
+		},
+		{
+			Namespace: NamespacePrefix + "cloud-resources-operator",
+			Name:      "cloud-resource-operator",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r",
+			Name:      "ratelimit",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r-operator",
+			Name:      "marin3r-controller-webhook",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r-operator",
+			Name:      "marin3r-controller-manager",
+		},
+		{
+			Namespace: NamespacePrefix + "rhsso-operator",
+			Name:      "rhsso-operator",
+		},
+		{
+			Namespace: NamespacePrefix + "user-sso-operator",
+			Name:      "rhsso-operator",
+		},
 		{
 			Namespace: NamespacePrefix + "3scale",
 			Name:      "apicast-production",
@@ -81,43 +112,6 @@ func priorityDeploymentConfigs() []CustomResource {
 	}
 }
 
-func priorityDeployments() []CustomResource {
-	return []CustomResource{
-		{
-			Namespace: NamespacePrefix + "3scale",
-			Name:      "marin3r-instance",
-		},
-		{
-			Namespace: NamespacePrefix + "3scale-operator",
-			Name:      "threescale-operator-controller-manager-v2",
-		},
-		{
-			Namespace: NamespacePrefix + "cloud-resources-operator",
-			Name:      "cloud-resource-operator",
-		},
-		{
-			Namespace: NamespacePrefix + "marin3r",
-			Name:      "ratelimit",
-		},
-		{
-			Namespace: NamespacePrefix + "marin3r-operator",
-			Name:      "marin3r-controller-webhook",
-		},
-		{
-			Namespace: NamespacePrefix + "marin3r-operator",
-			Name:      "marin3r-controller-manager",
-		},
-		{
-			Namespace: NamespacePrefix + "rhsso-operator",
-			Name:      "rhsso-operator",
-		},
-		{
-			Namespace: NamespacePrefix + "user-sso-operator",
-			Name:      "rhsso-operator",
-		},
-	}
-}
-
 // TestPriorityClass tests to ensure the pod priority class is created and verifies various crs are updated accordingly
 func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -136,16 +130,6 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		}
 		if err = checkPriorityIsSet(statefulSet.Spec.Template.Spec, priorityClass); err != nil {
 			t.Errorf("failure validating %s/%s: %s", statefulSet.Kind, statefulSet.Name, err.Error())
-		}
-	}
-	for _, dc := range priorityDeploymentConfigs() {
-		deploymentConfig := &openshiftappsv1.DeploymentConfig{}
-		if err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: dc.Name, Namespace: dc.Namespace}, deploymentConfig); err != nil {
-			t.Errorf("Error: %v", err)
-			break
-		}
-		if err = checkPriorityIsSet(deploymentConfig.Spec.Template.Spec, priorityClass); err != nil {
-			t.Errorf("failure validating %s/%s: %s", deploymentConfig.Kind, deploymentConfig.Name, err.Error())
 		}
 	}
 	for _, d := range priorityDeployments() {

@@ -44,7 +44,6 @@ var (
 				{"A10 - Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 				{"A11 - Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
 				{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
-				{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				{"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},

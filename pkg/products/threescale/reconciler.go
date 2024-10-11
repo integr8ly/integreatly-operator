@@ -60,15 +60,16 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	apiMachineryTypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -81,20 +82,20 @@ const (
 	rhssoIntegrationName         = "rhsso"
 	apicastHTTPsPort             = int32(8444)
 
-	s3CredentialsSecretName        = "s3-credentials"
-	externalRedisSecretName        = "system-redis"
-	externalBackendRedisSecretName = "backend-redis"
-	externalPostgresSecretName     = "system-database"
-	apicastStagingDCName           = "apicast-staging"
-	apicastProductionDCName        = "apicast-production"
-	backendListenerDCName          = "backend-listener"
-	systemSeedSecretName           = "system-seed"
-	systemMasterApiCastSecretName  = "system-master-apicast"
-	systemAppDCName                = "system-app"
-	multitenantID                  = "rhoam-mt"
-	registrySecretName             = "threescale-registry-auth"
-	threeScaleIcon                 = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzNyAzNyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzcgMzc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRUUwMDAwO30KCS5zdDF7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBkPSJNMjcuNSwwLjVoLTE4Yy00Ljk3LDAtOSw0LjAzLTksOXYxOGMwLDQuOTcsNC4wMyw5LDksOWgxOGM0Ljk3LDAsOS00LjAzLDktOXYtMThDMzYuNSw0LjUzLDMyLjQ3LDAuNSwyNy41LDAuNUwyNy41LDAuNXoiCgkJLz4KCTxnPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNSwyMi4zN2MtMC45NSwwLTEuNzUsMC42My0yLjAyLDEuNWgtMS44NVYyMS41YzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYycy0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDIuNDhjMC4yNywwLjg3LDEuMDcsMS41LDIuMDIsMS41YzEuMTcsMCwyLjEyLTAuOTUsMi4xMi0yLjEyUzI2LjE3LDIyLjM3LDI1LDIyLjM3eiBNMjUsMjUuMzcKCQkJYy0wLjQ4LDAtMC44OC0wLjM5LTAuODgtMC44OHMwLjM5LTAuODgsMC44OC0wLjg4czAuODgsMC4zOSwwLjg4LDAuODhTMjUuNDgsMjUuMzcsMjUsMjUuMzd6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIwLjUsMTYuMTJjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTIuMzhoMS45MWMwLjMyLDAuNzcsMS4wOCwxLjMxLDEuOTYsMS4zMQoJCQljMS4xNywwLDIuMTItMC45NSwyLjEyLTIuMTJzLTAuOTUtMi4xMi0yLjEyLTIuMTJjLTEuMDIsMC0xLjg4LDAuNzMtMi4wOCwxLjY5SDIwLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJQzE5Ljg3LDE1Ljg1LDIwLjE2LDE2LjEyLDIwLjUsMTYuMTJ6IE0yNSwxMS40M2MwLjQ4LDAsMC44OCwwLjM5LDAuODgsMC44OHMtMC4zOSwwLjg4LTAuODgsMC44OHMtMC44OC0wLjM5LTAuODgtMC44OAoJCQlTMjQuNTIsMTEuNDMsMjUsMTEuNDN6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjEyLDE5Ljk2di0wLjg0aDIuMzhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJzLTAuMjgtMC42Mi0wLjYyLTAuNjJoLTIuMzh2LTAuOTEKCQkJYzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYyaC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYzYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDNDMTEuODQsMjAuNTksMTIuMTIsMjAuMzEsMTIuMTIsMTkuOTYKCQkJeiBNMTAuODcsMTkuMzRIOS4xMnYtMS43NWgxLjc1VjE5LjM0eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yOC41LDE2LjM0aC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYwLjkxSDIyLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYyczAuMjgsMC42MiwwLjYyLDAuNjJoMi4zOAoJCQl2MC44NGMwLDAuMzUsMC4yOCwwLjYyLDAuNjIsMC42MmgzYzAuMzQsMCwwLjYyLTAuMjgsMC42Mi0wLjYydi0zQzI5LjEyLDE2LjYyLDI4Ljg0LDE2LjM0LDI4LjUsMTYuMzR6IE0yNy44NywxOS4zNGgtMS43NXYtMS43NQoJCQloMS43NVYxOS4zNHoiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwyMC44N2MtMC4zNCwwLTAuNjMsMC4yOC0wLjYzLDAuNjJ2Mi4zOGgtMS44NWMtMC4yNy0wLjg3LTEuMDctMS41LTIuMDItMS41CgkJCWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMmMwLjk1LDAsMS43NS0wLjYzLDIuMDItMS41aDIuNDhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTMKCQkJQzE3LjEyLDIxLjE1LDE2Ljg0LDIwLjg3LDE2LjUsMjAuODd6IE0xMiwyNS4zN2MtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4CgkJCVMxMi40OCwyNS4zNywxMiwyNS4zN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwxMS44N2gtMi40MmMtMC4yLTAuOTctMS4wNi0xLjY5LTIuMDgtMS42OWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMgoJCQljMC44OCwwLDEuNjQtMC41NCwxLjk2LTEuMzFoMS45MXYyLjM4YzAsMC4zNSwwLjI4LDAuNjIsMC42MywwLjYyczAuNjItMC4yOCwwLjYyLTAuNjJ2LTNDMTcuMTIsMTIuMTUsMTYuODQsMTEuODcsMTYuNSwxMS44N3oKCQkJIE0xMiwxMy4xOGMtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4UzEyLjQ4LDEzLjE4LDEyLDEzLjE4eiIvPgoJPC9nPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTE4LjUsMjIuNjJjLTIuMjcsMC00LjEzLTEuODUtNC4xMy00LjEyczEuODUtNC4xMiw0LjEzLTQuMTJzNC4xMiwxLjg1LDQuMTIsNC4xMlMyMC43NywyMi42MiwxOC41LDIyLjYyegoJCSBNMTguNSwxNS42MmMtMS41OCwwLTIuODgsMS4yOS0yLjg4LDIuODhzMS4yOSwyLjg4LDIuODgsMi44OHMyLjg4LTEuMjksMi44OC0yLjg4UzIwLjA4LDE1LjYyLDE4LjUsMTUuNjJ6Ii8+CjwvZz4KPC9zdmc+Cg=="
-	user3ScaleID                   = "3scale_user_id"
+	s3CredentialsSecretName         = "s3-credentials"
+	externalRedisSecretName         = "system-redis"
+	externalBackendRedisSecretName  = "backend-redis"
+	externalPostgresSecretName      = "system-database"
+	apicastStagingDeploymentName    = "apicast-staging"
+	apicastProductionDeploymentName = "apicast-production"
+	backendListenerDeploymentName   = "backend-listener"
+	systemSeedSecretName            = "system-seed"
+	systemMasterApiCastSecretName   = "system-master-apicast"
+	systemAppDeploymentName         = "system-app"
+	multitenantID                   = "rhoam-mt"
+	registrySecretName              = "threescale-registry-auth"
+	threeScaleIcon                  = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzNyAzNyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzcgMzc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRUUwMDAwO30KCS5zdDF7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBkPSJNMjcuNSwwLjVoLTE4Yy00Ljk3LDAtOSw0LjAzLTksOXYxOGMwLDQuOTcsNC4wMyw5LDksOWgxOGM0Ljk3LDAsOS00LjAzLDktOXYtMThDMzYuNSw0LjUzLDMyLjQ3LDAuNSwyNy41LDAuNUwyNy41LDAuNXoiCgkJLz4KCTxnPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNSwyMi4zN2MtMC45NSwwLTEuNzUsMC42My0yLjAyLDEuNWgtMS44NVYyMS41YzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYycy0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDIuNDhjMC4yNywwLjg3LDEuMDcsMS41LDIuMDIsMS41YzEuMTcsMCwyLjEyLTAuOTUsMi4xMi0yLjEyUzI2LjE3LDIyLjM3LDI1LDIyLjM3eiBNMjUsMjUuMzcKCQkJYy0wLjQ4LDAtMC44OC0wLjM5LTAuODgtMC44OHMwLjM5LTAuODgsMC44OC0wLjg4czAuODgsMC4zOSwwLjg4LDAuODhTMjUuNDgsMjUuMzcsMjUsMjUuMzd6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIwLjUsMTYuMTJjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTIuMzhoMS45MWMwLjMyLDAuNzcsMS4wOCwxLjMxLDEuOTYsMS4zMQoJCQljMS4xNywwLDIuMTItMC45NSwyLjEyLTIuMTJzLTAuOTUtMi4xMi0yLjEyLTIuMTJjLTEuMDIsMC0xLjg4LDAuNzMtMi4wOCwxLjY5SDIwLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJQzE5Ljg3LDE1Ljg1LDIwLjE2LDE2LjEyLDIwLjUsMTYuMTJ6IE0yNSwxMS40M2MwLjQ4LDAsMC44OCwwLjM5LDAuODgsMC44OHMtMC4zOSwwLjg4LTAuODgsMC44OHMtMC44OC0wLjM5LTAuODgtMC44OAoJCQlTMjQuNTIsMTEuNDMsMjUsMTEuNDN6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjEyLDE5Ljk2di0wLjg0aDIuMzhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJzLTAuMjgtMC42Mi0wLjYyLTAuNjJoLTIuMzh2LTAuOTEKCQkJYzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYyaC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYzYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDNDMTEuODQsMjAuNTksMTIuMTIsMjAuMzEsMTIuMTIsMTkuOTYKCQkJeiBNMTAuODcsMTkuMzRIOS4xMnYtMS43NWgxLjc1VjE5LjM0eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yOC41LDE2LjM0aC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYwLjkxSDIyLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYyczAuMjgsMC42MiwwLjYyLDAuNjJoMi4zOAoJCQl2MC44NGMwLDAuMzUsMC4yOCwwLjYyLDAuNjIsMC42MmgzYzAuMzQsMCwwLjYyLTAuMjgsMC42Mi0wLjYydi0zQzI5LjEyLDE2LjYyLDI4Ljg0LDE2LjM0LDI4LjUsMTYuMzR6IE0yNy44NywxOS4zNGgtMS43NXYtMS43NQoJCQloMS43NVYxOS4zNHoiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwyMC44N2MtMC4zNCwwLTAuNjMsMC4yOC0wLjYzLDAuNjJ2Mi4zOGgtMS44NWMtMC4yNy0wLjg3LTEuMDctMS41LTIuMDItMS41CgkJCWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMmMwLjk1LDAsMS43NS0wLjYzLDIuMDItMS41aDIuNDhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTMKCQkJQzE3LjEyLDIxLjE1LDE2Ljg0LDIwLjg3LDE2LjUsMjAuODd6IE0xMiwyNS4zN2MtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4CgkJCVMxMi40OCwyNS4zNywxMiwyNS4zN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwxMS44N2gtMi40MmMtMC4yLTAuOTctMS4wNi0xLjY5LTIuMDgtMS42OWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMgoJCQljMC44OCwwLDEuNjQtMC41NCwxLjk2LTEuMzFoMS45MXYyLjM4YzAsMC4zNSwwLjI4LDAuNjIsMC42MywwLjYyczAuNjItMC4yOCwwLjYyLTAuNjJ2LTNDMTcuMTIsMTIuMTUsMTYuODQsMTEuODcsMTYuNSwxMS44N3oKCQkJIE0xMiwxMy4xOGMtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4UzEyLjQ4LDEzLjE4LDEyLDEzLjE4eiIvPgoJPC9nPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTE4LjUsMjIuNjJjLTIuMjcsMC00LjEzLTEuODUtNC4xMy00LjEyczEuODUtNC4xMiw0LjEzLTQuMTJzNC4xMiwxLjg1LDQuMTIsNC4xMlMyMC43NywyMi42MiwxOC41LDIyLjYyegoJCSBNMTguNSwxNS42MmMtMS41OCwwLTIuODgsMS4yOS0yLjg4LDIuODhzMS4yOSwyLjg4LDIuODgsMi44OHMyLjg4LTEuMjksMi44OC0yLjg4UzIwLjA4LDE1LjYyLDE4LjUsMTUuNjJ6Ii8+CjwvZz4KPC9zdmc+Cg=="
+	user3ScaleID                    = "3scale_user_id"
 
 	labelRouteToSystemMaster    = "system-master"
 	labelRouteToSystemDeveloper = "system-developer"
@@ -107,7 +108,7 @@ const (
 )
 
 var (
-	threeScaleDeploymentConfigs = []string{
+	threeScaleDeployments = []string{
 		"apicast-production",
 		"apicast-staging",
 		"backend-cron",
@@ -152,7 +153,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		mpm:           mpm,
 		installation:  installation,
 		tsClient:      tsClient,
-		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
@@ -167,7 +167,6 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 	installation  *integreatlyv1alpha1.RHMI
 	tsClient      ThreeScaleInterface
-	appsv1Client  appsv1Client.AppsV1Interface
 	oauthv1Client oauthClient.OauthV1Interface
 	*resources.Reconciler
 	extraParams map[string]string
@@ -177,7 +176,7 @@ type Reconciler struct {
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
-	return &appsv1.DeploymentConfig{
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "system-app",
 			Namespace: ns,
@@ -419,20 +418,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, systemAppDCName, updateSystemAppAddresses)
+	phase, err = r.reconcileDeploymentEnvarEmailAddress(ctx, serverClient, systemAppDeploymentName, updateSystemAppAddresses)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.log.Warning("Failed to reconcileDcEnvarEmailAddress: " + err.Error())
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDcEnvarEmailAddress", err)
+			r.log.Warning("Failed to reconcileDeploymentEnvarEmailAddress: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDeploymentEnvarEmailAddress", err)
 		}
 		return phase, err
 	}
 
-	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, "system-sidekiq", updateSystemSidekiqAddresses)
+	phase, err = r.reconcileDeploymentEnvarEmailAddress(ctx, serverClient, "system-sidekiq", updateSystemSidekiqAddresses)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.log.Warning("Failed to reconcileDcEnvarEmailAddress: " + err.Error())
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDcEnvarEmailAddress", err)
+			r.log.Warning("Failed to reconcileDeploymentEnvarEmailAddress: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDeploymentEnvarEmailAddress", err)
 		}
 		return phase, err
 	}
@@ -544,11 +543,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	// Ensure deployment configs are ready before returning phase complete
-	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
-	r.log.Infof("ensureDeploymentConfigsReady", l.Fields{"phase": phase})
+	// Ensure deployments are ready before returning phase complete
+	phase, err = r.ensureDeploymentsReady(ctx, serverClient, productNamespace)
+	r.log.Infof("ensureDeploymentsReady", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs are ready", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployments are ready", err)
 		return phase, err
 	}
 
@@ -673,12 +672,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 			}
 
 			if smtpUpdated {
-				err = r.RolloutDeployment(ctx, "system-app")
+				err = r.RolloutDeployment(ctx, serverClient, "system-app")
 				if err != nil {
 					r.log.Error("Rollout system-app deployment", err)
 				}
 
-				err = r.RolloutDeployment(ctx, "system-sidekiq")
+				err = r.RolloutDeployment(ctx, serverClient, "system-sidekiq")
 				if err != nil {
 					r.log.Error("Rollout system-sidekiq deployment", err)
 				}
@@ -744,7 +743,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				},
 			},
 		}
-		// Set TopologySpreadConstraints in APIManager for deploymentConfigs
+		// Set TopologySpreadConstraints in APIManager for deployments
 		apim.Spec.Apicast.StagingSpec.TopologySpreadConstraints = topologySpreadConstraints
 		apim.Spec.Apicast.ProductionSpec.TopologySpreadConstraints = topologySpreadConstraints
 		apim.Spec.Backend.CronSpec.TopologySpreadConstraints = topologySpreadConstraints
@@ -973,7 +972,7 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 	pods := &corev1.PodList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ns),
-		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-sidekiq"}),
+		k8sclient.MatchingLabels(map[string]string{"deployment": "system-sidekiq"}),
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
@@ -2331,13 +2330,13 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	}
 
 	if status != controllerutil.OperationResultNone {
-		err = r.RolloutDeployment(ctx, "system-app")
+		err = r.RolloutDeployment(ctx, serverClient, "system-app")
 		if err != nil {
 			r.log.Info("Failed to rollout deployment (system-app):" + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 
-		err = r.RolloutDeployment(ctx, "system-sidekiq")
+		err = r.RolloutDeployment(ctx, serverClient, "system-sidekiq")
 		if err != nil {
 			r.log.Info("Failed to rollout deployment (system-sidekiq)" + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
@@ -2444,12 +2443,23 @@ func getToken(ctx context.Context, serverClient k8sclient.Client, namespace, tok
 	return &accessToken, nil
 }
 
-func (r *Reconciler) RolloutDeployment(ctx context.Context, name string) error {
-	_, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Instantiate(ctx, name, &appsv1.DeploymentRequest{
-		Name:   name,
-		Force:  true,
-		Latest: true,
-	}, metav1.CreateOptions{})
+func (r *Reconciler) RolloutDeployment(ctx context.Context, client k8sclient.Client, name string) error {
+	deployment := &appsv1.Deployment{}
+	err := client.Get(ctx, apiMachineryTypes.NamespacedName{Namespace: r.Config.GetNamespace(), Name: name}, deployment)
+	if err != nil {
+		return err
+	}
+
+	if deployment.Spec.Template.Labels == nil {
+		deployment.Spec.Template.Labels = make(map[string]string)
+	}
+
+	deployment.Spec.Template.Labels["rollout-restarted-at"] = time.Now().Format(time.RFC3339)
+
+	err = client.Update(ctx, deployment)
+	if err != nil {
+		return fmt.Errorf("failed to update deployment: %w", err)
+	}
 
 	return err
 }
@@ -2848,23 +2858,23 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-// Deployment configs are rescaled when adding topologySpreadConstraints, PodTopology etc
-// Should check that these deployment configs are ready before returning phase complete in CR
-func (r *Reconciler) ensureDeploymentConfigsReady(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	for _, name := range threeScaleDeploymentConfigs {
-		deploymentConfig := &appsv1.DeploymentConfig{}
+// Deployments are rescaled when adding topologySpreadConstraints, PodTopology etc
+// Should check that these deployments are ready before returning phase complete in CR
+func (r *Reconciler) ensureDeploymentsReady(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	for _, name := range threeScaleDeployments {
+		deployment := &appsv1.Deployment{}
 
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: productNamespace}, deploymentConfig)
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: productNamespace}, deployment)
 
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		// Rollout new dc if there is a failed condition
-		for _, condition := range deploymentConfig.Status.Conditions {
+		// Rollout new deployment if there is a failed condition
+		for _, condition := range deployment.Status.Conditions {
 			if condition.Status == corev1.ConditionFalse {
-				r.log.Warningf("3scale dc in a failed condition, rolling out new deployment", l.Fields{"dc": name})
-				err = r.RolloutDeployment(ctx, name)
+				r.log.Warningf("3scale deployment in a failed condition, rolling out new deployment", l.Fields{"deployment": name})
+				err = r.RolloutDeployment(ctx, serverClient, name)
 				if err != nil {
 					return integreatlyv1alpha1.PhaseFailed, err
 				}
@@ -2874,11 +2884,11 @@ func (r *Reconciler) ensureDeploymentConfigsReady(ctx context.Context, serverCli
 		}
 
 		//  Check that replicas are fully rolled out
-		for _, condition := range deploymentConfig.Status.Conditions {
-			if condition.Status != corev1.ConditionTrue || (deploymentConfig.Status.Replicas != deploymentConfig.Status.AvailableReplicas ||
-				deploymentConfig.Status.ReadyReplicas != deploymentConfig.Status.UpdatedReplicas) {
-				r.log.Infof("waiting for 3scale dc to become ready", l.Fields{"dc": name})
-				return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("waiting for 3scale deployment config %s to become available", name)
+		for _, condition := range deployment.Status.Conditions {
+			if condition.Status != corev1.ConditionTrue || (deployment.Status.Replicas != deployment.Status.AvailableReplicas ||
+				deployment.Status.ReadyReplicas != deployment.Status.UpdatedReplicas) {
+				r.log.Infof("waiting for 3scale deployment to become ready", l.Fields{"deployment": name})
+				return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("waiting for 3scale deployments %s to become available", name)
 			}
 		}
 	}
@@ -2899,10 +2909,10 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	// creates envoy proxy sidecar container for apicast staging
 	phase, err := proxyServer.CreateEnvoyProxyContainer(
-		apicastStagingDCName,
+		apicastStagingDeploymentName,
 		r.Config.GetNamespace(),
 		ApicastNodeID,
-		apicastStagingDCName,
+		apicastStagingDeploymentName,
 		"gateway",
 		ApicastEnvoyProxyPort,
 	)
@@ -2912,10 +2922,10 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	// creates envoy proxy sidecar container for apicast production
 	phase, err = proxyServer.CreateEnvoyProxyContainer(
-		apicastProductionDCName,
+		apicastProductionDeploymentName,
 		r.Config.GetNamespace(),
 		ApicastNodeID,
-		apicastProductionDCName,
+		apicastProductionDeploymentName,
 		"gateway",
 		ApicastEnvoyProxyPort,
 	)
@@ -2925,7 +2935,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	// creates envoy proxy sidecar container for backend listener
 	phase, err = proxyServer.CreateEnvoyProxyContainer(
-		backendListenerDCName,
+		backendListenerDeploymentName,
 		r.Config.GetNamespace(),
 		BackendNodeID,
 		BackendServiceName,
@@ -3115,7 +3125,7 @@ func (r *Reconciler) createBackendListenerProxyService(ctx context.Context, serv
 			},
 		}
 		backendListenerService.Spec.Selector = map[string]string{
-			"deploymentConfig": backendListenerDCName,
+			"deployment": backendListenerDeploymentName,
 		}
 		return nil
 	}); err != nil {
@@ -3424,27 +3434,29 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileDcEnvarEmailAddress(ctx context.Context, serverClient k8sclient.Client, dcName string, updateFn func(dc *appsv1.DeploymentConfig, value string) bool) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileDeploymentEnvarEmailAddress(ctx context.Context, serverClient k8sclient.Client, deploymentName string, updateFn func(deployment *appsv1.Deployment, value string) bool) (integreatlyv1alpha1.StatusPhase, error) {
 	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	dc, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Get(ctx, dcName, metav1.GetOptions{})
+	deployment := &appsv1.Deployment{}
+
+	err = serverClient.Get(ctx, apiMachineryTypes.NamespacedName{Namespace: r.Config.GetNamespace(), Name: deploymentName}, deployment)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	updated := updateFn(dc, existingSMTPFromAddress)
+	updated := updateFn(deployment, existingSMTPFromAddress)
 
 	if updated {
-		_, err = r.appsv1Client.DeploymentConfigs(dc.Namespace).Update(ctx, dc, metav1.UpdateOptions{})
+		err = serverClient.Update(ctx, deployment)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		err = r.RolloutDeployment(ctx, dcName)
+		err = r.RolloutDeployment(ctx, serverClient, deploymentName)
 		if err != nil {
-			r.log.Error(fmt.Sprintf("Rollout %v deployment", dcName), err)
+			r.log.Error(fmt.Sprintf("Rollout %v deployment", deploymentName), err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -3465,7 +3477,7 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	pods := &corev1.PodList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ns),
-		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": systemAppDCName}),
+		k8sclient.MatchingLabels(map[string]string{"deployment": systemAppDeploymentName}),
 	}
 	err = serverClient.List(ctx, pods, listOpts...)
 	if err != nil {
@@ -3500,22 +3512,22 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	}
 }
 
-func updateContainerSupportEmail(dc *appsv1.DeploymentConfig, existingSMTPFromAddress string, envar string) bool {
+func updateContainerSupportEmail(deployment *appsv1.Deployment, existingSMTPFromAddress string, envar string) bool {
 	updated := false
-	for index, container := range dc.Spec.Template.Spec.Containers {
+	for index, container := range deployment.Spec.Template.Spec.Containers {
 		found := false
 		for i, envVar := range container.Env {
 			if envVar.Name == envar {
 				found = true
 				if envVar.Value != existingSMTPFromAddress {
-					dc.Spec.Template.Spec.Containers[index].Env[i].Value = existingSMTPFromAddress
+					deployment.Spec.Template.Spec.Containers[index].Env[i].Value = existingSMTPFromAddress
 					updated = true
 				}
 			}
 		}
 		if !found {
 
-			dc.Spec.Template.Spec.Containers[index].Env = append(dc.Spec.Template.Spec.Containers[index].Env, corev1.EnvVar{
+			deployment.Spec.Template.Spec.Containers[index].Env = append(deployment.Spec.Template.Spec.Containers[index].Env, corev1.EnvVar{
 				Name:  envar,
 				Value: existingSMTPFromAddress,
 			})
@@ -3525,14 +3537,14 @@ func updateContainerSupportEmail(dc *appsv1.DeploymentConfig, existingSMTPFromAd
 	return updated
 }
 
-func updateSystemAppAddresses(dc *appsv1.DeploymentConfig, value string) bool {
-	return updateContainerSupportEmail(dc, value, "SUPPORT_EMAIL")
+func updateSystemAppAddresses(deployment *appsv1.Deployment, value string) bool {
+	return updateContainerSupportEmail(deployment, value, "SUPPORT_EMAIL")
 
 }
 
-func updateSystemSidekiqAddresses(dc *appsv1.DeploymentConfig, value string) bool {
-	support := updateContainerSupportEmail(dc, value, "SUPPORT_EMAIL")
-	notification := updateContainerSupportEmail(dc, value, "NOTIFICATION_EMAIL")
+func updateSystemSidekiqAddresses(deployment *appsv1.Deployment, value string) bool {
+	support := updateContainerSupportEmail(deployment, value, "SUPPORT_EMAIL")
+	notification := updateContainerSupportEmail(deployment, value, "NOTIFICATION_EMAIL")
 
 	if support || notification {
 		return true

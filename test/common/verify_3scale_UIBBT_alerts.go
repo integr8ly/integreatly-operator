@@ -2,14 +2,10 @@ package common
 
 import (
 	"context"
-	goctx "context"
 	"fmt"
-	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/retry"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
@@ -70,15 +66,15 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 	time.Sleep(1 * time.Minute)
 
 	// Scale down system-app to 0 pods
-	err = scaleDeploymentsConfig(t, "system-app", ThreeScaleProductNamespace, 0, client)
+	err = scaleDeployments(context.TODO(), t, client, ThreeScaleProductNamespace, "system-app", 0)
 
 	defer func() {
-		err = scaleDeploymentsConfig(t, "system-app", ThreeScaleProductNamespace, 1, client)
+		err = scaleDeployments(context.TODO(), t, client, ThreeScaleProductNamespace, "system-app", 3)
 		if err != nil {
 			t.Logf("Failed to scale up system-app: %v", err)
 		}
 
-		t.Logf("Deployment config successfully scaled back up")
+		t.Logf("Deployment successfully scaled back up")
 
 	}()
 
@@ -184,34 +180,4 @@ func isThreeScaleUIBBTAlertFiring(ctx *TestingContext, t TestingTB) (bool, error
 	// If we got here, all alerts are firing
 	t.Logf("alerts are firing")
 	return true, nil
-}
-
-func scaleDeploymentsConfig(t TestingTB, name string, namespace string, replicas int32, client k8sclient.Client) error {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deploymentConfig := &openshiftappsv1.DeploymentConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-		}
-		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
-		if getErr != nil {
-			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
-		}
-
-		deploymentConfig.Spec.Replicas = replicas
-
-		t.Logf("Scaling deployment config")
-
-		updateErr := client.Update(goctx.TODO(), deploymentConfig)
-		return updateErr
-	})
-	if retryErr != nil {
-		t.Logf("update failed: %v", retryErr)
-		return retryErr
-	}
-
-	t.Logf("Scaled deployment %q in namespace %q\n", name, namespace)
-
-	return nil
 }
