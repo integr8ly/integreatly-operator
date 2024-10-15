@@ -52,31 +52,31 @@ metadata:
     containerImages: |-
       {
         "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.11.8-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:0a6673eae2f0e8d95b919b0243e44d2c0383d13e2e616ac8d3f80742d496d292",
-          "3scale-rhel7-operator-0a6673eae2f0e8d95b919b0243e44d2c0383d13e2e616ac8d3f80742d496d292-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:0a6673eae2f0e8d95b919b0243e44d2c0383d13e2e616ac8d3f80742d496d292",
-          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:0a6673eae2f0e8d95b919b0243e44d2c0383d13e2e616ac8d3f80742d496d292",
-          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:7d07caf7b6c5a195ba4706e82f3d28c3793afab99b1a6d5a7020547c48534cdc",
-          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:a03a1ae7f01259192b8d7b4ecee6ddfcdc0cd9e2d24a8c2306accb93ee767135",
-          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:b0fd85a4994502a3a2ae9ba6a7610c38af64b6cc897efac12feb4b115a484f77",
-          "zync": "registry.redhat.io/3scale-mas/zync-rhel9@sha256:419eb09d1b165363d5b90df01c1fa10f1f91f03649a8758620ffa49276685feb",
-          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:9c2aba45971c924fd55b2aab50ee8e6861a9defd3808b38ff30316727af31f9a",
-          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:4f807ee6e885e966853f70e1c40bbc179dc1f994b401ac868b7f2b921f9d17a0",
-          "system_searchd": "registry.redhat.io/3scale-mas/searchd-rhel7@sha256:1426e4bd4aa0eb28b479900ffc02621203886280d24997cd11818387ff30d9df"
+          "3scale-operator.v0.12.1-mas": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "3scale-rhel9-operator-8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e-annotation": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:d0c561c6b9dfe9741722ba4a257fbd2df4d2a709457a0b0657ef7bcca1f2a5ca",
+          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:f174636a9ad43a2419fff5a9e6797e3185c540a9509188fd1606aef4acea7bdf",
+          "system": "registry.redhat.io/3scale-mas/system-rhel8@sha256:0fa28aaf3467fbd22fc1335dc6a712043e4dead694c3f14b60e89740bb7eb13e",
+          "zync": "registry.redhat.io/3scale-mas/zync-rhel9@sha256:78e5223a1a878f6527bd88d382948c125b7cb4a81540648244553af426d1a944",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2",
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa",
+          "system_searchd": "registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:7379186175c9c0f0a6d922cd2a0754b429c9728dfbe8979a9d6025789ebae0da"
         },
         "cloud-resource-operator.v1.1.4": {
           "cloud-resources.v1.1.4": "quay.io/integreatly/cloud-resource-operator:v1.1.4"
         },
-        "marin3r.v0.11.0": {
-          "marin3r.v0.13.1": "quay.io/3scale/marin3r:v0.13.1"
+        "marin3r.v0.13.1": {
+          "marin3r-operator.v0.13.1": "registry.redhat.io/3scale-mas/marin3r-rhel8-operator@sha256:7467b3e3ad2abf74c0aab83c395ec30eb3a5154c98c8793a82a4218096dcf0a6"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.9-opr-002": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
-          "sso7-rhel8-operator-3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:3849757fa1ffe8919928d30f9277906c281a52a9faf8274b78f62b6bad902c60",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:0b926fc9eae775425faa1ab9709a36fdac15afe4bfe523720e17ecf5df45bb28",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:0b926fc9eae775425faa1ab9709a36fdac15afe4bfe523720e17ecf5df45bb28",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:be49c4d5288bdcb3da6bbcf0155314ec3dd3a89b29ccaaafc3345f9f6e86e86a",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:be49c4d5288bdcb3da6bbcf0155314ec3dd3a89b29ccaaafc3345f9f6e86e86a"
+          "rhsso-operator.7.6.11-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "sso7-rhel8-operator-369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:710c0a0636973162b814b050b039a496afb792356e4839818fb46ecfad403bd4",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:710c0a0636973162b814b050b039a496afb792356e4839818fb46ecfad403bd4",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81122cb34e5d927ba20d4e0fc4165acfc70382dbe0679cc8ee568bf048e601d7",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81122cb34e5d927ba20d4e0fc4165acfc70382dbe0679cc8ee568bf048e601d7"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.3-8"
