@@ -11,7 +11,7 @@ limitador:
     url: "quay.io/kuadrant/limitador:v1.3.0"
 grafana:
   - name: grafana
-    url: "registry.redhat.io/rhel9/grafana@sha256:31cac5b19c9709d9d7aa00b10858a5f1c0e2badd7b9fdf9b6772e47c87e4cc16"
+    url: "registry.redhat.io/rhel9/grafana@sha256:043f656f9c940b66131f8932a9485c66317c1e274d91129d1b9a9a9b594e4547"
 grafana-ose-oauth-proxy:
   - name: grafana-ose-oauth-proxy
-    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:cdd63d660b8a629cbca27269b8c9e6ea76ece2b257a8f29a35610f822941b2db"
+    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:4387d0fdb0e8ac72b7d95525e22109b5a95effa1845b7f38113750c071a84253"
