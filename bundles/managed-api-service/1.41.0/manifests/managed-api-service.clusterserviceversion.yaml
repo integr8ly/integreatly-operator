@@ -82,7 +82,7 @@ metadata:
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.3-8"
         },
         "limitador": {
-          "marin3r-limitador": "quay.io/kuadrant/limitador:v1.3.0"
+          "marin3r-limitador": "quay.io/kuadrant/limitador:v1.6.0"
         },
         "grafana": {
           "grafana": "registry.redhat.io/rhel9/grafana@sha256:31cac5b19c9709d9d7aa00b10858a5f1c0e2badd7b9fdf9b6772e47c87e4cc16"
