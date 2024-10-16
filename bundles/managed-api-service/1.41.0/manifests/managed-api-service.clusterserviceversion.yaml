@@ -79,7 +79,7 @@ metadata:
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81122cb34e5d927ba20d4e0fc4165acfc70382dbe0679cc8ee568bf048e601d7"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.3-8"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.5-6"
         },
         "limitador": {
           "marin3r-limitador": "quay.io/kuadrant/limitador:v1.6.0"
