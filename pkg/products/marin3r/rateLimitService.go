@@ -35,7 +35,7 @@ const (
 	multitenantDescriptorValue    = "per-mt-limit"
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
-	rateLimitImage                = "quay.io/kuadrant/limitador:v1.3.0"
+	rateLimitImage                = "quay.io/kuadrant/limitador:v1.6.0"
 )
 
 type RateLimitServiceReconciler struct {
