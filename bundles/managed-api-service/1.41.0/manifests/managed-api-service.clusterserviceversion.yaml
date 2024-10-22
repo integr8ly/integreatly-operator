@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.41.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.17"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -85,12 +85,13 @@ metadata:
           "marin3r-limitador": "quay.io/kuadrant/limitador:v1.6.0"
         },
         "grafana": {
-          "grafana": "registry.redhat.io/rhel9/grafana@sha256:31cac5b19c9709d9d7aa00b10858a5f1c0e2badd7b9fdf9b6772e47c87e4cc16"
+          "grafana": "registry.redhat.io/rhel9/grafana@sha256:043f656f9c940b66131f8932a9485c66317c1e274d91129d1b9a9a9b594e4547"
         },
         "grafana-ose-oauth-proxy": {
-          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:cdd63d660b8a629cbca27269b8c9e6ea76ece2b257a8f29a35610f822941b2db"
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:4387d0fdb0e8ac72b7d95525e22109b5a95effa1845b7f38113750c071a84253"
         }
       }
+    serviceAffecting: "true"
   name: managed-api-service.v1.41.0
   namespace: placeholder
 spec:
@@ -668,7 +669,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.41.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
