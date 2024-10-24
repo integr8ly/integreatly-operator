@@ -58,54 +58,75 @@ func IsValidDomain(domain string) bool {
 	return false
 }
 
-func HasValidCustomDomainCR(ctx context.Context, serverClient client.Client, domain string) (bool, error) {
+func HasValidCustomDomainCR(ctx context.Context, serverClient client.Client, domain string) (bool, string, error) {
 	ok := IsValidDomain(domain)
 	if !ok {
-		return false, fmt.Errorf("invalid domain string passed: \"%s\"", domain)
+		return false, "", fmt.Errorf("invalid domain string passed: \"%s\"", domain)
 	}
 
 	customDomains := &customdomainv1alpha1.CustomDomainList{}
 
 	err := serverClient.List(ctx, customDomains)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	for _, item := range customDomains.Items {
 		if item.Spec.Domain == domain {
 			if item.Status.State == customdomainv1alpha1.CustomDomainStateReady {
-				return true, nil
+				return true, item.Name, nil
 			}
-			return false, fmt.Errorf("custom domain CR in failing state for: \"%s\"", domain)
+			return false, item.Name, fmt.Errorf("custom domain CR in failing state for: \"%s\"", domain)
 		}
 	}
 
-	return false, fmt.Errorf("no custom domain CR found for: \"%s\"", domain)
+	return false, "", fmt.Errorf("no custom domain CR found for: \"%s\"", domain)
 }
 
-func HasValidIngressControllerCR(ctx context.Context, serverClient client.Client, domain string) (bool, error) {
+func HasValidIngressControllerCR(ctx context.Context, serverClient client.Client, customDomainName, domain string) (bool, error) {
 	ok := IsValidDomain(domain)
 	if !ok {
 		return false, fmt.Errorf("invalid domain string passed: \"%s\"", domain)
 	}
 
-	ingressControllers := &ingressController.IngressControllerList{}
+	if customDomainName == "" {
+		ingressControllers := &ingressController.IngressControllerList{}
 
-	err := serverClient.List(ctx, ingressControllers)
-	if err != nil {
-		return false, err
-	}
-
-	for _, item := range ingressControllers.Items {
-		if item.Spec.Domain == domain {
-			for _, condition := range item.Status.Conditions {
-				if condition.Type == "Available" && condition.Status == "True" {
-					return true, nil
-				}
-			}
-
-			return false, fmt.Errorf("ingress controller CR in failing state for: \"%s\"", domain)
+		err := serverClient.List(ctx, ingressControllers)
+		if err != nil {
+			return false, err
 		}
+
+		for _, item := range ingressControllers.Items {
+			if item.Spec.Domain == domain {
+				for _, condition := range item.Status.Conditions {
+					if condition.Type == "Available" && condition.Status == "True" {
+						return true, nil
+					}
+				}
+
+				return false, fmt.Errorf("ingress controller CR in failing state for: \"%s\"", domain)
+			}
+		}
+	} else {
+		ingressControllerCR := &ingressController.IngressController{}
+		key := client.ObjectKey{
+			Name:      customDomainName,
+			Namespace: "openshift-ingress-operator",
+		}
+
+		err := serverClient.Get(ctx, key, ingressControllerCR)
+		if err != nil {
+			return false, fmt.Errorf("no ingress controller CR found for: \"%s\"", domain)
+		}
+
+		for _, condition := range ingressControllerCR.Status.Conditions {
+			if condition.Type == "Available" && condition.Status == "True" {
+				return true, nil
+			}
+		}
+
+		return false, fmt.Errorf("ingress controller CR in failing state for: \"%s\"", domain)
 	}
 
 	return false, fmt.Errorf("no ingress controller CR found for: \"%s\"", domain)

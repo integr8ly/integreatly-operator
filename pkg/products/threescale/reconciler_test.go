@@ -1910,7 +1910,7 @@ func TestReconciler_findCustomDomainCr(t *testing.T) {
 				recorder:      tt.fields.recorder,
 				log:           tt.fields.log,
 			}
-			got, err := r.findCustomDomainCr(tt.args.ctx, tt.args.serverClient)
+			got, _, err := r.findCustomDomainCr(tt.args.ctx, tt.args.serverClient)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("findCustomDomainCr() error = %v, wantErr %v", err, tt.wantErr)
 				return
