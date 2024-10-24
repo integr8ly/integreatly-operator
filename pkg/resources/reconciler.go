@@ -353,3 +353,20 @@ func (r *Reconciler) ReconcileCsvDeploymentsPriority(ctx context.Context, client
 	}
 	return k8s.PatchIfExists(ctx, client, mutateFn, csv)
 }
+
+func (r *Reconciler) ReconcileCsvContainerImage(ctx context.Context, client k8sclient.Client, csvName, csvNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      csvName,
+			Namespace: csvNamespace,
+		},
+	}
+	mutateFn := func() error {
+		deployments := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs
+		for i := range deployments {
+			deployments[i].Spec.Template.Spec.Containers[0].Image = "quay.io/integreatly/3scale-operator:v0.12.1-mas"
+		}
+		return nil
+	}
+	return k8s.PatchIfExists(ctx, client, mutateFn, csv)
+}
