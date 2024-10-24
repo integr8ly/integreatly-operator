@@ -277,8 +277,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	if customDomainActive {
-		customDomainPhase, customDomainErr := r.findCustomDomainCr(ctx, serverClient)
-		ingressControllerPhase, ingressControllerErr := r.findIngressControllerCr(ctx, serverClient)
+
+		customDomainPhase, customDomainName, customDomainErr := r.findCustomDomainCr(ctx, serverClient)
+
+		ingressControllerPhase, ingressControllerErr := r.findIngressControllerCr(ctx, customDomainName, serverClient)
 
 		// If both custom domain and ingress controller have errors, prioritize ingress controller error
 		if customDomainErr != nil && ingressControllerErr != nil {
@@ -3211,16 +3213,16 @@ func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, clien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	ok, err := customDomain.HasValidCustomDomainCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
+func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, string, error) {
+	ok, customDomainName, err := customDomain.HasValidCustomDomainCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
 	if ok {
-		return integreatlyv1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, customDomainName, nil
 	}
-	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
+	return integreatlyv1alpha1.PhaseFailed, customDomainName, fmt.Errorf("finding CustomDomain CR failed: %v", err)
 }
 
-func (r *Reconciler) findIngressControllerCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	ok, err := customDomain.HasValidIngressControllerCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
+func (r *Reconciler) findIngressControllerCr(ctx context.Context, customDomainName string, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	ok, err := customDomain.HasValidIngressControllerCR(ctx, serverClient, customDomainName, r.installation.Spec.RoutingSubdomain)
 	if ok {
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}

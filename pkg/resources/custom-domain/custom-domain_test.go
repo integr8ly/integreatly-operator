@@ -321,7 +321,7 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HasValidCustomDomainCR(tt.args.ctx, tt.args.serverClient, tt.args.domain)
+			got, _, err := HasValidCustomDomainCR(tt.args.ctx, tt.args.serverClient, tt.args.domain)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HasValidCustomDomainCR() error = %v, wantErr %v", err, tt.wantErr)
 				return
