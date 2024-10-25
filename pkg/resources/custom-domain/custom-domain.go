@@ -117,7 +117,7 @@ func HasValidIngressControllerCR(ctx context.Context, serverClient client.Client
 
 		err := serverClient.Get(ctx, key, ingressControllerCR)
 		if err != nil {
-			return false, fmt.Errorf("no ingress controller CR found for: \"%s\"", domain)
+			return false, err
 		}
 
 		for _, condition := range ingressControllerCR.Status.Conditions {
