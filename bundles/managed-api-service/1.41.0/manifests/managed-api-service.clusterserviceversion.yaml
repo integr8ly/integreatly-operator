@@ -492,6 +492,7 @@ spec:
               resources:
                 - ingresscontrollers
               verbs:
+                - get
                 - list
             - apiGroups:
                 - operators.coreos.com
