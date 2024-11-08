@@ -1,0 +1,880 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMI",
+          "metadata": {
+            "name": "INSTALLATION_NAME"
+          },
+          "spec": {
+            "deadMansSnitchSecret": "INSTALLATION_PREFIX-deadmanssnitch",
+            "namespacePrefix": "INSTALLATION_PREFIX-",
+            "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
+            "pagerDutySecret": "INSTALLATION_PREFIX-pagerduty",
+            "priorityClassName": "INSTALLATION_SHORTHAND-pod-priority",
+            "selfSignedCerts": "SELF_SIGNED_CERTS",
+            "smtpSecret": "INSTALLATION_PREFIX-smtp",
+            "type": "INSTALLATION_TYPE",
+            "useClusterStorage": "USE_CLUSTER_STORAGE"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMI",
+          "metadata": {
+            "name": "example-rhoam"
+          },
+          "spec": {
+            "deadMansSnitchSecret": "redhat-rhoam-deadmanssnitch",
+            "namespacePrefix": "redhat-rhoam-",
+            "pagerDutySecret": "redhat-rhoam-pagerduty",
+            "priorityClassName": "rhoam-pod-priority",
+            "selfSignedCerts": true,
+            "smtpSecret": "redhat-rhoam-smtp",
+            "type": "managed",
+            "useClusterStorage": "true"
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: Integration & Delivery
+    certified: "false"
+    containerImage: quay.io/integreatly/managed-api-service:master
+    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.17"}]'
+    operatorframework.io/suggested-namespace: redhat-rhoam-operator
+    operators.operatorframework.io/builder: operator-sdk-v1.21.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    support: RHOAM
+    containerImages: |-
+      {
+        "3scale-operator.3scale-2.13.1-GA": {
+          "3scale-operator.v0.12.1-mas": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "3scale-rhel9-operator-8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e-annotation": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel9-operator@sha256:8f41ab6027616e4bb65b1fddbcf44cc8a25a79cdda19d5cc354ac4228a15141e",
+          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:d0c561c6b9dfe9741722ba4a257fbd2df4d2a709457a0b0657ef7bcca1f2a5ca",
+          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:f174636a9ad43a2419fff5a9e6797e3185c540a9509188fd1606aef4acea7bdf",
+          "system": "registry.redhat.io/3scale-mas/system-rhel8@sha256:0fa28aaf3467fbd22fc1335dc6a712043e4dead694c3f14b60e89740bb7eb13e",
+          "zync": "registry.redhat.io/3scale-mas/zync-rhel9@sha256:78e5223a1a878f6527bd88d382948c125b7cb4a81540648244553af426d1a944",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:7a1abee11b4120f399485b438bda1e5262f04de28d3e788b207eecc3a9de9ed2",
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa",
+          "system_searchd": "registry.redhat.io/3scale-mas/3scale-manticore-search-rhel9@sha256:7379186175c9c0f0a6d922cd2a0754b429c9728dfbe8979a9d6025789ebae0da"
+        },
+        "cloud-resource-operator.v1.1.4": {
+          "cloud-resources.v1.1.4": "quay.io/integreatly/cloud-resource-operator:v1.1.4"
+        },
+        "marin3r.v0.13.1": {
+          "marin3r-operator.v0.13.1": "registry.redhat.io/3scale-mas/marin3r-rhel8-operator@sha256:7467b3e3ad2abf74c0aab83c395ec30eb3a5154c98c8793a82a4218096dcf0a6"
+        },
+        "rhsso-operator.18.0.x": {
+          "rhsso-operator.7.6.11-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "sso7-rhel8-operator-369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:710c0a0636973162b814b050b039a496afb792356e4839818fb46ecfad403bd4",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:710c0a0636973162b814b050b039a496afb792356e4839818fb46ecfad403bd4",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81122cb34e5d927ba20d4e0fc4165acfc70382dbe0679cc8ee568bf048e601d7",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:81122cb34e5d927ba20d4e0fc4165acfc70382dbe0679cc8ee568bf048e601d7"
+        },
+        "ratelimit": {
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.5-6"
+        },
+        "limitador": {
+          "marin3r-limitador": "quay.io/kuadrant/limitador:v1.6.0"
+        },
+        "grafana": {
+          "grafana": "registry.redhat.io/rhel9/grafana@sha256:043f656f9c940b66131f8932a9485c66317c1e274d91129d1b9a9a9b594e4547"
+        },
+        "grafana-ose-oauth-proxy": {
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:4387d0fdb0e8ac72b7d95525e22109b5a95effa1845b7f38113750c071a84253"
+        }
+      }
+    serviceAffecting: "true"
+  name: managed-api-service.v1.42.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+      - description: RHOAM is the Schema for the RHOAM API
+        displayName: RHOAM installation
+        kind: RHMI
+        name: rhmis.integreatly.org
+        resources:
+          - kind: Deployment
+            name: rhoam-operator
+            version: v1
+          - kind: Pod
+            name: rhoam
+            version: v1
+        specDescriptors:
+          - description: namespacePrefix
+            displayName: namespacePrefix
+            path: namespacePrefix
+          - description: operatorsInProductNamespace
+            displayName: operatorsInProductNamespace
+            path: operatorsInProductNamespace
+          - description: pagerDutySecret
+            displayName: pagerDutySecret
+            path: pagerDutySecret
+          - description: selfSignedCerts
+            displayName: selfSignedCerts
+            path: selfSignedCerts
+          - description: deadMansSnitchSecret
+            displayName: deadMansSnitchSecret
+            path: deadMansSnitchSecret
+          - description: type
+            displayName: type
+            path: type
+          - description: useClusterStorage
+            displayName: useClusterStorage
+            path: useClusterStorage
+          - description: priorityClassName
+            displayName: priorityClassName
+            path: priorityClassName
+          - description: smtpSecret
+            displayName: smtpSecret
+            path: smtpSecret
+          - description: pagerDutySecret
+            displayName: pagerDutySecret
+            path: pagerDutySecret
+          - description: priorityClassName
+            displayName: priorityClassName
+            path: priorityClassName
+          - description: selfSignedCerts
+            displayName: selfSignedCerts
+            path: selfSignedCerts
+          - description: smtpSecret
+            displayName: smtpSecret
+            path: smtpSecret
+          - description: type
+            displayName: type
+            path: type
+          - description: useClusterStorage
+            displayName: useClusterStorage
+            path: useClusterStorage
+          - description: deadMansSnitchSecret
+            displayName: deadMansSnitchSecret
+            path: deadMansSnitchSecret
+        statusDescriptors:
+          - description: The status of each of the RHMI CR
+            displayName: RHMI CR Status
+            path: status
+        version: v1alpha1
+  description: RHOAM integration suite of tools
+  displayName: RHOAM
+  icon:
+    - base64data: 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
+      mediatype: image/png
+  install:
+    spec:
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+            - apiGroups:
+                - ""
+              resources:
+                - limitranges
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+              verbs:
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - nodes
+              verbs:
+                - list
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - create
+                - list
+            - apiGroups:
+                - ""
+              resources:
+                - pods/exec
+              verbs:
+                - create
+            - apiGroups:
+                - ""
+              resourceNames:
+                - grafana-datasources
+              resources:
+                - secrets
+              verbs:
+                - get
+            - apiGroups:
+                - ""
+              resourceNames:
+                - pull-secret
+              resources:
+                - secrets
+              verbs:
+                - get
+            - apiGroups:
+                - ""
+                - project.openshift.io
+              resources:
+                - projectrequests
+              verbs:
+                - create
+            - apiGroups:
+                - '*'
+              resources:
+                - configmaps
+                - secrets
+                - services
+                - subscriptions
+              verbs:
+                - create
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - addons.managed.openshift.io
+              resources:
+                - addoninstances
+              verbs:
+                - get
+                - list
+                - patch
+                - watch
+            - apiGroups:
+                - addons.managed.openshift.io
+              resources:
+                - addoninstances/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - admissionregistration.k8s.io
+              resources:
+                - mutatingwebhookconfigurations
+                - validatingwebhookconfigurations
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - apiextensions.k8s.io
+              resources:
+                - customresourcedefinitions
+              verbs:
+                - delete
+                - get
+                - list
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+                - replicasets
+                - statefulsets
+              verbs:
+                - create
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+                - statefulsets
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - apps.3scale.net
+              resources:
+                - apimanagers
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+            - apiGroups:
+                - apps.openshift.io
+              resources:
+                - deploymentconfigs
+              verbs:
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - apps.openshift.io
+              resources:
+                - deploymentconfigs/instantiate
+              verbs:
+                - create
+            - apiGroups:
+                - config.openshift.io
+              resources:
+                - clusterversions
+                - infrastructures
+                - oauths
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - console.openshift.io
+              resources:
+                - consolelinks
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - image.openshift.io
+              resources:
+                - imagestreams
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - integreatly.org
+              resources:
+                - '*'
+              verbs:
+                - '*'
+            - apiGroups:
+                - integreatly.org
+              resources:
+                - apimanagementtenant
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - integreatly.org
+              resources:
+                - apimanagementtenant/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - integreatly.org
+              resources:
+                - rhmis
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - integreatly.org
+              resources:
+                - rhmis/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - managed.openshift.io
+              resources:
+                - customdomains
+              verbs:
+                - list
+            - apiGroups:
+                - marin3r.3scale.net
+              resources:
+                - envoyconfigs
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - podmonitors
+                - probes
+                - prometheusrules
+                - servicemonitors
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+            - apiGroups:
+                - monitoring.rhobs
+              resources:
+                - monitoringstacks
+                - podmonitors
+                - probes
+                - prometheusrules
+                - servicemonitors
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - oauth.openshift.io
+              resources:
+                - oauthclients
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - operator.marin3r.3scale.net
+              resources:
+                - discoveryservices
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - operator.openshift.io
+              resources:
+                - cloudcredentials
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - operator.openshift.io
+              resources:
+                - ingresscontrollers
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - operators.coreos.com
+              resourceNames:
+                - rhmi-registry-cs
+              resources:
+                - catalogsources
+              verbs:
+                - update
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - catalogsources
+                - operatorgroups
+              verbs:
+                - create
+                - get
+                - list
+                - update
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - clusterserviceversions
+              verbs:
+                - delete
+                - get
+                - list
+                - patch
+                - update
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - installplans
+              verbs:
+                - get
+                - update
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - subscriptions
+              verbs:
+                - create
+                - delete
+                - update
+            - apiGroups:
+                - package-operator.run
+              resources:
+                - clusterpackages
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - project.openshift.io
+              resources:
+                - projects
+              verbs:
+                - delete
+                - get
+            - apiGroups:
+                - rbac.authorization.k8s.io
+              resources:
+                - clusterrolebindings
+                - clusterroles
+                - rolebindings
+                - roles
+              verbs:
+                - '*'
+            - apiGroups:
+                - route.openshift.io
+              resources:
+                - routes
+              verbs:
+                - get
+                - list
+                - update
+            - apiGroups:
+                - samples.operator.openshift.io
+              resourceNames:
+                - cluster
+              resources:
+                - configs
+              verbs:
+                - get
+                - update
+            - apiGroups:
+                - scheduling.k8s.io
+              resources:
+                - '*'
+              verbs:
+                - '*'
+            - apiGroups:
+                - template.openshift.io
+              resources:
+                - templates
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - user.openshift.io
+              resources:
+                - groups
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - user.openshift.io
+              resourceNames:
+                - rhmi-developers
+              resources:
+                - groups
+              verbs:
+                - delete
+                - update
+            - apiGroups:
+                - user.openshift.io
+              resources:
+                - identities
+              verbs:
+                - get
+                - list
+            - apiGroups:
+                - user.openshift.io
+              resources:
+                - users
+              verbs:
+                - get
+                - list
+                - update
+                - watch
+          serviceAccountName: rhmi-operator
+      deployments:
+        - name: rhmi-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: rhmi-operator
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/default-container: manager
+                labels:
+                  name: rhmi-operator
+              spec:
+                containers:
+                  - args:
+                      - --enable-leader-election
+                    command:
+                      - rhmi-operator
+                    env:
+                      - name: INSTALLATION_TYPE
+                        value: managed-api
+                      - name: WATCH_NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.annotations['olm.targetNamespaces']
+                      - name: POD_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
+                      - name: OPERATOR_NAME
+                        value: rhmi-operator
+                      - name: USE_CLUSTER_STORAGE
+                        value: "true"
+                      - name: LOG_LEVEL
+                        value: info
+                      - name: REBALANCE_PODS
+                        value: "true"
+                      - name: ALERT_SMTP_FROM
+                        value: default@test.com
+                      - name: QUOTA
+                        value: "200"
+                    image: quay.io/integreatly/managed-api-service:master
+                    imagePullPolicy: Always
+                    livenessProbe:
+                      exec:
+                        command:
+                          - ls
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+                      timeoutSeconds: 10
+                    name: rhmi-operator
+                    ports:
+                      - containerPort: 8090
+                    readinessProbe:
+                      exec:
+                        command:
+                          - ls
+                    resources:
+                      limits:
+                        cpu: 200m
+                        memory: 1536Mi
+                      requests:
+                        cpu: 100m
+                        memory: 64Mi
+                    volumeMounts:
+                      - mountPath: /etc/ssl/certs/webhook
+                        name: webhook-certs
+                serviceAccountName: rhmi-operator
+                terminationGracePeriodSeconds: 10
+                volumes:
+                  - emptyDir: {}
+                    name: webhook-certs
+      permissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps/status
+              verbs:
+                - get
+                - update
+                - patch
+            - apiGroups:
+                - ""
+              resources:
+                - events
+              verbs:
+                - create
+                - patch
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+                - events
+                - pods
+                - secrets
+              verbs:
+                - create
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - endpoints
+                - pods
+                - services
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - services
+                - services/finalizers
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - marin3r.3scale.net
+              resources:
+                - envoyconfigs
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - prometheusrules
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - servicemonitors
+              verbs:
+                - create
+                - get
+            - apiGroups:
+                - operator.marin3r.3scale.net
+              resources:
+                - discoveryservices
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - clusterserviceversions
+              verbs:
+                - delete
+                - get
+                - list
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - installplans
+              verbs:
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - operators.coreos.com
+              resources:
+                - subscriptions
+                - subscriptions/status
+              verbs:
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+          serviceAccountName: rhmi-operator
+    strategy: deployment
+  installModes:
+    - supported: true
+      type: OwnNamespace
+    - supported: false
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: false
+      type: AllNamespaces
+  keywords:
+    - RHOAM
+    - Integration
+  labels:
+    alm-owner-rhoam: rhoam-operator
+    operated-by: rhoam-operator
+  maintainers:
+    - email: rhoam-support@redhat.com
+      name: rhoam
+  maturity: alpha
+  provider:
+    name: rhoam
+  replaces: managed-api-service.v1.41.0
+  selector:
+    matchLabels:
+      alm-owner-rhoam: rhoam-operator
+      operated-by: rhoam-operator
+  version: 1.42.0

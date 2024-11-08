@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	managedAPIVersion = "1.41.0"
+	managedAPIVersion = "1.42.0"
 	log               = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "version"})
 )
 
