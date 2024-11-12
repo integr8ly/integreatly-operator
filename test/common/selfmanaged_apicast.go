@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	apicastOperatorVersion       = "0.7.4-mas"
+	apicastOperatorVersion       = "0.12.1-mas"
 	apicastImageStreamTag        = "3scale-mas"
 	apicastNamespace             = "selfmanaged-apicast"
 	apiExampleApicast            = "apicast-example-apicast"
