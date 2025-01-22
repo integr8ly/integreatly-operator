@@ -14,7 +14,7 @@ require (
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/golang/protobuf v1.5.4
-	github.com/integr8ly/cloud-resource-operator v1.1.4
+	github.com/integr8ly/cloud-resource-operator v1.1.5
 	github.com/integr8ly/keycloak-client v0.1.14
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.33.0

@@ -44,7 +44,7 @@ const (
 	defaultAwsDBInstanceClass            = "db.t3.small"
 	defaultAwsDeleteAutomatedBackups     = true
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "13.13"
+	defaultAwsEngineVersion              = "13.18"
 	defaultAwsIdentifierLength           = 40
 	defaultAwsMaxAllocatedStorage        = 100
 	defaultAwsMultiAZ                    = true

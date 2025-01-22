@@ -13,7 +13,7 @@ require (
 	github.com/chromedp/chromedp v0.9.2
 	github.com/google/go-cmp v0.6.0
 	github.com/headzoo/surf v1.0.1
-	github.com/integr8ly/cloud-resource-operator v1.1.4
+	github.com/integr8ly/cloud-resource-operator v1.1.5
 	github.com/integr8ly/integreatly-operator v1.19.1-0.20230418125645-5aec6c015174
 	github.com/integr8ly/keycloak-client v0.1.14
 	github.com/onsi/ginkgo/v2 v2.17.1
