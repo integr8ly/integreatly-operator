@@ -362,7 +362,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance cluster/prepare/rhoam-config
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance cluster/prepare/rhoam-config install-oo
 	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
 		echo "manual mode (sts)"; \
 		$(MAKE) cluster/prepare/sts; \
@@ -641,3 +641,8 @@ test/scripts:
 	# Preform a basic check on scripts checking for a non zero exit
 	echo "Running make release/prepare"
 	SEMVER=$(RHOAM_TAG) make release/prepare
+
+.PHONY: install-oo
+install-oo:
+	@echo "Installing Cluster Observability Operator Subscription..."
+	kubectl apply -f  config/samples/subscription_oo.yaml
