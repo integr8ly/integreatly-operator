@@ -295,7 +295,7 @@ test/products:
 	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
 .PHONY: cluster/deploy
-cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
+cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml install-oo
 	@ - oc create -f config/rbac/service_account.yaml
 	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
 	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
@@ -644,5 +644,5 @@ test/scripts:
 
 .PHONY: install-oo
 install-oo:
-	@echo "Installing Cluster Observability Operator Subscription..."
+	@echo "Creating Cluster Observability Operator Subscription"
 	kubectl apply -f  config/samples/subscription_oo.yaml
