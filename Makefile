@@ -245,7 +245,7 @@ test/e2e/multitenant-rhoam/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
-test/e2e: cluster/deploy test/prepare/ocp/obo
+test/e2e: cluster/deploy/e2e test/prepare/ocp/obo
 	cd test && go clean -testcache && go test -v ./e2e -timeout=120m -ginkgo.v
 
 .PHONY: test/e2e/single
@@ -296,6 +296,12 @@ test/products:
 
 .PHONY: cluster/deploy
 cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml install-oo
+	@ - oc create -f config/rbac/service_account.yaml
+	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
+	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
+
+.PHONY: cluster/deploy/e2e
+cluster/deploy/e2e: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
 	@ - oc create -f config/rbac/service_account.yaml
 	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
 	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
