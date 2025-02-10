@@ -245,7 +245,7 @@ test/e2e/multitenant-rhoam/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
-test/e2e: cluster/deploy test/prepare/ocp/obo
+test/e2e: cluster/deploy/e2e test/prepare/ocp/obo
 	cd test && go clean -testcache && go test -v ./e2e -timeout=120m -ginkgo.v
 
 .PHONY: test/e2e/single
@@ -295,7 +295,13 @@ test/products:
 	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
 .PHONY: cluster/deploy
-cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
+cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml install-oo
+	@ - oc create -f config/rbac/service_account.yaml
+	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
+	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
+
+.PHONY: cluster/deploy/e2e
+cluster/deploy/e2e: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
 	@ - oc create -f config/rbac/service_account.yaml
 	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
 	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
@@ -362,7 +368,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance cluster/prepare/rhoam-config
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance cluster/prepare/rhoam-config install-oo
 	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
 		echo "manual mode (sts)"; \
 		$(MAKE) cluster/prepare/sts; \
@@ -641,3 +647,8 @@ test/scripts:
 	# Preform a basic check on scripts checking for a non zero exit
 	echo "Running make release/prepare"
 	SEMVER=$(RHOAM_TAG) make release/prepare
+
+.PHONY: install-oo
+install-oo:
+	@echo "Creating Cluster Observability Operator Subscription"
+	kubectl apply -f  config/samples/subscription_oo.yaml
