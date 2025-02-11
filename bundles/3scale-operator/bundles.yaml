@@ -1,39 +1,7 @@
 bundles:
-    - name: 3scale-operator.v0.8.0
-      image: quay.io/integreatly/3scale-bundle:v0.8.0
-    - name: 3scale-operator.v0.8.0+0.1634606167.p
-      image: quay.io/integreatly/3scale-bundle:v0.8.0-0.1634606167
-    - name: 3scale-operator.v0.8.1
-      image: quay.io/integreatly/3scale-bundle:v0.8.1
-    - name: 3scale-operator.v0.8.2
-      image: quay.io/integreatly/3scale-bundle:v0.8.2
-    - name: 3scale-operator.v0.8.3
-      image: quay.io/integreatly/3scale-bundle:v0.8.3
-    - name: 3scale-operator.v0.8.3+0.1645735250.p
-      image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1645735250
-    - name: 3scale-operator.v0.8.3+0.1646619125.p
-      image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1646619125
-    - name: 3scale-operator.v0.8.4
-      image: quay.io/integreatly/3scale-bundle:v0.8.4
-    - name: 3scale-operator.v0.9.0
-      image: quay.io/integreatly/3scale-bundle:v0.9.0
-    - name: 3scale-operator.v0.9.1
-      image: quay.io/integreatly/3scale-bundle:v0.9.1
-    - name: 3scale-operator.v0.10.0-mas
-      image: quay.io/integreatly/3scale-bundle:v0.10.0-mas
-    - name: 3scale-operator.v0.11.0-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.0-mas
-    - name: 3scale-operator.v0.11.1-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.1-mas
-    - name: 3scale-operator.v0.11.2-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.2-mas
-    - name: 3scale-operator.v0.11.3-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.3-mas
-    - name: 3scale-operator.v0.11.5-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.5-mas
-    - name: 3scale-operator.v0.11.6-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.6-mas
-    - name: 3scale-operator.v0.11.8-mas
-      image: quay.io/integreatly/3scale-bundle:v0.11.8-mas
-    - name: 3scale-operator.v0.12.1-mas
-      image: quay.io/integreatly/3scale-bundle:v0.12.1-mas
+    - name: 3scale-operator.v0.12.0
+      image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.15.0
+    - name: 3scale-operator.v0.12.1
+      image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.15.1
+    - name: 3scale-operator.v0.12.2
+      image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.15.2
