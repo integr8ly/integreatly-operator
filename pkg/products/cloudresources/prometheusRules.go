@@ -119,7 +119,7 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 				"message": "Elastic Cache snapshot not found or not available for tagging.",
 			},
 			Expr:   intstr.FromString(metricsCheck),
-			Labels: map[string]string{"severity": "warning", "product": installationName},
+			Labels: map[string]string{"severity": "critical", "product": installationName},
 		})
 		alertsReconciler.Alerts[0].Rules = alertListType
 	}

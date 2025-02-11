@@ -217,8 +217,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale apicast-production has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'apicast-production.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleBackendWorkerPod",
@@ -237,8 +237,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale backend-listener has no pods in a ready state",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'backend-listener.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleSystemAppPod",
@@ -247,8 +247,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale system-app has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'system-app.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleAdminUIBBT",
@@ -288,7 +288,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
 						For:    "15m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleZyncDatabasePodAvailability",
@@ -297,8 +297,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Zync-database has no pods in a ready state. Expected a minimum of 1 pod.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync-database.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					alertThreeScaleContainerHighMemory(installationName, r.Config.GetNamespace()),
 					{
