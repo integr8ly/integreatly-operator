@@ -359,17 +359,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileCsvContainerImage(
-		ctx,
-		serverClient,
-		fmt.Sprintf("3scale-operator.v%s", integreatlyv1alpha1.OperatorVersion3Scale),
-		r.Config.GetOperatorNamespace(),
-	)
-	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale-operator csv container image", err)
-		return phase, err
-	}
-
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
