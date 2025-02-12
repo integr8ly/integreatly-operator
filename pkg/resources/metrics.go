@@ -51,7 +51,7 @@ const (
 	alertFor20Mins  = "20m"
 	alertFor30Mins  = "30m"
 	alertFor60Mins  = "60m"
-	alertPercentage = "90"
+	alertPercentage = "80"
 )
 
 var (
@@ -204,7 +204,7 @@ func CreateAddonManagedApiServiceParametersExists(ctx context.Context, client k8
 	)
 	alertDescription := fmt.Sprintf("The %s secret has been removed from the %s namespace, this secret should be generated and managed by Hive", addonParametersSecret.Name, cr.Namespace)
 	labels := map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 
@@ -261,10 +261,6 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if strings.Contains(productName, "sso") {
-		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
-		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
-		// https://issues.redhat.com/browse/MGDAPI-587
-		alertSeverity = "warning"
 		sopURL = sopUrlPostgresInstanceUnavailable
 	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
@@ -302,10 +298,6 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if strings.Contains(productName, "sso") {
-		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
-		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
-		// https://issues.redhat.com/browse/MGDAPI-587
-		alertSeverity = "warning"
 		sopURL = sopUrlPostgresConnectionFailed
 	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
@@ -465,7 +457,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	ruleName = "postgres-storage-will-fill-in-4-days"
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 days"
 	labels = map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 
@@ -483,14 +475,14 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	// build and reconcile postgres low storage alert
 	alertName = "PostgresStorageLow"
 	ruleName = "postgres-storage-low"
-	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, storage is currently under 10 percent of its capacity"
+	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, storage is currently under 20 percent of its capacity"
 	labels = map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 
 	// checking if the percentage of free storage is less than 10% of the current allocated storage
-	alertExp = intstr.FromString("cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100 ) * 10)")
+	alertExp = intstr.FromString("cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100 ) * 20)")
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresWillFill, alertFor30Mins, alertExp, labels)
 	if err != nil {
@@ -511,15 +503,15 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// build and reconcile postgres low freeable memory alert
 	alertName := "PostgresFreeableMemoryLow"
 	ruleName := "postgres-freeable-memory-low"
-	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 10 percent of its capacity"
+	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 20 percent of its capacity"
 	labels := map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 
-	// checking if the percentage of freeable memory is less than 10% of the max memory
+	// checking if the percentage of freeable memory is less than 20% of the max memory
 	// conversion formula is MiB = bytes / (1024^2)
-	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average) < ((cro_postgres_max_memory / 100 ) * 10)")
+	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average) < ((cro_postgres_max_memory / 100 ) * 20)")
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor5Mins, alertExp, labels)
@@ -540,16 +532,16 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 
 	alertName := "PostgresCPUHigh"
 	ruleName := "postgres-cpu-high"
-	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for 15 minutes or more"
+	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for 60 minutes or more"
 	labels := map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 
-	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")
+	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 80")
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor15Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -595,9 +587,9 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 
 	alertName := "RedisMemoryUsageHigh"
 	ruleName := "redis-memory-usage-high"
-	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
+	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 80 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity":    "warning",
+		"severity":    "critical",
 		"productName": productName,
 	}
 
@@ -616,7 +608,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = "redis-memory-usage-will-max-in-4-hours"
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity":    "warning",
+		"severity":    "critical",
 		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -633,7 +625,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = "redis-memory-usage-max-fill-in-4-days"
 	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity":    "warning",
+		"severity":    "critical",
 		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -790,16 +782,16 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	productName := cr.Labels["productName"]
 	alertName := "RedisCpuUsageHigh"
 	ruleName := "redis-cpu-usage-high"
-	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
+	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 80 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity":    "warning",
+		"severity":    "critical",
 		"productName": productName,
 	}
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_engine_cpu_utilization_average > %s", alertPercentage))
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor15Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
