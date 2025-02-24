@@ -13,6 +13,7 @@ products:
       - 1.33.0
       - 1.36.0
       - 1.39.0
+      - 1.42.0
 ---
 
 # A30 - Validate RHOAM integration with LDAP IDP
@@ -131,7 +132,7 @@ Verify the integration with the LDAP server for an admin user
 
 1. Go to the cluster login page and check if there is an LDAP option for authentication in the list, if so click on this option.
 
-2. Enter `rhoam-customer-admin` for _username_ and `Password1` for _password_ and click the log in button.
+2. Enter `rhoam-customer-admin` for _username_ and `Password1` (or whatever password you did set up when configuring LDAP) for _password_ and click the log in button.
 
    > You should be redirected to the cluster console main page
 
@@ -171,7 +172,7 @@ Verify the integration with the LDAP server for an admin user
 
 8. Click on the LDAP option.
 
-9. Enter `rhoam-customer-admin` for _username_ and `Password1` for _password_ and click the log in button.
+9. Enter `rhoam-customer-admin` for _username_ and `Password1` (or whatever password you did set up when configuring LDAP) for _password_ and click the log in button.
 
    > You should be redirected to the 3scale main page.
 
@@ -179,7 +180,7 @@ Verify the integration with the LDAP server for a regular user
 
 1. Go to the cluster login page and check if there is an LDAP option for authentication in the list, if so click on this option.
 
-2. Enter `rhoam-test-user` for _username_ and _Password1_ for _password_ and click the log in button
+2. Enter `rhoam-test-user` for _username_ and `Password1` (or whatever password you did set up when configuring LDAP) for _password_ and click the log in button
 
    > You should be redirected to the cluster console main page
 
@@ -213,7 +214,7 @@ Verify the integration with the LDAP server for a regular user
 
 7. Click on the LDAP option.
 
-8. Enter `rhoam-test-user` for _username_ and `Password1` for _password_ and click the log in button.
+8. Enter `rhoam-test-user` for _username_ and `Password1` (or whatever password you did set up when configuring LDAP) for _password_ and click the log in button.
 
    > You should be redirected to the 3scale main page.
 

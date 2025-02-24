@@ -13,6 +13,7 @@ products:
 estimate: 4h
 tags:
   - destructive
+  - manual-selection
 ---
 
 # K04 - Run performance test against RHOAM (3scale + user SSO)
