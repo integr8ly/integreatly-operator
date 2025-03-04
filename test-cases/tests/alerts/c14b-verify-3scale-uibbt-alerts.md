@@ -22,6 +22,7 @@ products:
 estimate: 15m
 tags:
   - destructive
+  - manual-selection
 ---
 
 # C14B - Verify 3scale UIBBT alerts

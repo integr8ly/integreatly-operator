@@ -17,6 +17,8 @@ products:
       - 1.35.0
       - 1.38.0
 estimate: 15m
+tags:
+  - manual-selection
 ---
 
 # A36 - RHOAM operator log should not contain errors and irrelevant warnings

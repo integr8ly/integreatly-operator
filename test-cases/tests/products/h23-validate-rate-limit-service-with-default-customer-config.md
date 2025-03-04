@@ -19,6 +19,7 @@ products:
       - 1.35.0
       - 1.38.0
       - 1.39.0
+      - 1.42.0
 estimate: 1h
 tags:
   - destructive
@@ -112,7 +113,7 @@ Then SSH to the load testing instance (using the key-file):
 ssh -i /path/to/libra.pem fedora@10.0.77.22
 ```
 
-you should now be logged into [fedora@rate-limit-testing ~]
+you should now be logged into [fedora@rate-limit-testing ~]. If not, start the [instance](https://rhos-d.infra.prod.upshift.rdu2.redhat.com/dashboard/project/instances/7e7415f4-d702-4b2e-b0e9-13975e220b50/)
 
 list the folders - you should see a 'rate-limit-testing' folder.
 
@@ -288,3 +289,7 @@ The relevant alerts for Rate Limiting are:
 **12. Revert the email addresses back**
 
 Use the command from Step #1, just use the original email addresses.
+
+**13. Shut Off the rate-limit-testing Instance**
+
+Navigate to [instance details](https://rhos-d.infra.prod.upshift.rdu2.redhat.com/dashboard/project/instances/7e7415f4-d702-4b2e-b0e9-13975e220b50/) and `shut off` it.

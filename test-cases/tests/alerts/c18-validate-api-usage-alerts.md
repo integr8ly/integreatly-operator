@@ -120,7 +120,10 @@ tags:
 
 6.  Verify email addresses are added to Alert Manager configurations
 
-    Open the Alert Manager console and login via Openshift:
+    Open alert manager by following the port forwarded address using the following command & log in as kubeadmin:
+    `oc port-forward -n redhat-rhoam-operator-observability alertmanager-rhoam-0 9093:9093`
+
+    Or just use following scripts
 
     ```shell script
      oc exec -n redhat-rhoam-operator-observability alertmanager-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate 'http://localhost:9093/api/v1/status/' | jq -r '.data.configJSON.receivers[] | select(.name == "BUandCustomer") | .email_configs[].to'
@@ -228,7 +231,7 @@ tags:
 
     Interrupt the script (Ctrl+C), wait 1 minute and repeat for the next rpm
 
-17. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent (these might not be sent). Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
+17. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent (only RHOAMApiUsageOverLimit email is sent, no email might be send for "level" alerts). Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
 
 18. Verify customer facing Grafana instance and Dashboard is present
 
