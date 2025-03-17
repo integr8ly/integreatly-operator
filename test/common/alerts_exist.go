@@ -753,7 +753,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	// exec into the prometheus pod
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
+	output, err := execToPod("curl -s localhost:9090/api/v1/rules",
 
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,

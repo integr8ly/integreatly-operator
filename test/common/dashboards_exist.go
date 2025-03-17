@@ -40,7 +40,7 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
-	output, err := execToPod(fmt.Sprintf("wget -qO - %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(fmt.Sprintf("curl -s %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
 		ObservabilityProductNamespace,
 		curlContainerName, ctx)
