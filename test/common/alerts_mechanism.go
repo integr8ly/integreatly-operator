@@ -240,7 +240,7 @@ func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t Test
 }
 
 func getKeycloakAlertState(ctx *TestingContext) error {
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
+	output, err := execToPod("curl -s localhost:9090/api/v1/alerts",
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
