@@ -11,7 +11,7 @@
     "@types/jira-client": "6.13.1",
     "@types/xml2js": "0.4.5",
     "@types/yargs": "15.0.5",
-    "axios": "0.21.2",
+    "axios": "1.8.2",
     "form-data": "3.0.0",
     "gray-matter": "4.0.2",
     "jira-client": "6.18.0",
