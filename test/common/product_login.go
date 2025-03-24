@@ -107,8 +107,8 @@ func assertGrafanaLoginUnAuthorized(t TestingTB, userName string) chromedp.Actio
 		if err != nil {
 			return err
 		}
-		if !strings.Contains(html, "403") {
-			t.Errorf("Expected 403 error in HTML but didn't: %s", html)
+		if !strings.Contains(html, "Authorize") {
+			t.Errorf("expected authorization prompt but did not find it in HTML: %s", html)
 		}
 
 		t.Logf("User %s was not authorized to log into customer grafana", userName)

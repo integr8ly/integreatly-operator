@@ -113,12 +113,21 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		var sections []*cdp.Node
 
 		sectionSelector := `section[class="pf-c-app-launcher__group"]`
-		match, err := regexp.MatchString("4\\.1[56789]\\.", clusterVersion)
+		match, err := regexp.MatchString("4\\.1[567]\\.", clusterVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
+		// Check if the clusterVersion matches 4.18 or 4.19
+		match1, err := regexp.MatchString("4\\.1[89]\\.", clusterVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		if match {
 			sectionSelector = `section[class="pf-v5-c-app-launcher__group"]`
+		} else if match1 {
+			// For versions 4.18 or 4.19:
+			sectionSelector = `section[class="pf-v5-c-menu__group"]`
 		}
 
 		if err := chromedp.Run(ctx, chromedp.Nodes(sectionSelector, &sections, chromedp.ByQueryAll)); err != nil {
