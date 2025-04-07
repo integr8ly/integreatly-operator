@@ -307,7 +307,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for last 1 hour", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "60m",
+					For:    "90m",
 					Labels: map[string]string{"severity": "critical", "product": installationName},
 				},
 				{
