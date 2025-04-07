@@ -45,8 +45,9 @@ import (
 )
 
 const (
-	apicastOperatorVersion       = "0.12.1-mas"
-	apicastImageStreamTag        = "3scale-mas"
+	apicastOperatorVersion       = "0.12.3"
+	apicastOperatorChannel       = "threescale-2.15"
+	apicastImageStreamTag        = "3scale-amp2"
 	apicastNamespace             = "selfmanaged-apicast"
 	apiExampleApicast            = "apicast-example-apicast"
 	adminPortalCredentialsSecret = "adminportal-credentials"
@@ -304,10 +305,6 @@ func createAdminPortalCredentialsSecret(ctx context.Context, client k8sclient.Cl
 // Install 3scale APIcast gateway operator
 func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 	log.Info("Install 3scale APIcast gateway Operator")
-	// After moving to MAS stream the channel version is just "mas"
-	//verSplit := strings.Split(string(integreatlyv1alpha1.Version3Scale), ".")
-	//channelVer := verSplit[0] + "." + verSplit[1] // example: 2.11.0 -> 2.11
-	channelVer := "mas"
 	targetNamespaces := []string{apicastNamespace}
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -337,7 +334,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 			Generation: 1,
 		},
 		Spec: &operatorsv1alpha1.SubscriptionSpec{
-			Channel:                "threescale-" + channelVer,
+			Channel:                apicastOperatorChannel,
 			InstallPlanApproval:    operatorsv1alpha1.ApprovalAutomatic,
 			Package:                "apicast-operator",
 			CatalogSource:          "redhat-operators",

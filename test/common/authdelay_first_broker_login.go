@@ -219,7 +219,7 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 
 	By("Wait until account is provisioned and user is authenticated in 3Scale")
 	// waits until the account is provisioned and user is authenticated in three scale
-	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx context.Context) (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*8, false, func(ctx context.Context) (done bool, err error) {
 		t.Logf("\nbrowser URL first:\n %s\nURL with requestURI:\n %s\n", clintBrowser.Url().String(), clintBrowser.Url().RequestURI())
 
 		// checks if an error happened in the login

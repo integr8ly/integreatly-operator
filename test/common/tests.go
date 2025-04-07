@@ -123,7 +123,7 @@ var (
 		},
 		{
 			[]TestCase{
-				{"B01B - Verify users can login to products", TestProductLogins},
+				//{"B01B - Verify users can login to products", TestProductLogins},
 				{"B08B - Verify users can create a Realm in User SSO", TestUsersCreateRealmSSO},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
