@@ -310,16 +310,6 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 					For:    "60m",
 					Labels: map[string]string{"severity": "critical", "product": installationName},
 				},
-				{
-					Alert: fmt.Sprintf("%sInstallationControllerReconcileDelayed", strings.ToUpper(installationName)),
-					Annotations: map[string]string{
-						"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-						"message": fmt.Sprintf("The reconcile function of the installation controller in a completed state of %s operator is taking more than 2 hours to complete", strings.ToUpper(installationName)),
-					},
-					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) (installation_controller_reconcile_delayed == 1)`),
-					For:    "90m",
-					Labels: map[string]string{"severity": "critical", "product": installationName},
-				},
 			},
 		},
 	}
@@ -345,10 +335,31 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 		alerts = append(alerts, multitenantAlert)
 	}
 
+	alertsToBeRemoved := []resources.AlertConfiguration{
+		{
+			AlertName: fmt.Sprintf("%s-rhmi-controller-alerts", installationName),
+			Namespace: namespace,
+			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
+			Rules: []monv1.Rule{
+				{
+					Alert: fmt.Sprintf("%sInstallationControllerReconcileDelayed", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+						"message": fmt.Sprintf("The reconcile function of the installation controller in a completed state of %s operator is taking more than 2 hours to complete", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) (installation_controller_reconcile_delayed == 1)`),
+					For:    "90m",
+					Labels: map[string]string{"severity": "critical", "product": installationName},
+				},
+			},
+		},
+	}
+
 	return &resources.AlertReconcilerImpl{
-		ProductName:  "OBO",
-		Installation: installation,
-		Log:          logger,
-		Alerts:       alerts,
+		ProductName:   "OBO",
+		Installation:  installation,
+		Log:           logger,
+		Alerts:        alerts,
+		RemovedAlerts: alertsToBeRemoved,
 	}
 }
