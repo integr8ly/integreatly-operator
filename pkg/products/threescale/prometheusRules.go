@@ -286,7 +286,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": fmt.Sprintf("3Scale Zync has no pods in a ready state. Expected %d of pods.", r.Config.GetReplicasConfig(r.installation)["zyncApp"]),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
+						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync.*', pod!~\"zync-database-.*\"} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
 						For:    "15m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
