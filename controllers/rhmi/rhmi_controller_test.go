@@ -417,19 +417,19 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "managed-api-service",
+							Name:       "managed-api-service",
 							Generation: 1,
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Conditions: []metav1.Condition{
 								metav1.Condition{
-									Type: "Available",
-									Status: metav1.ConditionTrue,
+									Type:               "Available",
+									Status:             metav1.ConditionTrue,
 									ObservedGeneration: 1,
 								},
 								metav1.Condition{
-									Type: "Progressing",
-									Status: metav1.ConditionFalse,
+									Type:               "Progressing",
+									Status:             metav1.ConditionFalse,
 									ObservedGeneration: 1,
 								},
 							},
@@ -444,19 +444,19 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "managed-api-service",
+							Name:       "managed-api-service",
 							Generation: 1,
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Conditions: []metav1.Condition{
 								metav1.Condition{
-									Type: "Available",
-									Status: metav1.ConditionTrue,
+									Type:               "Available",
+									Status:             metav1.ConditionTrue,
 									ObservedGeneration: 0,
 								},
 								metav1.Condition{
-									Type: "Progressing",
-									Status: metav1.ConditionFalse,
+									Type:               "Progressing",
+									Status:             metav1.ConditionFalse,
 									ObservedGeneration: 0,
 								},
 							},
@@ -471,19 +471,19 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "managed-api-service",
+							Name:       "managed-api-service",
 							Generation: 1,
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Conditions: []metav1.Condition{
 								metav1.Condition{
-									Type: "Available",
-									Status: metav1.ConditionFalse,
+									Type:               "Available",
+									Status:             metav1.ConditionFalse,
 									ObservedGeneration: 0,
 								},
 								metav1.Condition{
-									Type: "Progressing",
-									Status: metav1.ConditionTrue,
+									Type:               "Progressing",
+									Status:             metav1.ConditionTrue,
 									ObservedGeneration: 1,
 								},
 							},
@@ -503,11 +503,11 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Conditions: []metav1.Condition{
 								metav1.Condition{
-									Type: "Available",
+									Type:   "Available",
 									Status: metav1.ConditionTrue,
 								},
 								metav1.Condition{
-									Type: "Progressing",
+									Type:   "Progressing",
 									Status: metav1.ConditionFalse,
 								},
 							},

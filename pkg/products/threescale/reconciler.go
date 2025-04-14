@@ -2456,7 +2456,7 @@ func (r *Reconciler) RolloutDeployment(ctx context.Context, client k8sclient.Cli
 		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
 
-	deployment.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+	deployment.Spec.Template.Annotations["kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
 
 	err = client.Update(ctx, deployment)
 	if err != nil {
