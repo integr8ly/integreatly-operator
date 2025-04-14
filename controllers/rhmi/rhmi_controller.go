@@ -935,10 +935,29 @@ func (r *RHMIReconciler) checkClusterPackageAvailablity() error {
 		return fmt.Errorf("failed to get ClusterPackage: %w", err)
 	}
 
-	if pkg.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
-		return fmt.Errorf("error cluster package state is not phase available, current phase: %s", pkg.Status.Phase)
+	if !isPackageReady(pkg) {
+		return fmt.Errorf("error: package is not ready (Available=True, Progressing=False required), current conditions: %+v", pkg.Status.Conditions)
 	}
 	return nil
+}
+
+func hasMatchingCondition(conditions []metav1.Condition, conditionType string, expectedStatus metav1.ConditionStatus, expectedGeneration int64) bool {
+	for _, cond := range conditions {
+		if cond.Type == conditionType &&
+			cond.Status == expectedStatus &&
+			cond.ObservedGeneration == expectedGeneration {
+			return true
+		}
+	}
+	return false
+}
+
+func isPackageReady(pkg *packageOperatorv1alpha1.ClusterPackage) bool {
+	gen := pkg.ObjectMeta.Generation
+	conds := pkg.Status.Conditions
+
+	return hasMatchingCondition(conds, "Available", metav1.ConditionTrue, gen) &&
+		hasMatchingCondition(conds, "Progressing", metav1.ConditionFalse, gen)
 }
 
 func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) ([]string, error) {

@@ -2452,11 +2452,11 @@ func (r *Reconciler) RolloutDeployment(ctx context.Context, client k8sclient.Cli
 		return err
 	}
 
-	if deployment.Spec.Template.Labels == nil {
-		deployment.Spec.Template.Labels = make(map[string]string)
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
 
-	deployment.Spec.Template.Labels["rollout-restarted-at"] = time.Now().Format(time.RFC3339)
+	deployment.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
 
 	err = client.Update(ctx, deployment)
 	if err != nil {
