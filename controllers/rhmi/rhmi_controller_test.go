@@ -417,25 +417,76 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "managed-api-service",
+							Name:       "managed-api-service",
+							Generation: 1,
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
-							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
+							Conditions: []metav1.Condition{
+								metav1.Condition{
+									Type:               "Available",
+									Status:             metav1.ConditionTrue,
+									ObservedGeneration: 1,
+								},
+								metav1.Condition{
+									Type:               "Progressing",
+									Status:             metav1.ConditionFalse,
+									ObservedGeneration: 1,
+								},
+							},
 						},
 					},
 				)},
 			wantErr: false,
 		},
 		{
-			name: "Test - RHOAM - cluster package is not phase available",
+			name: "Test - RHOAM - cluster package successfully reconciled but with wrong generation being available",
 			fields: fields{
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "managed-api-service",
+							Name:       "managed-api-service",
+							Generation: 1,
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
-							Phase: packageOperatorv1alpha1.PackagePhaseNotReady,
+							Conditions: []metav1.Condition{
+								metav1.Condition{
+									Type:               "Available",
+									Status:             metav1.ConditionTrue,
+									ObservedGeneration: 0,
+								},
+								metav1.Condition{
+									Type:               "Progressing",
+									Status:             metav1.ConditionFalse,
+									ObservedGeneration: 0,
+								},
+							},
+						},
+					},
+				)},
+			wantErr: true,
+		},
+		{
+			name: "Test - RHOAM - cluster package is not available",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:       "managed-api-service",
+							Generation: 1,
+						},
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Conditions: []metav1.Condition{
+								metav1.Condition{
+									Type:               "Available",
+									Status:             metav1.ConditionFalse,
+									ObservedGeneration: 0,
+								},
+								metav1.Condition{
+									Type:               "Progressing",
+									Status:             metav1.ConditionTrue,
+									ObservedGeneration: 1,
+								},
+							},
 						},
 					},
 				)},
@@ -450,7 +501,16 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 							Name: "incorrect-name",
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
-							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
+							Conditions: []metav1.Condition{
+								metav1.Condition{
+									Type:   "Available",
+									Status: metav1.ConditionTrue,
+								},
+								metav1.Condition{
+									Type:   "Progressing",
+									Status: metav1.ConditionFalse,
+								},
+							},
 						},
 					},
 				)},
@@ -464,6 +524,7 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		t.Setenv("WATCH_NAMESPACE", "test")
 		t.Run(tt.name, func(t *testing.T) {
 
 			r := &RHMIReconciler{
