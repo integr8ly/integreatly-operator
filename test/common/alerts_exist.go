@@ -168,7 +168,6 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
 			Rules: []string{
 				"RHOAMIsInReconcilingErrorState",
-				"RHOAMInstallationControllerReconcileDelayed",
 			},
 		},
 	}
@@ -239,7 +238,6 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
 			Rules: []string{
 				"RHOAMIsInReconcilingErrorState",
-				"RHOAMInstallationControllerReconcileDelayed",
 			},
 		},
 		{
