@@ -213,7 +213,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					{
 						Alert: "ThreeScaleApicastProductionPod",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlApicastProductionPodsDown,
 							"message": "3Scale apicast-production has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'apicast-production.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
@@ -243,7 +243,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					{
 						Alert: "ThreeScaleSystemAppPod",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlSystemAppPodsDown,
 							"message": "3Scale system-app has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'system-app.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),

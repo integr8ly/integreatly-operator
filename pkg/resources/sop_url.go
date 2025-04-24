@@ -20,6 +20,8 @@ const (
 	sopUrlRedisServiceMaintenanceCritical                      = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/RedisServiceMaintenanceCritical.asciidoc"
 	SopUrlEndpointAvailableAlert                               = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/tree/master/sops/rhoam/alerts/service_endpoint_down.asciidoc"
 	SopUrlAlertsAndTroubleshooting                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md"
+	SopUrlApicastProductionPodsDown                            = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleApicastProductionPod.md"
+	SopUrlSystemAppPodsDown                                    = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleSystemAppPod.md"
 	sopUrlCloudResourceDeletionStatusFailed                    = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/tree/master/sops/rhoam/alerts/clean_up_cloud_resources_failed_teardown.asciidoc" //#nosec G101 -- This is a false positive
 	sopUrlSendGridSmtpSecretExists                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/sendgrid_smtp_secret_not_present.asciidoc"         //#nosec G101 -- This is a false positive
 	SopUrlDeadMansSnitchSecretExists                           = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/DeadMansSnitchSecretNotPresent.asciidoc"           //#nosec G101 -- This is a false positive
