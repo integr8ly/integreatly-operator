@@ -9,7 +9,7 @@
 #
 # Usage:
 # REG=<REGISTRY> ORG=<QUAY ORG> IMAGE=<IMAGE NAME> BUILD_TOOL=<docker|podman> VERSION=<VERSION TAG> BUILD_FRESH=<false|true> make create/<3scale|rhsso|marin3r>/index
-# PRODUCT - set by Makefile for relevant caller, create/3scale/index|create/rhsso/index|create/marin3r/index
+# PRODUCT - set by Makefile for relevant caller, create/3scale/index|create/rhsso/index|create/marin3r/index|create/cloud-resource-operator/index
 # REG - registry of where to push the bundles and indices, defaults to quay.io
 # ORG - organization of where to push the bundles and indices
 # IMAGE - image name of the image to push
