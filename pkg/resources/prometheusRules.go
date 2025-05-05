@@ -65,13 +65,6 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 		}
 	}
 
-	//removing RHOAMUpgradeExpectedDuration30minExceeded alert as it was renamed (30min -> 60min)
-	alertToDelete := AlertConfiguration{
-		AlertName: "RHOAMUpgradeExpectedDuration30minExceeded",
-		Namespace: "openshift-monitoring",
-	}
-	r.RemovedAlerts = append(r.RemovedAlerts, alertToDelete)
-
 	if err := r.deleteAlerts(ctx, client, r.RemovedAlerts); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
