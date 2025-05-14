@@ -70,7 +70,7 @@ products:
     channel: stable
     installFrom: index
     package: marin3r-operator
-    index: quay.io/integreatly/marin3r-index:v0.13.1
+    index: quay.io/vmogilev_rhmi/marin3r-operator:v0.13.2-index
   rhsso:
     channel: stable
     installFrom: index

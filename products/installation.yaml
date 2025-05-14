@@ -67,10 +67,10 @@ products:
         package: rhmi-cloud-resources
         index: quay.io/integreatly/cloud-resource-operator:index-v1.1.5
     marin3r:
-        channel: stable
+        channel: alpha
         installFrom: index
-        package: marin3r-operator
-        index: quay.io/integreatly/marin3r-index:v0.13.1
+        package: marin3r
+        index: quay.io/vmogilev_rhmi/marin3r-operator:v0.13.2-index
     rhsso:
         channel: stable
         installFrom: index
