@@ -340,6 +340,10 @@ create/3scale/index:
 create/marin3r/index:
 	PRODUCT=marin3r ./scripts/create-product-index.sh
 
+.PHONY: create/cloud-resource-operator/index
+create/cloud-resource-operator/index:
+	PRODUCT=cloud-resource-operator ./scripts/create-product-index.sh
+
 .PHONY: create/rhsso/index
 create/rhsso/index:
 	PRODUCT=rhsso ./scripts/create-product-index.sh
