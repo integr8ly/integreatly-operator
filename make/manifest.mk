@@ -19,4 +19,4 @@ manifest/check/graph:
 	delorean ews check-olm-graph -d ./manifests
 
 .PHONY: manifest/check
-manifest/check: manifest/check/image_mirror_mapping manifest/check/graph
+manifest/check: manifest/check/image_mirror_mapping

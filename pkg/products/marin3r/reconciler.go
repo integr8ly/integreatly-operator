@@ -190,7 +190,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		client,
-		fmt.Sprintf("marin3r-operator.v%s", integreatlyv1alpha1.OperatorVersionMarin3r),
+		fmt.Sprintf("marin3r.v%s", integreatlyv1alpha1.OperatorVersionMarin3r),
 		r.Config.GetOperatorNamespace(),
 		r.installation.Spec.PriorityClassName,
 	)
