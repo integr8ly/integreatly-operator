@@ -377,8 +377,6 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, discoveryService, func() error {
-		image := fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
-		discoveryService.Spec.Image = &image
 		discoveryService.Spec.PodPriorityClass = &r.installation.Spec.PriorityClassName
 		return nil
 	})
