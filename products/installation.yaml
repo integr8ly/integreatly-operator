@@ -69,8 +69,8 @@ products:
     marin3r:
         channel: stable
         installFrom: index
-        package: marin3r-operator
-        index: quay.io/integreatly/marin3r-index:v0.13.1
+        package: marin3r
+        index: quay.io/integreatly/marin3r-index:v0.13.2
     rhsso:
         channel: stable
         installFrom: index

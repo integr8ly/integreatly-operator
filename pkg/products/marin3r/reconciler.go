@@ -190,7 +190,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		client,
-		fmt.Sprintf("marin3r-operator.v%s", integreatlyv1alpha1.OperatorVersionMarin3r),
+		fmt.Sprintf("marin3r.v%s", integreatlyv1alpha1.OperatorVersionMarin3r),
 		r.Config.GetOperatorNamespace(),
 		r.installation.Spec.PriorityClassName,
 	)
@@ -377,8 +377,6 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, discoveryService, func() error {
-		image := fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
-		discoveryService.Spec.Image = &image
 		discoveryService.Spec.PodPriorityClass = &r.installation.Spec.PriorityClassName
 		return nil
 	})
