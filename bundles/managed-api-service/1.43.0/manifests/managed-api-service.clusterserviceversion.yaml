@@ -79,16 +79,16 @@ metadata:
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:da302560a513c6d90c606818234ea983f86408da10339148e016729ca4e069a7"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.5.8-8"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.7-5"
         },
         "limitador": {
-          "marin3r-limitador": "quay.io/kuadrant/limitador:v1.6.0"
+          "marin3r-limitador": "quay.io/kuadrant/limitador:v2.0.0"
         },
         "grafana": {
-          "grafana": "registry.redhat.io/rhel9/grafana@sha256:b94c461bf189097087b957520898d52a2de1bac01ebdeac963f62b1c92febb80"
+          "grafana": "registry.redhat.io/rhel9/grafana:9.6-1747642001"
         },
         "grafana-ose-oauth-proxy": {
-          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:bd49cfc8452b3d96467cc222db9487e120abc6cc5ba81349c6b3703706f36a08"
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.17.0-202504281009.p0.g07d03d7.assembly.stream.el9"
         }
       }
     serviceAffecting: "true"
