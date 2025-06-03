@@ -486,11 +486,9 @@ func (r *RateLimitServiceReconciler) getRHOAMLimitadorSetting() ([]limitadorLimi
 			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
 			Seconds:   unitInSeconds,
 			Conditions: []string{
-				fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+				fmt.Sprintf(`descriptors[0]['%s'] == "%s"`, genericKey, ratelimit.RateLimitDescriptorValue),
 			},
-			Variables: []string{
-				genericKey,
-			},
+			Variables: []string{},
 		},
 	}, nil
 }
@@ -513,11 +511,9 @@ func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx con
 			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
 			Seconds:   unitInSeconds,
 			Conditions: []string{
-				fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+				fmt.Sprintf(`descriptors[0]['%s'] == "%s"`, genericKey, ratelimit.RateLimitDescriptorValue),
 			},
-			Variables: []string{
-				genericKey,
-			},
+			Variables: []string{},
 		},
 		{
 			Namespace: ratelimit.RateLimitDomain,

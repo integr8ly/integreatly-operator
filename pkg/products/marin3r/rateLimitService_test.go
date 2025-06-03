@@ -42,7 +42,7 @@ func TestRateLimitService(t *testing.T) {
 
 	podExecutorMock := &resources.PodExecutorInterfaceMock{
 		ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-			return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
+			return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"descriptors[0]['generic_key'] == \\\"slowpath\\\"\"],\"variables\":[]}]", "", nil
 		},
 	}
 
@@ -496,11 +496,9 @@ func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
 					MaxValue:  1,
 					Seconds:   1,
 					Conditions: []string{
-						fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+						fmt.Sprintf("descriptors[0]['%s'] == \"%s\"", genericKey, ratelimit.RateLimitDescriptorValue),
 					},
-					Variables: []string{
-						genericKey,
-					},
+					Variables: []string{},
 				},
 			},
 		},
@@ -546,11 +544,9 @@ func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
 					MaxValue:  1,
 					Seconds:   1,
 					Conditions: []string{
-						fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+						fmt.Sprintf("descriptors[0]['%s'] == \"%s\"", genericKey, ratelimit.RateLimitDescriptorValue),
 					},
-					Variables: []string{
-						genericKey,
-					},
+					Variables: []string{},
 				},
 				{
 					Namespace: ratelimit.RateLimitDomain,

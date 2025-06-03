@@ -68,7 +68,7 @@ var (
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMarin3r        ProductVersion = "0.13.3"
-	VersionGrafana        ProductVersion = "9.0.9"
+	VersionGrafana        ProductVersion = "9.6.0"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
