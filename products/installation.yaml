@@ -70,7 +70,7 @@ products:
         channel: stable
         installFrom: index
         package: marin3r
-        index: quay.io/integreatly/marin3r-index:v0.13.2
+        index: quay.io/integreatly/marin3r-index:v0.13.3
     rhsso:
         channel: stable
         installFrom: index

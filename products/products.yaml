@@ -19,7 +19,7 @@ products:
     manifestsDir: "integreatly-cloud-resources"
     quayScan: true
   - name: marin3r
-    version: v0.13.2
+    version: v0.13.3
     url: "https://github.com/3scale-sre/marin3r"
     installType: "rhoam"
     manifestsDir: "integreatly-marin3r"
