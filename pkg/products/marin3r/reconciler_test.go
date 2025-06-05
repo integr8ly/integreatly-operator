@@ -36,13 +36,12 @@ var (
 
 func getRateLimitConfigMap() *corev1.ConfigMap {
 	rateLimtCMString := `
-domain: kuard
-descriptors:
-  - key: generic_key
-    value: slowpath
-    ratelimit:
-      unit: minute
-      requestsperunit: 1`
+- namespace: kuard
+  max_value: 1
+  seconds: 60
+  conditions:
+    - descriptors[0]['generic_key'] == "slowpath"
+  variables: []`
 
 	return &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{

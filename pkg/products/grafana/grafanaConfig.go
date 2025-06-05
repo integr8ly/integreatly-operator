@@ -116,7 +116,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
@@ -196,7 +196,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
@@ -274,7 +274,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
@@ -334,7 +334,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -457,7 +457,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
@@ -537,7 +537,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
@@ -615,7 +615,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.0.9",
+      "pluginVersion": "9.6.0",
       "targets": [
         {
           "datasource": {
