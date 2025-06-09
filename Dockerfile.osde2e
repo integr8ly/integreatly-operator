@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.20 AS builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.23 AS builder
 
 ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
 WORKDIR ${PKG}
