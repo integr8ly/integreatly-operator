@@ -57,7 +57,7 @@ const (
 	cidrRangeKeyAws              = "cidr-range"
 )
 
-var redisServiceUpdatesToInstall = []string{"elasticache-20241007-intel", "elasticache-redis-cve-patch-update-202410", "elasticache-patch-update-202501", "elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001", "elasticache-redis-6-2-update", "elasticache-20240225-intel", "elasticache-20240501-intel"}
+var redisServiceUpdatesToInstall = []string{"elasticache-20250507-intel", "elasticache-20241007-intel", "elasticache-redis-cve-patch-update-202410", "elasticache-patch-update-202501", "elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001", "elasticache-redis-6-2-update", "elasticache-20240225-intel", "elasticache-20240501-intel"}
 
 // this timestamp is 2022-01-15-00:00:01
 var postgresServiceUpdateTimestamp = []string{"1642204801"}
