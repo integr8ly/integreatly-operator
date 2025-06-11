@@ -5,7 +5,7 @@ package catalogsource
 
 import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"k8s.io/apimachinery/pkg/types"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
 
@@ -19,7 +19,7 @@ var _ CatalogSourceClientInterface = &CatalogSourceClientInterfaceMock{}
 //
 //		// make and configure a mocked CatalogSourceClientInterface
 //		mockedCatalogSourceClientInterface := &CatalogSourceClientInterfaceMock{
-//			GetLatestCSVFunc: func(catalogSourceKey types.NamespacedName, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+//			GetLatestCSVFunc: func(catalogSourceKey k8sclient.ObjectKey, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 //				panic("mock out the GetLatestCSV method")
 //			},
 //		}
@@ -30,14 +30,14 @@ var _ CatalogSourceClientInterface = &CatalogSourceClientInterfaceMock{}
 //	}
 type CatalogSourceClientInterfaceMock struct {
 	// GetLatestCSVFunc mocks the GetLatestCSV method.
-	GetLatestCSVFunc func(catalogSourceKey types.NamespacedName, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error)
+	GetLatestCSVFunc func(catalogSourceKey k8sclient.ObjectKey, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// GetLatestCSV holds details about calls to the GetLatestCSV method.
 		GetLatestCSV []struct {
 			// CatalogSourceKey is the catalogSourceKey argument value.
-			CatalogSourceKey types.NamespacedName
+			CatalogSourceKey k8sclient.ObjectKey
 			// PackageName is the packageName argument value.
 			PackageName string
 			// ChannelName is the channelName argument value.
@@ -48,12 +48,12 @@ type CatalogSourceClientInterfaceMock struct {
 }
 
 // GetLatestCSV calls GetLatestCSVFunc.
-func (mock *CatalogSourceClientInterfaceMock) GetLatestCSV(catalogSourceKey types.NamespacedName, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+func (mock *CatalogSourceClientInterfaceMock) GetLatestCSV(catalogSourceKey k8sclient.ObjectKey, packageName string, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	if mock.GetLatestCSVFunc == nil {
 		panic("CatalogSourceClientInterfaceMock.GetLatestCSVFunc: method is nil but CatalogSourceClientInterface.GetLatestCSV was just called")
 	}
 	callInfo := struct {
-		CatalogSourceKey types.NamespacedName
+		CatalogSourceKey k8sclient.ObjectKey
 		PackageName      string
 		ChannelName      string
 	}{
@@ -72,12 +72,12 @@ func (mock *CatalogSourceClientInterfaceMock) GetLatestCSV(catalogSourceKey type
 //
 //	len(mockedCatalogSourceClientInterface.GetLatestCSVCalls())
 func (mock *CatalogSourceClientInterfaceMock) GetLatestCSVCalls() []struct {
-	CatalogSourceKey types.NamespacedName
+	CatalogSourceKey k8sclient.ObjectKey
 	PackageName      string
 	ChannelName      string
 } {
 	var calls []struct {
-		CatalogSourceKey types.NamespacedName
+		CatalogSourceKey k8sclient.ObjectKey
 		PackageName      string
 		ChannelName      string
 	}

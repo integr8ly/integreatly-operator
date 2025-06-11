@@ -2,7 +2,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
@@ -126,22 +125,23 @@ rules:
   - apps
   resources:
   - deployments
-  - replicasets
   - statefulsets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
   verbs:
   - create
   - get
   - patch
   - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - apps.3scale.net
   resources:
@@ -208,12 +208,6 @@ rules:
 - apiGroups:
   - integreatly.org
   resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
-  - integreatly.org
-  resources:
   - apimanagementtenant
   verbs:
   - get
@@ -223,6 +217,7 @@ rules:
   - integreatly.org
   resources:
   - apimanagementtenant/status
+  - rhmis/status
   verbs:
   - get
   - patch
@@ -241,12 +236,11 @@ rules:
   - watch
 - apiGroups:
   - integreatly.org
+  - scheduling.k8s.io
   resources:
-  - rhmis/status
+  - '*'
   verbs:
-  - get
-  - patch
-  - update
+  - '*'
 - apiGroups:
   - managed.openshift.io
   resources:
@@ -411,12 +405,6 @@ rules:
   - get
   - update
 - apiGroups:
-  - scheduling.k8s.io
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
   - template.openshift.io
   resources:
   - templates
@@ -463,7 +451,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  creationTimestamp: null
   name: manager-role
   namespace: integreatly-operator
 rules:
@@ -471,17 +458,10 @@ rules:
   - ""
   resources:
   - configmaps
-  verbs:
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - events
-  - pods
   - secrets
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
@@ -491,8 +471,6 @@ rules:
   - ""
   resources:
   - endpoints
-  - pods
-  - services
   verbs:
   - get
   - list
@@ -500,9 +478,15 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
+  - events
+  - pods
   verbs:
-  - delete
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -567,16 +551,6 @@ rules:
   - operators.coreos.com
   resources:
   - installplans
-  verbs:
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operators.coreos.com
-  resources:
   - subscriptions
   - subscriptions/status
   verbs:

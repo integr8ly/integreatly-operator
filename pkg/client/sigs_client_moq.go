@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
@@ -33,7 +32,7 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //			DeleteAllOfFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteAllOfOption) error {
 //				panic("mock out the DeleteAllOf method")
 //			},
-//			GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+//			GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 //				panic("mock out the Get method")
 //			},
 //			GetSigsClientFunc: func() k8sclient.Client {
@@ -86,7 +85,7 @@ type SigsClientInterfaceMock struct {
 	DeleteAllOfFunc func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteAllOfOption) error
 
 	// GetFunc mocks the Get method.
-	GetFunc func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error
+	GetFunc func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error
 
 	// GetSigsClientFunc mocks the GetSigsClient method.
 	GetSigsClientFunc func() k8sclient.Client
@@ -155,7 +154,7 @@ type SigsClientInterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Key is the key argument value.
-			Key types.NamespacedName
+			Key k8sclient.ObjectKey
 			// Obj is the obj argument value.
 			Obj k8sclient.Object
 			// Opts is the opts argument value.
@@ -365,13 +364,13 @@ func (mock *SigsClientInterfaceMock) DeleteAllOfCalls() []struct {
 }
 
 // Get calls GetFunc.
-func (mock *SigsClientInterfaceMock) Get(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+func (mock *SigsClientInterfaceMock) Get(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 	if mock.GetFunc == nil {
 		panic("SigsClientInterfaceMock.GetFunc: method is nil but SigsClientInterface.Get was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
-		Key  types.NamespacedName
+		Key  k8sclient.ObjectKey
 		Obj  k8sclient.Object
 		Opts []k8sclient.GetOption
 	}{
@@ -392,13 +391,13 @@ func (mock *SigsClientInterfaceMock) Get(ctx context.Context, key types.Namespac
 //	len(mockedSigsClientInterface.GetCalls())
 func (mock *SigsClientInterfaceMock) GetCalls() []struct {
 	Ctx  context.Context
-	Key  types.NamespacedName
+	Key  k8sclient.ObjectKey
 	Obj  k8sclient.Object
 	Opts []k8sclient.GetOption
 } {
 	var calls []struct {
 		Ctx  context.Context
-		Key  types.NamespacedName
+		Key  k8sclient.ObjectKey
 		Obj  k8sclient.Object
 		Opts []k8sclient.GetOption
 	}
