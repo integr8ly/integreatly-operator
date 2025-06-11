@@ -124,7 +124,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	go install github.com/matryer/moq@v0.2.7
+	go install github.com/matryer/moq@v0.5.0
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
@@ -605,7 +605,7 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.2
-CONTROLLER_TOOLS_VERSION ?= v0.8.0
+CONTROLLER_TOOLS_VERSION ?= v0.17.3
 OPERATOR_SDK_VERSION=1.21.0
 GOLANGCI_LINT_VERSION=v1.51.0
 
