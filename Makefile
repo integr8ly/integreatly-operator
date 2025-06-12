@@ -43,6 +43,7 @@ CONTAINER_PLATFORM ?= linux/amd64
 TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
+PROJECT_ROOT := $(shell git rev-parse --show-toplevel)
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
@@ -124,7 +125,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	go install github.com/matryer/moq@v0.2.7
+	go install github.com/matryer/moq@v0.5.0
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
@@ -605,9 +606,25 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.2
-CONTROLLER_TOOLS_VERSION ?= v0.8.0
+CONTROLLER_TOOLS_VERSION ?= v0.17.3
 OPERATOR_SDK_VERSION=1.21.0
-GOLANGCI_LINT_VERSION=v1.51.0
+GOLANGCI_LINT_VERSION=v1.64.0
+
+# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
+# $1 - target path with name of binary (ideally with version)
+# $2 - package url which can be installed
+# $3 - specific version of package
+define go-install-tool
+@[ -f "$(1)-$(3)" ] || { \
+  set -e; \
+  package=$(2)@$(3) ;\
+  echo "Downloading $${package}" ;\
+  rm -f $(1) || true ;\
+  GOBIN=$(LOCALBIN) GOFLAGS= go install $${package} ;\
+  mv $(1) $(1)-$(3) ;\
+} ;\
+ln -sf $(1)-$(3) $(1)
+endef
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -627,8 +644,9 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+
 $(GOLANGCI_LINT): $(LOCALBIN)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION)
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 .PHONY: mkdocs/serve
 mkdocs/serve:
@@ -644,7 +662,7 @@ test/unit/prometheus/single:
 
 .PHONY: test/lint
 test/lint: golangci-lint
-	@$(GOLANGCI_LINT) run
+	@cd $(PROJECT_ROOT) && $(GOLANGCI_LINT) run
 
 .PHONY: test/scripts
 test/scripts:

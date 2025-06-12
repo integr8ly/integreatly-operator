@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.17.3
   name: rhmis.integreatly.org
 spec:
   group: integreatly.org
@@ -21,14 +20,19 @@ spec:
         description: RHMI is the Schema for the rhmis API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -52,25 +56,33 @@ spec:
                 - cssre
                 type: object
               deadMansSnitchSecret:
-                description: "DeadMansSnitchSecret is the name of a secret in the
-                  installation namespace containing connection details for Dead Mans
-                  Snitch. The secret must contain the following fields: \n url"
+                description: |-
+                  DeadMansSnitchSecret is the name of a secret in the
+                  installation namespace containing connection details
+                  for Dead Mans Snitch. The secret must contain the
+                  following fields:
+
+                  url
                 type: string
               masterURL:
                 type: string
               namespacePrefix:
                 type: string
               operatorsInProductNamespace:
-                description: OperatorsInProductNamespace is a flag that decides if
-                  the product operators should be installed in the product namespace
-                  (when set to true) or in standalone namespace (when set to false,
-                  default). Standalone namespace will be used only for those operators
-                  that support it.
+                description: |-
+                  OperatorsInProductNamespace is a flag that decides if
+                  the product operators should be installed in the product
+                  namespace (when set to true) or in standalone namespace
+                  (when set to false, default). Standalone namespace will
+                  be used only for those operators that support it.
                 type: boolean
               pagerDutySecret:
-                description: "PagerDutySecret is the name of a secret in the installation
-                  namespace containing PagerDuty account details. The secret must
-                  contain the following fields: \n serviceKey"
+                description: |-
+                  PagerDutySecret is the name of a secret in the
+                  installation namespace containing PagerDuty account
+                  details. The secret must contain the following fields:
+
+                  serviceKey
                 type: string
               priorityClassName:
                 type: string
@@ -91,9 +103,16 @@ spec:
               selfSignedCerts:
                 type: boolean
               smtpSecret:
-                description: "SMTPSecret is the name of a secret in the installation
-                  namespace containing SMTP connection details. The secret must contain
-                  the following fields: \n host port tls username password"
+                description: |-
+                  SMTPSecret is the name of a secret in the installation
+                  namespace containing SMTP connection details. The secret
+                  must contain the following fields:
+
+                  host
+                  port
+                  tls
+                  username
+                  password
                 type: string
               type:
                 type: string
@@ -175,9 +194,9 @@ spec:
                   - name
                   - phase
                   type: object
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
                 type: object
               toQuota:
                 type: string
@@ -195,9 +214,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

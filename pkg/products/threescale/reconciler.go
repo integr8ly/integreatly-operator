@@ -294,6 +294,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// If both are found but neither are in the completed phase, report an error
 		if customDomainPhase != integreatlyv1alpha1.PhaseCompleted && ingressControllerPhase != integreatlyv1alpha1.PhaseCompleted {
 			errorMessage := "CustomDomain or IngressController CR is not in a completed phase"
+			//nolint:staticcheck // SA1006: Error is not printf-style, so this is fine
 			err := fmt.Errorf(errorMessage)
 			r.log.Error(errorMessage, err)
 			events.HandleError(r.recorder, installation, phase, errorMessage, err)
