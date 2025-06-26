@@ -1,4 +1,4 @@
 # initial bundle must contain olm.skipRange (for 1.1.6)
 bundles:
     - name: cloud-resource-operator.v1.1.6
-      image: quay.io/integreatly/cloud-resource-operator:v1.1.6
+      image: quay.io/integreatly/cloud-resource-operator:v1.1.6-bundle
