@@ -52,16 +52,16 @@ metadata:
     containerImages: |-
       {
         "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.12.2": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "3scale-rhel9-operator-509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:095920fea30c2628cb0bbe180d11a036b9417a74a9259c8cfed65f165b709076",
-          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:45c0b4fb3f0ad2c1d4a966d5e956bb016063eebe1518929ac6cb964e1bcac4fa",
-          "system": "registry.redhat.io/3scale-amp2/system-rhel8@sha256:b6260dfa41364e846688b631f71973d24a156caf2d8a684ec33abc40ae2bb152",
-          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:4530f39b04953517a8985844e15121d6704987f0ad895c8d3b38c4f9232a657e",
+          "3scale-operator.v0.13.0": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:3f6f229f07dcf192aa69f27e10e5017a7468493d2482f0cda01fcaf70db7e463",
+          "3scale-rhel9-operator-3f6f229f07dcf192aa69f27e10e5017a7468493d2482f0cda01fcaf70db7e463-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:3f6f229f07dcf192aa69f27e10e5017a7468493d2482f0cda01fcaf70db7e463",
+          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:3f6f229f07dcf192aa69f27e10e5017a7468493d2482f0cda01fcaf70db7e463",
+          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:46874e060a5ab8c38b0a59d506266e05ba1a6b385f43ad06b737811a6abd53c8",
+          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:37f0383975b20cfcedad1b591ffc7d874b99a62260f7a058058612548cfc7a78",
+          "system": "registry.redhat.io/3scale-amp2/system-rhel8@sha256:67365ee164f92ee981239d3eb79fadc6d754e49682bab05f1afab3100d97d22c",
+          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:112eda1dfaf4fab21233d6ae237d6d23bb26c5f373b33bbaf2554eb20ee0a71d",
           "system_memcached": "registry.redhat.io/rhel9/memcached@sha256:8738110ef16c9e35deeb07c0577ffe09d6ef029761b504a8d20253fa715da394",
-          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa",
-          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:c8e61bfd49af995b372c76bac506823fc5a5f1f68165d13c08b842d636eebe5e"
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:9f1abe0146be17874a6d841dfdbe7198b64100615a1c74586bec20b3ab0cd75e",
+          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:6d14d52a37ea4bcf413099b7669d41e0b2d1f32ca1e66feb1b8e192c588afa7c"
         },
         "cloud-resource-operator.v1.1.5": {
           "cloud-resources.v1.1.5": "quay.io/integreatly/cloud-resource-operator:v1.1.5"
