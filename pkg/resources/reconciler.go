@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	projectv1 "github.com/openshift/api/project/v1"
 
