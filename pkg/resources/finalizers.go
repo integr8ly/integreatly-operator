@@ -5,7 +5,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"

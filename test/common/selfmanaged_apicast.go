@@ -22,8 +22,8 @@ import (
 	"time"
 
 	appsv1alpha1 "github.com/3scale/apicast-operator/apis/apps/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/internal/controller/subscription/rhmiConfigs"
 	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/resources"

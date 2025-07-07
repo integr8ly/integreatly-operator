@@ -36,7 +36,7 @@ import (
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
