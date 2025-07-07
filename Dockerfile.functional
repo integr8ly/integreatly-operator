@@ -14,8 +14,8 @@ COPY test ./test
 RUN go mod download
 
 # Copy the go source
-COPY apis/ apis/
-COPY controllers/ controllers/
+COPY api/ api/
+COPY internal/controller/ internal/controller/
 COPY pkg ./pkg
 COPY manifests ./manifests
 COPY version ./version

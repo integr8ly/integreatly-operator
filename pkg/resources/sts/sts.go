@@ -3,7 +3,7 @@ package sts
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"

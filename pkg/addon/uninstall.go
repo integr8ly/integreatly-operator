@@ -6,7 +6,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

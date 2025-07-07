@@ -3,7 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"os"

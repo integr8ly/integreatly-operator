@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/utils"
 	"gopkg.in/yaml.v2"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"

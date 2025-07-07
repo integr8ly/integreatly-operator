@@ -28,7 +28,7 @@ report_coverage_travis() {
 
 echo Running tests:
 # tests with negated `unittests` build tag will not be run
-go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" ./apis/... ./controllers/... ./pkg/...
+go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" ./apis/... ./internal/controller/... ./pkg/...
 # Remove generated files from coverage profile
 grep -v "zz_generated" "${COVER_PROFILE}.tmp" > "${COVER_PROFILE}"
 rm -f "${COVER_PROFILE}.tmp"

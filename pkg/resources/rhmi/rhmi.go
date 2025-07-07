@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )

@@ -51,7 +51,7 @@ import (
 
 	apps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"

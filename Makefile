@@ -156,11 +156,11 @@ install/sandboxrhoam/config:
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
-	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) QUOTA=$(DEV_QUOTA) go run ./main.go
+	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) QUOTA=$(DEV_QUOTA) go run ./cmd/main.go
 
 .PHONY: code/rerun
 code/rerun: setup/service_account
-	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) go run ./main.go
+	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) go run ./cmd/main.go
 
 .PHONY: code/run/service_account
 code/run/service_account: code/run
@@ -172,19 +172,19 @@ code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/
 code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) .
 
-pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: apis/v1alpha1/rhmi_types.go
+pkg/api/integreatly/v1alpha1/zz_generated.openapi.go: api/v1alpha1/rhmi_types.go
 	$(OPENAPI_GEN) --logtostderr=true -o "" \
-		-i ./apis/v1alpha1/ \
-		-p ./apis/v1alpha1/ \
+		-i ./api/v1alpha1/ \
+		-p ./api/v1alpha1/ \
 		-O zz_generated.openapi \
 		-h ./hack/boilerplate.go.txt \
 		-r "-"
 
-apis/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen apis/v1alpha1/rhmi_types.go
+api/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen api/v1alpha1/rhmi_types.go
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: code/gen
-code/gen: setup/moq apis/integreatly/v1alpha1/zz_generated.deepcopy.go
+code/gen: setup/moq api/integreatly/v1alpha1/zz_generated.deepcopy.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@go generate ./...
 	mv ./config/crd/bases/integreatly.org_apimanagementtenants.yaml ./config/crd-sandbox/bases
@@ -612,16 +612,17 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
+KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
+GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v4.5.2
-CONTROLLER_TOOLS_VERSION ?= v0.17.3
-OPERATOR_SDK_VERSION=1.21.0
-GOLANGCI_LINT_VERSION=v1.64.0
+KUSTOMIZE_VERSION ?= v5.5.0
+CONTROLLER_TOOLS_VERSION ?= v0.15.0
+ENVTEST_VERSION ?= release-0.19
+GOLANGCI_LINT_VERSION ?= v1.59.1
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
@@ -629,12 +630,12 @@ GOLANGCI_LINT_VERSION=v1.64.0
 # $3 - specific version of package
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \
-  set -e; \
-  package=$(2)@$(3) ;\
-  echo "Downloading $${package}" ;\
-  rm -f $(1) || true ;\
-  GOBIN=$(LOCALBIN) GOFLAGS= go install $${package} ;\
-  mv $(1) $(1)-$(3) ;\
+	set -e; \
+	package=$(2)@$(3) ;\
+	echo "Downloading $${package}" ;\
+	rm -f $(1) || true ;\
+	GOBIN=$(LOCALBIN) GOFLAGS= go install $${package} ;\
+	mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
@@ -643,23 +644,22 @@ KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/k
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_TOOLS_VERSION))
 
 .PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
-
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
 
 .PHONY: mkdocs/serve
 mkdocs/serve:
@@ -687,3 +687,15 @@ test/scripts:
 install-oo:
 	@echo "Creating Cluster Observability Operator Subscription"
 	kubectl apply -f  config/samples/subscription_oo.yaml
+
+.PHONY: build-installer
+build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
+	mkdir -p dist
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default > dist/install.yaml
+
+.PHONY: build-installer-rhoam
+build-installer-rhoam: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
+	mkdir -p dist
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default > dist/install.yaml

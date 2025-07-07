@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"

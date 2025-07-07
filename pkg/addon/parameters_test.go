@@ -10,7 +10,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -2,7 +2,7 @@ package marin3r
 
 import (
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"

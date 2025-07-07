@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
