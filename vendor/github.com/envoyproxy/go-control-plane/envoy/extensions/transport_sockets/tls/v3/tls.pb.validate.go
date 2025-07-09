@@ -98,6 +98,10 @@ func (m *UpstreamTlsContext) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for AutoHostSni
+
+	// no validation rules for AutoSniSanValidation
+
 	// no validation rules for AllowRenegotiation
 
 	if all {
@@ -419,6 +423,8 @@ func (m *DownstreamTlsContext) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for PreferClientCiphers
 
 	switch v := m.SessionTicketKeysType.(type) {
 	case *DownstreamTlsContext_SessionTicketKeys:
@@ -919,6 +925,35 @@ func (m *CommonTlsContext) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return CommonTlsContextValidationError{
 				field:  "TlsCertificateProviderInstance",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetCustomTlsCertificateSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CommonTlsContextValidationError{
+					field:  "CustomTlsCertificateSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CommonTlsContextValidationError{
+					field:  "CustomTlsCertificateSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCustomTlsCertificateSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CommonTlsContextValidationError{
+				field:  "CustomTlsCertificateSelector",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

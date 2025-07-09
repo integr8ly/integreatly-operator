@@ -23,7 +23,7 @@ func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8
 		inst.SetFinalizers(append(inst.GetFinalizers(), finalizer))
 		err := client.Update(ctx, inst)
 		if err != nil {
-			log.Error("Error adding finalizer to custom resource", err)
+			log.Error("Error adding finalizer to custom resource", nil, err)
 			return err
 		}
 	}
@@ -38,7 +38,7 @@ func UpdateFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 		inst.SetFinalizers(Replace(inst.GetFinalizers(), previousFinalizer, finalizer))
 		err := client.Update(ctx, inst)
 		if err != nil {
-			log.Error("error replacing finalizer to custom resource", err)
+			log.Error("error replacing finalizer to custom resource", nil, err)
 			return err
 		}
 	}
@@ -49,7 +49,7 @@ func UpdateFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string, log l.Logger) error {
 	err := oauthClient.OAuthClients().Delete(context.TODO(), oauthClientName, metav1.DeleteOptions{})
 	if err != nil && !k8serr.IsNotFound(err) {
-		log.Error("Error cleaning up oauth client", err)
+		log.Error("Error cleaning up oauth client", nil, err)
 		return err
 	}
 	return nil
@@ -64,7 +64,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 		if k8serr.IsNotFound(err) || k8serr.IsForbidden(err) {
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		log.Error("Error getting a namespace", err)
+		log.Error("Error getting a namespace", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -79,7 +79,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 	err = client.Delete(ctx, nsProject)
 	log.Infof("Removal triggered, status will be checked on next reconcile", l.Fields{"ns": namespace})
 	if err != nil && !k8serr.IsNotFound(err) {
-		log.Error("Error deleting a namespace", err)
+		log.Error("Error deleting a namespace", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseInProgress, nil
@@ -91,7 +91,7 @@ func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI,
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
-		log.Error("Error removing finalizer from custom resource", err)
+		log.Error("Error removing finalizer from custom resource", nil, err)
 		return err
 	}
 	return nil
@@ -102,7 +102,7 @@ func RemoveFinalizerAndUpdate(ctx context.Context, inst *integreatlyv1alpha1.RHM
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
-		log.Error("Error removing finalizer from custom resource", err)
+		log.Error("Error removing finalizer from custom resource", nil, err)
 		return err
 	}
 	return nil

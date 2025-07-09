@@ -3,6 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	routev1 "github.com/openshift/api/route/v1"
@@ -17,8 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"strings"
-	"time"
 )
 
 var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "tenant_controller"})
@@ -61,13 +62,13 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 		if k8serr.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		log.Error("failed to get APIManagementTenant", err)
+		log.Error("failed to get APIManagementTenant", nil, err)
 		return ctrl.Result{}, err
 	}
 
 	isTenantVerified, rejectionReason, err := r.verifyAPIManagementTenant(tenant)
 	if err != nil {
-		log.Error("error verifying the APIManagementTenant CR", err)
+		log.Error("error verifying the APIManagementTenant CR", nil, err)
 		if err1 := r.updateLastError(tenant, err.Error()); err1 != nil {
 			return ctrl.Result{}, err1
 		}
@@ -99,7 +100,7 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 		return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
 	}
 	if err != nil {
-		log.Error("error reconciling tenant URL", err)
+		log.Error("error reconciling tenant URL", nil, err)
 		if err1 := r.updateLastError(tenant, err.Error()); err1 != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, err1
 		}
@@ -297,7 +298,7 @@ func (r *TenantReconciler) updateLastError(tenant *v1alpha1.APIManagementTenant,
 	tenant.Status.LastError = message
 	err := r.Client.Status().Update(context.TODO(), tenant)
 	if err != nil {
-		log.Error("error updating status of APIManagementTenant CR", err)
+		log.Error("error updating status of APIManagementTenant CR", nil, err)
 	}
 	return err
 }
