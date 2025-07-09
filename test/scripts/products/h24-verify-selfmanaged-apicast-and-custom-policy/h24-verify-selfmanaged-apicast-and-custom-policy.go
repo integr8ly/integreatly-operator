@@ -1,6 +1,5 @@
 // This script is automation of Test H24 procedure - to verify self-managed APIcast API gateway deployment
 // Test does not include creation of custom policy
-// Procedure: ./test-cases/tests/products/h24-verify-selfmanaged-apicast-and-custom-policy.md
 // Doc: https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00
 // This test case should prove that it is possible for customers to deploy self-managed APIcast
 
