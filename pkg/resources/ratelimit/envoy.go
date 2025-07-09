@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/3scale-ops/marin3r/pkg/envoy"
+	"github.com/3scale-sre/marin3r/api/envoy"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"

@@ -16,6 +16,7 @@ import (
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
 	reflect "reflect"
 	sync "sync"
+	unsafe "unsafe"
 )
 
 type GoFeatures_StripEnumPrefix int32
@@ -85,6 +86,133 @@ type GoFeatures struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+const (
+	// API_LEVEL_UNSPECIFIED results in selecting the OPEN API,
+	// but needs to be a separate value to distinguish between
+	// an explicitly set api level or a missing api level.
+	GoFeatures_API_LEVEL_UNSPECIFIED GoFeatures_APILevel = 0
+	GoFeatures_API_OPEN              GoFeatures_APILevel = 1
+	GoFeatures_API_HYBRID            GoFeatures_APILevel = 2
+	GoFeatures_API_OPAQUE            GoFeatures_APILevel = 3
+)
+
+// Enum value maps for GoFeatures_APILevel.
+var (
+	GoFeatures_APILevel_name = map[int32]string{
+		0: "API_LEVEL_UNSPECIFIED",
+		1: "API_OPEN",
+		2: "API_HYBRID",
+		3: "API_OPAQUE",
+	}
+	GoFeatures_APILevel_value = map[string]int32{
+		"API_LEVEL_UNSPECIFIED": 0,
+		"API_OPEN":              1,
+		"API_HYBRID":            2,
+		"API_OPAQUE":            3,
+	}
+)
+
+func (x GoFeatures_APILevel) Enum() *GoFeatures_APILevel {
+	p := new(GoFeatures_APILevel)
+	*p = x
+	return p
+}
+
+func (x GoFeatures_APILevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GoFeatures_APILevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_google_protobuf_go_features_proto_enumTypes[0].Descriptor()
+}
+
+func (GoFeatures_APILevel) Type() protoreflect.EnumType {
+	return &file_google_protobuf_go_features_proto_enumTypes[0]
+}
+
+func (x GoFeatures_APILevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Do not use.
+func (x *GoFeatures_APILevel) UnmarshalJSON(b []byte) error {
+	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
+	if err != nil {
+		return err
+	}
+	*x = GoFeatures_APILevel(num)
+	return nil
+}
+
+// Deprecated: Use GoFeatures_APILevel.Descriptor instead.
+func (GoFeatures_APILevel) EnumDescriptor() ([]byte, []int) {
+	return file_google_protobuf_go_features_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type GoFeatures_StripEnumPrefix int32
+
+const (
+	GoFeatures_STRIP_ENUM_PREFIX_UNSPECIFIED   GoFeatures_StripEnumPrefix = 0
+	GoFeatures_STRIP_ENUM_PREFIX_KEEP          GoFeatures_StripEnumPrefix = 1
+	GoFeatures_STRIP_ENUM_PREFIX_GENERATE_BOTH GoFeatures_StripEnumPrefix = 2
+	GoFeatures_STRIP_ENUM_PREFIX_STRIP         GoFeatures_StripEnumPrefix = 3
+)
+
+// Enum value maps for GoFeatures_StripEnumPrefix.
+var (
+	GoFeatures_StripEnumPrefix_name = map[int32]string{
+		0: "STRIP_ENUM_PREFIX_UNSPECIFIED",
+		1: "STRIP_ENUM_PREFIX_KEEP",
+		2: "STRIP_ENUM_PREFIX_GENERATE_BOTH",
+		3: "STRIP_ENUM_PREFIX_STRIP",
+	}
+	GoFeatures_StripEnumPrefix_value = map[string]int32{
+		"STRIP_ENUM_PREFIX_UNSPECIFIED":   0,
+		"STRIP_ENUM_PREFIX_KEEP":          1,
+		"STRIP_ENUM_PREFIX_GENERATE_BOTH": 2,
+		"STRIP_ENUM_PREFIX_STRIP":         3,
+	}
+)
+
+func (x GoFeatures_StripEnumPrefix) Enum() *GoFeatures_StripEnumPrefix {
+	p := new(GoFeatures_StripEnumPrefix)
+	*p = x
+	return p
+}
+
+func (x GoFeatures_StripEnumPrefix) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GoFeatures_StripEnumPrefix) Descriptor() protoreflect.EnumDescriptor {
+	return file_google_protobuf_go_features_proto_enumTypes[1].Descriptor()
+}
+
+func (GoFeatures_StripEnumPrefix) Type() protoreflect.EnumType {
+	return &file_google_protobuf_go_features_proto_enumTypes[1]
+}
+
+func (x GoFeatures_StripEnumPrefix) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Do not use.
+func (x *GoFeatures_StripEnumPrefix) UnmarshalJSON(b []byte) error {
+	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
+	if err != nil {
+		return err
+	}
+	*x = GoFeatures_StripEnumPrefix(num)
+	return nil
+}
+
+// Deprecated: Use GoFeatures_StripEnumPrefix.Descriptor instead.
+func (GoFeatures_StripEnumPrefix) EnumDescriptor() ([]byte, []int) {
+	return file_google_protobuf_go_features_proto_rawDescGZIP(), []int{0, 1}
+}
+
+type GoFeatures struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Whether or not to generate the deprecated UnmarshalJSON method for enums.
 	LegacyUnmarshalJsonEnum *bool                       `protobuf:"varint,1,opt,name=legacy_unmarshal_json_enum,json=legacyUnmarshalJsonEnum" json:"legacy_unmarshal_json_enum,omitempty"`
 	StripEnumPrefix         *GoFeatures_StripEnumPrefix `protobuf:"varint,3,opt,name=strip_enum_prefix,json=stripEnumPrefix,enum=pb.GoFeatures_StripEnumPrefix" json:"strip_enum_prefix,omitempty"`
@@ -200,12 +328,12 @@ var file_google_protobuf_go_features_proto_rawDesc = []byte{
 
 var (
 	file_google_protobuf_go_features_proto_rawDescOnce sync.Once
-	file_google_protobuf_go_features_proto_rawDescData = file_google_protobuf_go_features_proto_rawDesc
+	file_google_protobuf_go_features_proto_rawDescData []byte
 )
 
 func file_google_protobuf_go_features_proto_rawDescGZIP() []byte {
 	file_google_protobuf_go_features_proto_rawDescOnce.Do(func() {
-		file_google_protobuf_go_features_proto_rawDescData = protoimpl.X.CompressGZIP(file_google_protobuf_go_features_proto_rawDescData)
+		file_google_protobuf_go_features_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_google_protobuf_go_features_proto_rawDesc), len(file_google_protobuf_go_features_proto_rawDesc)))
 	})
 	return file_google_protobuf_go_features_proto_rawDescData
 }
@@ -250,7 +378,6 @@ func file_google_protobuf_go_features_proto_init() {
 		ExtensionInfos:    file_google_protobuf_go_features_proto_extTypes,
 	}.Build()
 	File_google_protobuf_go_features_proto = out.File
-	file_google_protobuf_go_features_proto_rawDesc = nil
 	file_google_protobuf_go_features_proto_goTypes = nil
 	file_google_protobuf_go_features_proto_depIdxs = nil
 }

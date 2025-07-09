@@ -3,10 +3,11 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"os"
+
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	custom_smtp "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -35,7 +36,7 @@ func GetSMTPFromAddress(ctx context.Context, serverClient k8sclient.Client, log 
 		existingSMTPFromAddress, err = custom_smtp.GetFromAddress(ctx, serverClient, installation.Namespace)
 
 		if err != nil {
-			log.Error("error getting smtp_from address from custom smtp secret", err)
+			log.Error("error getting smtp_from address from custom smtp secret", nil, err)
 			return "", err
 		}
 	} else {

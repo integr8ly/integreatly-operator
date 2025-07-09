@@ -416,7 +416,7 @@ func (r *Reconciler) reconcileOauthSecretData(ctx context.Context, serverClient 
 		}
 		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecret.Name}, oauthClient)
 		if !k8serr.IsNotFound(err) && err != nil {
-			r.log.Error("Error getting oauth client secret", err)
+			r.log.Error("Error getting oauth client secret", nil, err)
 			return err
 		} else if k8serr.IsNotFound(err) {
 			oauthClientSecret.Data[key] = []byte(r.generateSecret(32))
@@ -638,7 +638,7 @@ func (r *Reconciler) generateSecret(length int) string {
 	for i := range buf {
 		rnd, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		if err != nil {
-			r.log.Error("error generating client secret: ", err)
+			r.log.Error("error generating client secret: ", nil, err)
 		}
 		buf[i] = chars[rnd.Int64()]
 	}

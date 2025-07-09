@@ -150,7 +150,7 @@ func (r *NamespaceLabelReconciler) Reconcile(ctx context.Context, request ctrl.R
 
 		ns, err := GetNS(ctx, r.operatorNamespace, r.Client)
 		if err != nil {
-			r.log.Error("could not retrieve %s namespace:", err)
+			r.log.Error("could not retrieve %s namespace:", nil, err)
 		}
 
 		rhmiCr, err := rhmi.GetRhmiCr(r.Client, ctx, request.NamespacedName.Namespace, log)
@@ -249,7 +249,7 @@ func Uninstall(v string, request ctrl.Request, r *NamespaceLabelReconciler) erro
 		r.log.Info("Deleting RHMI CR")
 		err := r.Delete(context.TODO(), rhmiCr)
 		if err != nil {
-			r.log.Error("failed to delete RHMI CR", err)
+			r.log.Error("failed to delete RHMI CR", nil, err)
 		}
 	}
 	return nil
@@ -276,7 +276,7 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 	// Unmarshal or Decode the JSON to the interface.
 	err = json.Unmarshal([]byte(data), &cfgMapData)
 	if err != nil {
-		r.log.Error("Failed to unmarshal cfgMapData", err)
+		r.log.Error("Failed to unmarshal cfgMapData", nil, err)
 	}
 
 	if cfgMapData == nil || cfgMapData["production"] == nil {

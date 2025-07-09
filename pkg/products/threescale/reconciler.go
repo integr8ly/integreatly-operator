@@ -5,12 +5,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	configv1 "github.com/openshift/api/config/v1"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	configv1 "github.com/openshift/api/config/v1"
 
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/golang/protobuf/ptypes/any"
@@ -285,7 +286,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// If both custom domain and ingress controller have errors, prioritize ingress controller error
 		if customDomainErr != nil && ingressControllerErr != nil {
 			errorMessage := "Both CustomDomain and IngressController CRs failed to be found or are in unexpected state"
-			r.log.Error(errorMessage, ingressControllerErr)
+			r.log.Error("msg", nil, errors.New(errorMessage))
 			events.HandleError(r.recorder, installation, ingressControllerPhase, errorMessage, ingressControllerErr)
 			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, ingressControllerErr)
 			return ingressControllerPhase, ingressControllerErr
@@ -295,8 +296,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if customDomainPhase != integreatlyv1alpha1.PhaseCompleted && ingressControllerPhase != integreatlyv1alpha1.PhaseCompleted {
 			errorMessage := "CustomDomain or IngressController CR is not in a completed phase"
 			//nolint:staticcheck // SA1006: Error is not printf-style, so this is fine
-			err := fmt.Errorf("CustomDomain or IngressController CR is not in a completed phase")
-			r.log.Error(errorMessage, err)
+			err := fmt.Errorf("customDomain Phase and ingressController Phase failed : %s", errorMessage)
+			r.log.Error("msg", nil, err)
 			events.HandleError(r.recorder, installation, phase, errorMessage, err)
 			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 			return phase, err
@@ -396,7 +397,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ping3scalePortals(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		errorMessage := "failed pinging 3scale portals through the ingress cluster router"
-		r.log.Error(errorMessage, err)
+		r.log.Error("msg", nil, errors.New(errorMessage))
 		events.HandleError(r.recorder, installation, phase, errorMessage, err)
 		return phase, err
 	}
@@ -404,7 +405,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
 		if err != nil {
-			r.log.Error("reconcile3scaleMultiTenancy", err)
+			r.log.Error("reconcile3scaleMultiTenancy", nil, err)
 			return phase, err
 		}
 	}
@@ -677,12 +678,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 			if smtpUpdated {
 				err = r.RolloutDeployment(ctx, serverClient, "system-app")
 				if err != nil {
-					r.log.Error("Rollout system-app deployment", err)
+					r.log.Error("Rollout system-app deployment", nil, err)
 				}
 
 				err = r.RolloutDeployment(ctx, serverClient, "system-sidekiq")
 				if err != nil {
-					r.log.Error("Rollout system-sidekiq deployment", err)
+					r.log.Error("Rollout system-sidekiq deployment", nil, err)
 				}
 			}
 		}
@@ -885,7 +886,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
 		} else if err != nil {
-			r.log.Error("Error getting system-provider route", err)
+			r.log.Error("Error getting system-provider route", nil, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		// Its not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
@@ -979,7 +980,7 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
-		r.log.Error("Error getting list of pods", err)
+		r.log.Error("Error getting list of pods", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -998,11 +999,11 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 	stdout, stderr, err := r.podExecutor.ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
 		"-c", "bundle exec rake zync:resync:domains"})
 	if err != nil {
-		r.log.Error("Failed to resync 3Scale routes", err)
+		r.log.Error("Failed to resync 3Scale routes", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, nil
 	} else if stderr != "" {
 		err := errors.New(stderr)
-		r.log.Error("Error attempting to resync 3Scale routes", err)
+		r.log.Error("Error attempting to resync 3Scale routes", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	} else {
 		r.log.Infof("Resync 3Scale routes result", l.Fields{"stdout": stdout})
@@ -1348,7 +1349,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 
 	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
 	if err != nil {
-		r.log.Error("Failed to set email from address:", err)
+		r.log.Error("Failed to set email from address:", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1386,7 +1387,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
-		r.log.Error("Error retrieving client secret", err)
+		r.log.Error("Error retrieving client secret", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -1480,7 +1481,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
 			if err != nil {
-				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale", tsUser.UserDetails.Id), err)
+				r.log.Error("msg", nil, err)
 			} else {
 				statusCode = res.StatusCode
 			}
@@ -1488,7 +1489,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 			metrics.SetThreeScaleUserAction(statusCode, strconv.Itoa(tsUser.UserDetails.Id), http.MethodDelete)
 
 			if statusCode != http.StatusOK {
-				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale with status code %d", tsUser.UserDetails.Id, statusCode), errors.New("error on http request"))
+				r.log.Error("msg", nil, errors.New("error on http request"))
 			}
 		}
 	}
@@ -1512,7 +1513,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 	for _, kcUser := range added {
 		user, err := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
 		if err != nil {
-			r.log.Error("Failed to get user", err)
+			r.log.Error("Failed to get user", nil, err)
 		}
 
 		// recheck the user is new.
@@ -1522,7 +1523,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 			res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 
 			if err != nil {
-				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
+				r.log.Error("msg", nil, err)
 			} else {
 				statusCode = res.StatusCode
 			}
@@ -1535,7 +1536,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 			metrics.SetThreeScaleUserAction(statusCode, kcUser.UserName, http.MethodPost)
 
 			if statusCode != http.StatusCreated {
-				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale with status code %d", kcUser.UserName, statusCode), errors.New("error on http request"))
+				r.log.Error("msg", nil, errors.New("error on http request"))
 			}
 		}
 	}
@@ -1649,7 +1650,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			return ac.Id != 1 && ac.Id != 2
 		})
 		if err != nil {
-			r.log.Error("failed to get accounts from 3scale API:", err)
+			r.log.Error("failed to get accounts from 3scale API:", nil, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		allAccounts = append(allAccounts, accounts...)
@@ -1701,7 +1702,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 					err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
 					if err != nil {
-						r.log.Errorf("Error activating user access to new tenant account",
+						r.log.Error("Error activating user access to new tenant account",
 							l.Fields{
 								"userName":          user.Username,
 								"tenantAccountName": account.OrgName,
@@ -1747,7 +1748,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			// verify if the account have the auth provider already
 			err = r.addAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
 			if err != nil {
-				r.log.Errorf("Error adding authentication provider to tenant account",
+				r.log.Error("Error adding authentication provider to tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
 						"tenantAccountName":  account.OrgName,
@@ -1761,7 +1762,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			// Get the account's corresponding KeycloakUser for later verification
 			kcUser, err := r.getKeycloakUserFromAccount(serverClient, account.OrgName)
 			if err != nil {
-				r.log.Errorf("Failed to get KeycloakUser for tenant account",
+				r.log.Error("Failed to get KeycloakUser for tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
 						"tenantAccountName":  account.OrgName,
@@ -1775,7 +1776,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			// Get the account's corresponding KeycloakClient for later verification
 			kcClient, err := r.getKeycloakClientFromAccount(serverClient, account.OrgName)
 			if err != nil {
-				r.log.Errorf("Failed to get KeycloakClient for tenant account",
+				r.log.Error("Failed to get KeycloakClient for tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
 						"tenantAccountName":  account.OrgName,
@@ -1798,7 +1799,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				// This is required by the apimanagementtenant_controller so it can finish reconciling the APIManagementTenant CR
 				err = r.addSSOReadyAnnotationToUser(ctx, serverClient, account.OrgName)
 				if err != nil {
-					r.log.Errorf("Error adding ssoReady annotation for the user associated with the tenant account org",
+					r.log.Error("Error adding ssoReady annotation for the user associated with the tenant account org",
 						l.Fields{
 							"tenantAccountOrgName": account.OrgName,
 						},
@@ -1812,7 +1813,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				// Only add the dashboard link when account fully ready
 				err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
 				if err != nil {
-					r.log.Errorf("Error reconciling console link for the tenant account",
+					r.log.Error("Error reconciling console link for the tenant account",
 						l.Fields{
 							"tenantAccountId":   account.Id,
 							"tenantAccountName": account.OrgName,
@@ -1828,7 +1829,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					tenantsCreated.ObjectMeta.ResourceVersion = ""
 					return nil
 				}); err != nil {
-					r.log.Errorf("Error setting account created in config map to true", l.Fields{"tenantAccountName": account.OrgName}, err)
+					r.log.Error("Error setting account created in config map to true", l.Fields{"tenantAccountName": account.OrgName}, err)
 					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating tenant created CM: %w", err)
 				}
 			}
@@ -1843,7 +1844,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 			err = r.tsClient.DeleteTenant(*accessToken, account.Id)
 			if err != nil {
-				r.log.Errorf("Error deleting broken account",
+				r.log.Error("Error deleting broken account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
 						"tenantAccountName":  account.OrgName,
@@ -1881,14 +1882,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 		pw, err := r.getTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
-			r.log.Error("Failed to get account tenant password:", err)
+			r.log.Error("Failed to get account tenant password:", nil, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
 		// Create 3scale account
 		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, pw, emailAddrs[idx])
 		if err != nil {
-			r.log.Errorf("Error creating tenant account",
+			r.log.Error("Error creating tenant account",
 				l.Fields{"tenantAccountName": account.OrgName},
 				err,
 			)
@@ -1912,7 +1913,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 			return nil
 		}); err != nil {
-			r.log.Error("Error creating access token secret ", err)
+			r.log.Error("Error creating access token secret ", nil, err)
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating access token secret: %w", err)
 		}
 		r.log.Info("After signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
@@ -1929,7 +1930,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	)
 	err = r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
-		r.log.Error("error deleting tenant accounts:", err)
+		r.log.Error("error deleting tenant accounts:", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -1941,7 +1942,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 		err := r.removeTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
-			r.log.Errorf("error deleting tenant account password",
+			r.log.Error("error deleting tenant account password",
 				l.Fields{
 					"tenantAccount": account,
 				},
@@ -2028,7 +2029,7 @@ func (r *Reconciler) removeTenantAccountPassword(ctx context.Context, serverClie
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: tenantAccountSecret.Name, Namespace: tenantAccountSecret.Namespace}, tenantAccountSecret)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
-			r.log.Error("Failed to get tenantAccountPasswords secret", err)
+			r.log.Error("Failed to get tenantAccountPasswords secret", nil, err)
 			return err
 		}
 	}
@@ -2060,7 +2061,7 @@ func (r *Reconciler) getTenantAccountPassword(ctx context.Context, serverClient 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: tenantAccountSecret.Name, Namespace: tenantAccountSecret.Namespace}, tenantAccountSecret)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
-			r.log.Error("Failed to get tenantAccountPasswords secret", err)
+			r.log.Error("Failed to get tenantAccountPasswords secret", nil, err)
 			return "", err
 		}
 	}
@@ -2143,13 +2144,13 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 		oauthClientSecrets,
 	)
 	if err != nil {
-		r.log.Errorf("could not find secret", l.Fields{"secret": oauthClientSecrets.Name, "operatorNamespace": oauthClientSecrets.Namespace}, err)
+		r.log.Error("could not find secret", l.Fields{"secret": oauthClientSecrets.Name, "operatorNamespace": oauthClientSecrets.Namespace}, err)
 		return fmt.Errorf("could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	secret, ok := oauthClientSecrets.Data[tenantID]
 	if !ok {
-		r.log.Errorf("could not find tenant key in secret", l.Fields{"tenant": tenantID, "secret": oauthClientSecrets.Name}, err)
+		r.log.Error("could not find tenant key in secret", l.Fields{"tenant": tenantID, "secret": oauthClientSecrets.Name}, err)
 		return fmt.Errorf("could not find %s key in %s Secret: %w", tenantID, oauthClientSecrets.Name, err)
 	}
 
@@ -2179,7 +2180,7 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 		r.log,
 	)
 	if err != nil {
-		r.log.Errorf("failed to create RHSSO client", l.Fields{"tenant": tenantID, "clientID": clientID}, err)
+		r.log.Error("failed to create RHSSO client", l.Fields{"tenant": tenantID, "clientID": clientID}, err)
 		return fmt.Errorf("failed to create RHSSO client: %w", err)
 	}
 	authProviderDetails := AuthProviderDetails{
@@ -2198,7 +2199,7 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 		account.AccountDetail, authProviderDetails,
 	)
 	if err != nil {
-		r.log.Errorf("failed to add auth provider to tenant account", l.Fields{"tenant": tenantID, "authProviderDetails": authProviderDetails}, err)
+		r.log.Error("failed to add auth provider to tenant account", l.Fields{"tenant": tenantID, "authProviderDetails": authProviderDetails}, err)
 		return fmt.Errorf("failed to add auth provider to account %w", err)
 	}
 
@@ -3003,13 +3004,13 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		apicastHTTPFilters, err = getAPICastHTTPFilters()
 		if err != nil {
-			r.log.Errorf("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
+			r.log.Error("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	} else {
 		apicastHTTPFilters, err = getMultitenantAPICastHTTPFilters()
 		if err != nil {
-			r.log.Errorf("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
+			r.log.Error("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
@@ -3037,7 +3038,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	apiCastProxyConfig := ratelimit.NewEnvoyConfig(ApicastClusterName, r.Config.GetNamespace(), ApicastNodeID)
 	err = apiCastProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{apiCastClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{apiCastListenerResource}, apiCastRuntimes, installation)
 	if err != nil {
-		r.log.Errorf("Failed to create envoyconfig for apicast", l.Fields{"APICast": ApicastClusterName}, err)
+		r.log.Error("Failed to create envoyconfig for apicast", l.Fields{"APICast": ApicastClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -3074,7 +3075,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
 	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{backendListenerResource}, backendRuntimes, installation)
 	if err != nil {
-		r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
+		r.log.Error("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -3290,7 +3291,7 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		service, err := customDomain.GetIngressRouterService(ctx, serverClient, portal.Ingress)
 		if err != nil || len(service.Status.LoadBalancer.Ingress) == 0 {
 			errorMessage := "failed to retrieve ingress router service"
-			r.log.Error(errorMessage, err)
+			r.log.Error("msg", nil, errors.New(errorMessage))
 			phase := integreatlyv1alpha1.PhaseFailed
 			events.HandleError(r.recorder, r.installation, phase, errorMessage, err)
 			return phase, fmt.Errorf("%s: %v", errorMessage, err)
@@ -3299,7 +3300,7 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		ips, err := customDomain.GetIngressRouterIPs(service.Status.LoadBalancer.Ingress)
 		if err != nil {
 			errorMessage := "failed to retrieve ingress router ips"
-			r.log.Error(errorMessage, err)
+			r.log.Error("msg", nil, errors.New(errorMessage))
 			phase := integreatlyv1alpha1.PhaseFailed
 			events.HandleError(r.recorder, r.installation, phase, errorMessage, err)
 			return phase, fmt.Errorf("%s: %v", errorMessage, err)
@@ -3459,7 +3460,7 @@ func (r *Reconciler) reconcileDeploymentEnvarEmailAddress(ctx context.Context, s
 		}
 		err = r.RolloutDeployment(ctx, serverClient, deploymentName)
 		if err != nil {
-			r.log.Error(fmt.Sprintf("Rollout %v deployment", deploymentName), err)
+			r.log.Error(fmt.Sprintf("Rollout %v deployment", deploymentName), nil, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -3484,7 +3485,7 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	}
 	err = serverClient.List(ctx, pods, listOpts...)
 	if err != nil {
-		r.log.Error("Error getting list of pods", err)
+		r.log.Error("Error getting list of pods", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -3503,11 +3504,11 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	stdout, stderr, err := r.podExecutor.ExecuteRemoteContainerCommand(ns, podname, "system-master", []string{"/bin/bash",
 		"-c", fmt.Sprintf("bundle exec rails runner \"a=Account.find_by_master true; a.from_email = '%v'; a.save;\"", fromAddress)})
 	if err != nil {
-		r.log.Error("Failed to set 3Scale invitation email", err)
+		r.log.Error("Failed to set 3Scale invitation email", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, nil
 	} else if stderr != "" {
 		err := errors.New(stderr)
-		r.log.Error("Error attempting to set 3Scale invitation email", err)
+		r.log.Error("Error attempting to set 3Scale invitation email", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	} else {
 		r.log.Infof("Set 3Scale invitation email", l.Fields{"stdout": stdout})

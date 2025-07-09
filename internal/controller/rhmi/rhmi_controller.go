@@ -69,7 +69,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
 
+	clientgocache "k8s.io/client-go/tools/cache"
 	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 const (
@@ -101,6 +103,8 @@ type RHMIReconciler struct {
 	customInformers map[string]map[string]*cache.Informer
 
 	productsInstallationLoader marketplace.ProductsInstallationLoader
+
+	customEventChan chan event.GenericEvent // Channel for injecting reconcile events
 }
 
 func New(mgr ctrl.Manager) *RHMIReconciler {
@@ -117,6 +121,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 		productsInstallationLoader: marketplace.NewFSProductInstallationLoader(
 			marketplace.GetProductsInstallationPath(),
 		),
+		customEventChan: make(chan event.GenericEvent, 100), // buffered channel
 	}
 }
 
@@ -273,7 +278,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	// remove installation, upgrade and missingMetrics alerts from openshift monitoring
 	err = r.removeInstallationRules(installation, context.TODO(), alertsClient)
 	if err != nil {
-		log.Error("Error reconciling removing alerts installation, upgrade and missing metrics from openshift-monitoring namespace", err)
+		log.Error("Error reconciling removing alerts installation, upgrade and missing metrics from openshift-monitoring namespace", nil, err)
 	}
 
 	originalInstallation := installation.DeepCopy()
@@ -294,7 +299,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		installation.Spec.AlertingEmailAddresses.CSSRE = cssreAlertingEmailAddress
 		err = r.Update(context.TODO(), installation)
 		if err != nil {
-			log.Error("Error while copying alerting email addresses to RHMI CR", err)
+			log.Error("Error while copying alerting email addresses to RHMI CR", nil, err)
 		}
 	}
 
@@ -304,7 +309,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		installation.Spec.AlertingEmailAddresses.BusinessUnit = buAlertingEmailAddress
 		err = r.Update(context.TODO(), installation)
 		if err != nil {
-			log.Error("Error while copying alerting email addresses to RHMI CR", err)
+			log.Error("Error while copying alerting email addresses to RHMI CR", nil, err)
 		}
 	}
 
@@ -315,12 +320,12 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		"notification-email",
 	)
 	if err != nil {
-		log.Error("failed while retrieving addon parameter", err)
+		log.Error("failed while retrieving addon parameter", nil, err)
 	} else if ok && installation.Spec.AlertingEmailAddress != customerAlertingEmailAddress {
 		log.Info("Updating customer email address from parameter")
 		installation.Spec.AlertingEmailAddress = customerAlertingEmailAddress
 		if err := r.Update(context.TODO(), installation); err != nil {
-			log.Error("Error while updating customer email address to RHMI CR", err)
+			log.Error("Error while updating customer email address to RHMI CR", nil, err)
 		}
 	}
 
@@ -397,13 +402,13 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	log.Info("set cluster metric")
 	err = r.setRHOAMClusterMetric()
 	if err != nil {
-		log.Error("error setting RHOAM cluster metric:", err)
+		log.Error("error setting RHOAM cluster metric:", nil, err)
 	}
 
 	log.Info("set rhoam status metric")
 	state, err := metrics.GetRhoamState(installation)
 	if err != nil {
-		log.Error("error compiling RHOAM state metric:", err)
+		log.Error("error compiling RHOAM state metric:", nil, err)
 	}
 	metrics.SetRhoamState(state)
 
@@ -485,13 +490,13 @@ func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHM
 
 	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 	if err != nil {
-		log.Error("Error getting server client for pod distribution", err)
+		log.Error("Error getting server client for pod distribution", nil, err)
 		installation.Status.LastError = err.Error()
 		return
 	}
 	mErr := poddistribution.ReconcilePodDistribution(context.TODO(), serverClient, installation.Spec.NamespacePrefix, installation.Spec.Type)
 	if mErr != nil && len(mErr.Errors) > 0 {
-		logrus.Errorf("Error reconciling pod distributions %v", mErr)
+		log.Error("Error reconciling pod distributions", nil, mErr)
 		installation.Status.LastError = mErr.Error()
 	}
 }
@@ -562,7 +567,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 
 	if err != nil {
-		log.Error("error creating silence", err)
+		log.Error("error creating silence", nil, err)
 	}
 
 	installation.Status.Stage = "deletion"
@@ -796,7 +801,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return ctrl.Result{}, err
+				return result, err
 			}
 
 			return result, nil
@@ -897,7 +902,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	log.Info("preflightChecks: checking if STS mode")
 	isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
 	if err != nil {
-		log.Error("Error checking STS mode", err)
+		log.Error("Error checking STS mode", nil, err)
 		return result, err
 	}
 	if isSTS {
@@ -1167,7 +1172,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			})
 
 			if err != nil {
-				log.Error("Addon flow installation detected - missing MTR_RECONCILED env after 10 mintues", err)
+				log.Error("Addon flow installation detected - missing MTR_RECONCILED env after 10 mintues", nil, err)
 				return err
 			}
 		}
@@ -1204,6 +1209,14 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	r.controller = reconcileController
+
+	// Register the custom channel as a source for the controller
+	err = r.controller.Watch(
+		source.Channel(r.customEventChan, &handler.EnqueueRequestForObject{}),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register custom event channel: %w", err)
+	}
 
 	return nil
 }
@@ -1375,7 +1388,53 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 	if err != nil {
 		return fmt.Errorf("failed to create informer for %v: %v", crd, err)
 	}
-	err = r.controller.Watch(&source.Informer{Informer: informer}, &EnqueueIntegreatlyOwner{log: log})
+	//TODO confirm that this works, the change is due to generics in controller-runtime 0.20.4
+	myHandler := &EnqueueIntegreatlyOwner{log: log}
+	informer.AddEventHandler(clientgocache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			co, ok := obj.(k8sclient.Object)
+			if !ok {
+				return
+			}
+			if _, err := myHandler.getIntegreatlyOwner(co); err == nil {
+				select {
+				case r.customEventChan <- event.GenericEvent{Object: co}:
+				default:
+					log.Warning("customEventChan full, dropping event")
+				}
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			co, ok := newObj.(k8sclient.Object)
+			if !ok {
+				return
+			}
+			if _, err := myHandler.getIntegreatlyOwner(co); err == nil {
+				select {
+				case r.customEventChan <- event.GenericEvent{Object: co}:
+				default:
+					log.Warning("customEventChan full, dropping event")
+				}
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			co, ok := obj.(k8sclient.Object)
+			if !ok {
+				return
+			}
+			if _, err := myHandler.getIntegreatlyOwner(co); err == nil {
+				select {
+				case r.customEventChan <- event.GenericEvent{Object: co}:
+				default:
+					log.Warning("customEventChan full, dropping event")
+				}
+			}
+		},
+	})
+
+	err = r.controller.Watch(
+		&source.Informer{Informer: informer},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
 	}
@@ -1404,7 +1463,7 @@ func checkEnvVars(checks map[string]func(string, bool) error) error {
 	for env, check := range checks {
 		value, exists := os.LookupEnv(env)
 		if err := check(value, exists); err != nil {
-			log.Errorf("Validation failure for env var", l.Fields{"envVar": env}, err)
+			log.Error("Validation failure for env var", l.Fields{"envVar": env}, err)
 			return fmt.Errorf("validation failure for env var %s: %w", env, err)
 		}
 	}

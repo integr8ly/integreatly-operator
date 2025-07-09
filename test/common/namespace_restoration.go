@@ -2,8 +2,8 @@ package common
 
 import (
 	goctx "context"
-	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
-	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	marin3rv1alpha1 "github.com/3scale-sre/marin3r/api/marin3r/v1alpha1"
+	marin3rOperatorv1alpha1 "github.com/3scale-sre/marin3r/api/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	corev1 "k8s.io/api/core/v1"

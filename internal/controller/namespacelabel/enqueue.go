@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // EnqueueNamespaceFromObject is an EventHandler that enqueues requests with
@@ -17,48 +18,46 @@ import (
 // { Name: "Bar", Namespace: "" }
 type EnqueueNamespaceFromObject struct{}
 
-var _ handler.EventHandler = &EnqueueNamespaceFromObject{}
+var _ handler.TypedEventHandler[client.Object, reconcile.Request] = &EnqueueNamespaceFromObject{}
 
-// Create implements EventHandler
-func (e *EnqueueNamespaceFromObject) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+// Create implements TypedEventHandler
+func (e *EnqueueNamespaceFromObject) Create(ctx context.Context, evt event.TypedCreateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if evt.Object == nil {
 		return
 	}
-
 	addNamespaceRequest(evt.Object, q)
 }
 
-// Update implements EventHandler
-func (e *EnqueueNamespaceFromObject) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+// Update implements TypedEventHandler
+func (e *EnqueueNamespaceFromObject) Update(ctx context.Context, evt event.TypedUpdateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if evt.ObjectOld != nil {
 		addNamespaceRequest(evt.ObjectOld, q)
 	}
-
 	if evt.ObjectNew != nil {
 		addNamespaceRequest(evt.ObjectNew, q)
 	}
 }
 
-// Delete implements EventHandler
-func (e *EnqueueNamespaceFromObject) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+// Delete implements TypedEventHandler
+func (e *EnqueueNamespaceFromObject) Delete(ctx context.Context, evt event.TypedDeleteEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if evt.Object == nil {
 		return
 	}
-
 	addNamespaceRequest(evt.Object, q)
 }
 
-// Generic implements EventHandler
-func (e *EnqueueNamespaceFromObject) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+// Generic implements TypedEventHandler
+func (e *EnqueueNamespaceFromObject) Generic(ctx context.Context, evt event.TypedGenericEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if evt.Object == nil {
 		return
 	}
-
 	addNamespaceRequest(evt.Object, q)
 }
 
-func addNamespaceRequest(meta metav1.Object, q workqueue.RateLimitingInterface) {
-	q.Add(ctrl.Request{NamespacedName: types.NamespacedName{
-		Name: meta.GetNamespace(),
-	}})
+func addNamespaceRequest(obj client.Object, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	q.Add(reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name: obj.GetNamespace(),
+		},
+	})
 }

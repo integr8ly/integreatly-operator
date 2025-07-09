@@ -36,8 +36,8 @@ type valueForType struct {
 // beforehand that the object implements either the `Defaulter` of `Validator`
 // interfaces
 func WebhookRegisterFor(object runtime.Object) (*ObjectWebhookRegister, error) {
-	_, isDefaulter := object.(admission.Defaulter)
-	_, isValidator := object.(admission.Validator)
+	_, isDefaulter := object.(interface{ Default() })
+	_, isValidator := object.(interface{ Validate() error })
 
 	if isDefaulter || isValidator {
 		return &ObjectWebhookRegister{object}, nil
@@ -94,12 +94,12 @@ func (vwr ObjectWebhookRegister) getPaths(scheme *runtime.Scheme) (*valueForType
 
 	result := &valueForType{}
 
-	_, isDefaulter := vwr.Object.(admission.Defaulter)
+	_, isDefaulter := vwr.Object.(interface{ Default() })
 	if isDefaulter {
 		result.mutating = generatePath("mutate", gvk)
 	}
 
-	_, isValidator := vwr.Object.(admission.Validator)
+	_, isValidator := vwr.Object.(interface{ Validate() error })
 	if isValidator {
 		result.validating = generatePath("validate", gvk)
 	}

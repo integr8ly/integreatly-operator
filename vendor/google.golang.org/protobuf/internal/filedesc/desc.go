@@ -19,7 +19,6 @@ import (
 	"google.golang.org/protobuf/internal/pragma"
 	"google.golang.org/protobuf/internal/strs"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // Edition is an Enum for proto2.Edition
@@ -117,6 +116,9 @@ type (
 		// GenerateLegacyUnmarshalJSON determines if the plugin generates the
 		// UnmarshalJSON([]byte) error method for enums.
 		GenerateLegacyUnmarshalJSON bool
+		// APILevel controls which API (Open, Hybrid or Opaque) should be used
+		// for generated code (.pb.go files).
+		APILevel int
 	}
 )
 
@@ -393,11 +395,6 @@ func (fd *Field) Enum() protoreflect.EnumDescriptor {
 	return fd.L1.Enum
 }
 func (fd *Field) Message() protoreflect.MessageDescriptor {
-	if fd.L1.IsWeak {
-		if d, _ := protoregistry.GlobalFiles.FindDescriptorByName(fd.L1.Message.FullName()); d != nil {
-			return d.(protoreflect.MessageDescriptor)
-		}
-	}
 	return fd.L1.Message
 }
 func (fd *Field) IsMapEntry() bool {
