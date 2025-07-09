@@ -4,8 +4,8 @@ import (
 	obo "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
-	discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	envoyconfigv1 "github.com/3scale-sre/marin3r/api/marin3r/v1alpha1"
+	discoveryservicev1 "github.com/3scale-sre/marin3r/api/operator.marin3r/v1alpha1"
 	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	consolev1 "github.com/openshift/api/console/v1"

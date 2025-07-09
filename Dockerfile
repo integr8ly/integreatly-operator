@@ -1,5 +1,7 @@
 # Build the manager binary
-FROM registry.access.redhat.com/ubi9/go-toolset:1.23.6 AS builder
+# TODO switch to a red hat image of go1.24 when available
+# FROM registry.access.redhat.com/ubi9/go-toolset:1.23.6 AS builder
+FROM golang:1.24 AS builder
 
 # this is required for podman
 USER root
