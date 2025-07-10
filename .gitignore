@@ -101,7 +101,6 @@ test/*.json
 
 !vendor/**/zz_generated.*
 
-test-cases/package-lock.json
 
 ### GoLand ###
 .run

@@ -23,7 +23,6 @@ docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypo
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make code/check"
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make code/compile"
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make test/unit"
-docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make test-cases/lint"
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make test-containers/check"
 
 #Requires you to be oc logged in to any cluster on your host machine
