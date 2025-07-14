@@ -80,6 +80,8 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.ThreeScalePortals)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RhoamStateMetric)
 
+	customMetrics.Registry.MustRegister(integreatlymetrics.RhoamStateMetric)
+
 	integreatlymetrics.OperatorVersion.Add(1)
 	utilruntime.Must(v1.Install(clientgoscheme.Scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))

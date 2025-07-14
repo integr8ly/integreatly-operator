@@ -10,8 +10,8 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/utils"
 
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	moqClient "github.com/integr8ly/integreatly-operator/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )

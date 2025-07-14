@@ -6,6 +6,7 @@ const (
 	sopUrlRhoamBase                                            = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/"
 	sopUrlPostgresInstanceUnavailable                          = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/postgres_instance_unavailable.asciidoc"
 	sopUrlPostgresConnectionFailed                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/postgres_connection_failed.asciidoc"
+	SopUrlRHOAMAwsPostgresVersionUpdatesAvailable              = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/postgres_version_updates_available.asciidoc"
 	sopUrlRedisCacheUnavailable                                = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/redis_cache_unavailable.asciidoc"
 	sopUrlRedisConnectionFailed                                = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/redis_connection_failed.asciidoc"
 	sopUrlPostgresResourceStatusPhasePending                   = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/postgres_resource_status_phase_pending.asciidoc"

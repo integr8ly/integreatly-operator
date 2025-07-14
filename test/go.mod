@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator/test
 go 1.23.6
 
 require (
-	github.com/3scale-ops/marin3r v0.13.0
+	// github.com/3scale-ops/marin3r v0.8.0  // Temporarily disabled
 	github.com/3scale/3scale-operator v0.11.0
 	github.com/3scale/3scale-porta-go-client v0.11.0
 	github.com/3scale/apicast-operator v0.7.1

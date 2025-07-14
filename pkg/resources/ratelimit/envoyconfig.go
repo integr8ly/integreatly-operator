@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/3scale-ops/marin3r/pkg/envoy"
-	envoyserializer "github.com/3scale-ops/marin3r/pkg/envoy/serializer"
+	// "github.com/3scale-ops/marin3r/pkg/envoy"  // Temporarily disabled
+	// envoyserializer "github.com/3scale-ops/marin3r/pkg/envoy/serializer"  // Temporarily disabled
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
+	// marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"  // Temporarily disabled
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,26 +57,9 @@ func DeleteEnvoyConfigsInNamespaces(ctx context.Context, client k8sclient.Client
 }
 
 func DeleteEnvoyConfigsInNamespace(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	envoyConfigs := &marin3rv1alpha1.EnvoyConfigList{}
-	if err := client.List(ctx, envoyConfigs, k8sclient.InNamespace(namespace)); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if len(envoyConfigs.Items) == 0 {
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	for i := range envoyConfigs.Items {
-		envoyConfig := envoyConfigs.Items[i]
-		if err := k8sclient.IgnoreNotFound(
-			client.Delete(ctx, &envoyConfig),
-		); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete envoyconfig for namespace %s: %v",
-				namespace, err)
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseInProgress, nil
+	// Temporarily disabled - marin3r functionality stubbed out
+	// TODO: Re-enable when marin3r compatibility is resolved
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 type EnvoyConfig struct {

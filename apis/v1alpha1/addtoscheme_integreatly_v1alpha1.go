@@ -4,13 +4,13 @@ import (
 	obo "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
-	discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	// envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"  // Temporarily disabled
+	// discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"  // Temporarily disabled
 	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	consolev1 "github.com/openshift/api/console/v1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
@@ -67,8 +67,8 @@ func init() {
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.Install,
 		consolev1.Install,
-		envoyconfigv1.SchemeBuilder.AddToScheme,
-		discoveryservicev1.SchemeBuilder.AddToScheme,
+		// envoyconfigv1.SchemeBuilder.AddToScheme,  // Temporarily disabled
+		// discoveryservicev1.SchemeBuilder.AddToScheme,  // Temporarily disabled
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,

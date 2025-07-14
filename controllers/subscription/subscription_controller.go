@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"github.com/integr8ly/integreatly-operator/version"
@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"

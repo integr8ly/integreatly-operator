@@ -312,6 +312,26 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 				},
 			},
 		},
+
+		{
+			AlertName: fmt.Sprintf("%s-aws-postgres-version-updates-available", installationName),
+			Namespace: namespace,
+			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
+			Rules: []monv1.Rule{
+				{
+					Alert: fmt.Sprintf("%sRHOAMAwsPostgresVersionUpdatesAvailable", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMAwsPostgresVersionUpdatesAvailable,
+						"message": "PostgreSQL upgrade(s) available for improved security and performance. Current version: {{ $labels.current_version }}, Available version: {{ $labels.available_version }}",
+						"summary": "{{ $labels.instance_id }} has PostgreSQL upgrade(s) available",
+						"description": "One or more PostgreSQL engine version upgrades are available for RDS instance {{ $labels.instance_id }}. Upgrading can provide security patches, performance improvements, and new features.",
+					},
+					Expr:   intstr.FromString("postgres_upgrade_available > 0"),
+					For:    "10m",
+					Labels: map[string]string{"severity": "info", "product": installationName, "alert_type": "upgrade_notification"},
+				},
+			},
+		},
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {

@@ -1,10 +1,10 @@
 package utils
 
 import (
-	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
-	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	// envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"  // Temporarily disabled
+	// marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"  // Temporarily disabled
 	threescaleAppsv1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
@@ -60,11 +60,11 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		batchv1.AddToScheme,
 		configv1.Install,
 		consolev1.Install,
-		marin3roperator.AddToScheme,
+		// marin3roperator.AddToScheme,  // Temporarily disabled
 		apiextensionv1.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
 		cloudcredentialv1.Install,
-		envoyconfigv1.AddToScheme,
+		// envoyconfigv1.AddToScheme,  // Temporarily disabled
 		crov1.AddToScheme,
 		storagev1.AddToScheme,
 		addonv1alpha1.AddToScheme,

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/3scale-ops/marin3r/pkg/envoy"
+	// "github.com/3scale-ops/marin3r/pkg/envoy"  // Temporarily disabled
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -87,13 +87,13 @@ func (envoyProxy *envoyProxyServer) patchDeployment(deploymentName, namespace, e
 			"marin3r.3scale.net/ports":             envoyPort,
 			"marin3r.3scale.net/envoy-image":       EnvoyImage,
 			"marin3r.3scale.net/status":            "enabled",
-			"marin3r.3scale.net/envoy-api-version": envoy.APIv3.String(),
+			"marin3r.3scale.net/envoy-api-version": "v3", // envoy.APIv3.String() - temporarily hardcoded
 		})
 
 	deployment.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
 	deployment.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = envoyNodeID
 	deployment.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
-	deployment.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = envoy.APIv3.String()
+	deployment.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = "v3" // envoy.APIv3.String() - temporarily hardcoded
 	deployment.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
 	deployment.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
 	deployment.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"

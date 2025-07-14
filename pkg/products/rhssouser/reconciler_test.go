@@ -14,7 +14,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
-	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	croTypes "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,7 +26,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	crotypes "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -41,7 +41,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

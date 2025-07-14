@@ -10,14 +10,14 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
 
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	// marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"  // Temporarily disabled
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"

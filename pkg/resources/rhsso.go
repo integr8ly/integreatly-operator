@@ -6,8 +6,8 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
