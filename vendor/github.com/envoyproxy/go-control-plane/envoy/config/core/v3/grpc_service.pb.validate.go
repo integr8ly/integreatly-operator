@@ -451,8 +451,6 @@ func (m *GrpcService_EnvoyGrpc) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SkipEnvoyHeaders
-
 	if len(errors) > 0 {
 		return GrpcService_EnvoyGrpcMultiError(errors)
 	}

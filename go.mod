@@ -9,10 +9,11 @@ require (
 	github.com/RHsyseng/operator-utils v1.4.13
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/aws/aws-sdk-go v1.53.2
+	github.com/envoyproxy/go-control-plane v0.12.1-0.20240509201933-132c0a31ab09
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/golang/protobuf v1.5.4
-	github.com/integr8ly/cloud-resource-operator v1.1.6
+	github.com/integr8ly/cloud-resource-operator v1.1.5
 	github.com/integr8ly/keycloak-client v0.1.14
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
@@ -45,11 +46,8 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require github.com/envoyproxy/go-control-plane/envoy v1.32.4
-
 require (
-	cel.dev/expr v0.20.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	cel.dev/expr v0.19.2 // indirect
 	github.com/antchfx/xpath v1.1.10 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.5 // indirect
@@ -76,6 +74,7 @@ require (
 	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -123,7 +122,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
@@ -165,11 +163,7 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202108310919
 // Required to fix critical CVE. But it uses go 1.21.0 !
 replace github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.27.0
 
-// Compatibility constraints for marin3r v0.13.0
-replace google.golang.org/grpc => google.golang.org/grpc v1.58.0
-replace google.golang.org/protobuf => google.golang.org/protobuf v1.31.0
-
-replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20250716084011-f58ec3bf41bd
+replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20250717143315-95f501f64174
 
 // Compatibility constraints for marin3r v0.13.0
 replace google.golang.org/grpc => google.golang.org/grpc v1.58.0
