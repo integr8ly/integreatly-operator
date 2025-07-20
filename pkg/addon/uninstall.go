@@ -54,7 +54,7 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 }
 
 type deleteRHMIHandler struct {
-	decoder    *admission.Decoder
+	decoder    admission.Decoder
 	restConfig *rest.Config
 	scheme     *runtime.Scheme
 	client     k8sclient.Client
@@ -64,7 +64,7 @@ var _ admission.Handler = &deleteRHMIHandler{}
 
 //var _ admission.DecoderInjector = &deleteRHMIHandler{}
 
-func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder *admission.Decoder) admission.Handler {
+func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder admission.Decoder) admission.Handler {
 	return &deleteRHMIHandler{
 		restConfig: config,
 		scheme:     scheme,
@@ -72,7 +72,7 @@ func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder *
 	}
 }
 
-func (h *deleteRHMIHandler) InjectDecoder(d *admission.Decoder) error {
+func (h *deleteRHMIHandler) InjectDecoder(d admission.Decoder) error {
 	h.decoder = d
 	return nil
 }

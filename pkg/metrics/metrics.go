@@ -334,7 +334,7 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 func GetApiClient(route string, token prometheusConfig.Secret) (prometheusv1.API, error) {
 	client, err := prometheusApi.NewClient(prometheusApi.Config{
 		Address:      route,
-		RoundTripper: prometheusConfig.NewAuthorizationCredentialsRoundTripper("Bearer", token, prometheusApi.DefaultRoundTripper),
+		RoundTripper: prometheusConfig.NewAuthorizationCredentialsRoundTripper("Bearer", prometheusConfig.NewInlineSecret(string(token)), prometheusApi.DefaultRoundTripper),
 	})
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -23,25 +24,27 @@ type EnqueueIntegreatlyOwner struct {
 	log l.Logger
 }
 
-func (e *EnqueueIntegreatlyOwner) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+var _ handler.TypedEventHandler[client.Object, reconcile.Request] = &EnqueueIntegreatlyOwner{}
+
+func (e *EnqueueIntegreatlyOwner) Create(ctx context.Context, evt event.TypedCreateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Update(ctx context.Context, evt event.TypedUpdateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if req, err := e.getIntegreatlyOwner(evt.ObjectNew); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Delete(ctx context.Context, evt event.TypedDeleteEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
-func (e *EnqueueIntegreatlyOwner) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueIntegreatlyOwner) Generic(ctx context.Context, evt event.TypedGenericEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
