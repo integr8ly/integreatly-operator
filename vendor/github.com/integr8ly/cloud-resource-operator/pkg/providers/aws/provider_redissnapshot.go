@@ -7,16 +7,16 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	elasticachetypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	croType "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
@@ -70,19 +70,19 @@ func (p *RedisSnapshotProvider) CreateRedisSnapshot(ctx context.Context, snapsho
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	session, err := p.createSessionForResource(ctx, redis.Namespace, providers.RedisResourceType, redis.Spec.Tier)
+	cfg, err := p.createConfigForResource(ctx, redis.Namespace, providers.RedisResourceType, redis.Spec.Tier)
 
 	if err != nil {
 		errMsg := "failed to create AWS session"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	cacheSvc := elasticache.New(session)
+	elasticacheClient := NewElasticacheClient(*cfg)
 
-	return p.createRedisSnapshot(ctx, snapshot, redis, cacheSvc)
+	return p.createRedisSnapshot(ctx, snapshot, redis, elasticacheClient)
 }
 
-func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI) (*providers.RedisSnapshotInstance, croType.StatusMessage, error) {
+func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis, elasticacheClient ElastiCacheAPI) (*providers.RedisSnapshotInstance, croType.StatusMessage, error) {
 	logger := resources.NewActionLogger(p.logger, "createRedisSnapshot")
 	// generate snapshot name
 	snapshotName, err := resources.BuildTimestampedInfraNameFromObjectCreation(ctx, p.client, snapshot.ObjectMeta, defaultAwsIdentifierLength)
@@ -106,7 +106,7 @@ func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapsho
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	foundSnapshot, err := p.findSnapshotInstance(cacheSvc, snapshotName)
+	foundSnapshot, err := p.findSnapshotInstance(ctx, elasticacheClient, snapshotName)
 
 	if err != nil {
 		errMsg := "failed to describe snaphots in AWS"
@@ -114,7 +114,7 @@ func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapsho
 	}
 
 	// get replication group
-	cacheOutput, err := cacheSvc.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{
+	cacheOutput, err := elasticacheClient.DescribeReplicationGroups(ctx, &elasticache.DescribeReplicationGroupsInput{
 		ReplicationGroupId: aws.String(clusterName),
 	})
 
@@ -146,7 +146,7 @@ func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapsho
 			msg := "failed to get default redis tags"
 			return nil, "", errorUtil.Wrapf(err, msg)
 		}
-		_, err = cacheSvc.CreateSnapshot(&elasticache.CreateSnapshotInput{
+		_, err = elasticacheClient.CreateSnapshot(ctx, &elasticache.CreateSnapshotInput{
 			CacheClusterId: aws.String(cacheName),
 			SnapshotName:   aws.String(snapshotName),
 			Tags:           genericListToElasticacheTagList(tags),
@@ -173,21 +173,21 @@ func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapsho
 
 func (p *RedisSnapshotProvider) DeleteRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis) (croType.StatusMessage, error) {
 
-	session, err := p.createSessionForResource(ctx, redis.Namespace, providers.RedisResourceType, redis.Spec.Tier)
+	cfg, err := p.createConfigForResource(ctx, redis.Namespace, providers.RedisResourceType, redis.Spec.Tier)
 
 	if err != nil {
 		errMsg := "failed to create AWS session"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	cacheSvc := elasticache.New(session)
+	elasticacheClient := NewElasticacheClient(*cfg)
 
-	return p.deleteRedisSnapshot(ctx, snapshot, redis, cacheSvc)
+	return p.deleteRedisSnapshot(ctx, snapshot, redis, elasticacheClient)
 }
 
-func (p *RedisSnapshotProvider) deleteRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI) (croType.StatusMessage, error) {
+func (p *RedisSnapshotProvider) deleteRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis, elasticacheClient ElastiCacheAPI) (croType.StatusMessage, error) {
 	snapshotName := snapshot.Status.SnapshotID
-	foundSnapshot, err := p.findSnapshotInstance(cacheSvc, snapshotName)
+	foundSnapshot, err := p.findSnapshotInstance(ctx, elasticacheClient, snapshotName)
 
 	if err != nil {
 		errMsg := "failed to describe snaphots in AWS"
@@ -209,7 +209,7 @@ func (p *RedisSnapshotProvider) deleteRedisSnapshot(ctx context.Context, snapsho
 		SnapshotName: aws.String(snapshotName),
 	}
 
-	_, err = cacheSvc.DeleteSnapshot(deleteSnapshotInput)
+	_, err = elasticacheClient.DeleteSnapshot(ctx, deleteSnapshotInput)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to delete snapshot %s in aws", snapshotName)
@@ -219,29 +219,34 @@ func (p *RedisSnapshotProvider) deleteRedisSnapshot(ctx context.Context, snapsho
 	return "snapshot deletion started", nil
 }
 
-func (p *RedisSnapshotProvider) findSnapshotInstance(cacheSvc elasticacheiface.ElastiCacheAPI, snapshotName string) (*elasticache.Snapshot, error) {
+func (p *RedisSnapshotProvider) findSnapshotInstance(ctx context.Context, elasticacheClient ElastiCacheAPI, snapshotName string) (*elasticachetypes.Snapshot, error) {
 	// check snapshot exists
-	listOutput, err := cacheSvc.DescribeSnapshots(&elasticache.DescribeSnapshotsInput{
+	listOutput, err := elasticacheClient.DescribeSnapshots(ctx, &elasticache.DescribeSnapshotsInput{
 		SnapshotName: aws.String(snapshotName),
 	})
 	if err != nil {
-		elasticacheErr, isAwsErr := err.(awserr.Error)
-		if isAwsErr && elasticacheErr.Code() == "SnapshotNotFound" {
+		var notFoundErr *elasticachetypes.SnapshotNotFoundFault
+		if errors.As(err, &notFoundErr) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	var foundSnapshot *elasticache.Snapshot
+	var foundSnapshot elasticachetypes.Snapshot
+	found := false
 	for _, c := range listOutput.Snapshots {
 		if *c.SnapshotName == snapshotName {
 			foundSnapshot = c
+			found = true
 			break
 		}
 	}
-	return foundSnapshot, nil
+	if found {
+		return &foundSnapshot, nil
+	}
+	return nil, nil
 }
 
-func (p *RedisSnapshotProvider) createSessionForResource(ctx context.Context, namespace string, resourceType providers.ResourceType, tier string) (*session.Session, error) {
+func (p *RedisSnapshotProvider) createConfigForResource(ctx context.Context, namespace string, resourceType providers.ResourceType, tier string) (*aws.Config, error) {
 
 	// create the credentials to be used by the aws resource providers, not to be used by end-user
 	providerCreds, err := p.CredentialManager.ReconcileProviderCredentials(ctx, namespace)
@@ -256,5 +261,5 @@ func (p *RedisSnapshotProvider) createSessionForResource(ctx context.Context, na
 		return nil, err
 	}
 
-	return CreateSessionFromStrategy(ctx, p.client, providerCreds, stratCfg)
+	return CreateConfigFromStrategy(ctx, p.client, providerCreds, stratCfg)
 }

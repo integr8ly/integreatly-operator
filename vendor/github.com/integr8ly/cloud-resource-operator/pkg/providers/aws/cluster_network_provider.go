@@ -26,21 +26,22 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elasticachetypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/aws/smithy-go"
 	"net"
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface"
-	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/aws/aws-sdk-go/service/rds/rdsiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/integr8ly/cloud-resource-operator/internal/k8sutil"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
@@ -68,8 +69,8 @@ const (
 
 // Network wrapper for ec2 vpcs, to allow for extensibility
 type Network struct {
-	Vpc     *ec2.Vpc
-	Subnets []*ec2.Subnet
+	Vpc     *ec2types.Vpc
+	Subnets []ec2types.Subnet
 }
 
 type cidrList struct {
@@ -80,20 +81,20 @@ type cidrList struct {
 // NetworkAZSubnet used to map expected ip addresses to availability zones
 type NetworkAZSubnet struct {
 	IP net.IPNet
-	AZ *ec2.AvailabilityZone
+	AZ *ec2types.AvailabilityZone
 }
 
 // NetworkPeering wrapper for ec2 vpc peering connections, to allow for extensibility
 type NetworkPeering struct {
-	PeeringConnection *ec2.VpcPeeringConnection
+	PeeringConnection *ec2types.VpcPeeringConnection
 }
 
 type NetworkConnection struct {
-	StandaloneSecurityGroup *ec2.SecurityGroup
+	StandaloneSecurityGroup *ec2types.SecurityGroup
 }
 
 func (np *NetworkPeering) IsReady() bool {
-	return aws.StringValue(np.PeeringConnection.Status.Code) == ec2.VpcPeeringConnectionStateReasonCodeActive
+	return np.PeeringConnection.Status.Code == ec2types.VpcPeeringConnectionStateReasonCodeActive
 }
 
 //go:generate moq -out cluster_network_provider_moq.go . NetworkManager
@@ -104,7 +105,7 @@ type NetworkManager interface {
 	DeleteNetworkConnection(context.Context, *NetworkPeering) error
 	CreateNetworkPeering(context.Context, *Network) (*NetworkPeering, error)
 	GetClusterNetworkPeering(context.Context) (*NetworkPeering, error)
-	DeleteNetworkPeering(*NetworkPeering) error
+	DeleteNetworkPeering(context.Context, *NetworkPeering) error
 	IsEnabled(context.Context) (bool, error)
 	DeleteBundledCloudResources(context.Context) error
 }
@@ -112,25 +113,27 @@ type NetworkManager interface {
 var _ NetworkManager = (*NetworkProvider)(nil)
 
 type NetworkProvider struct {
-	Client         client.Client
-	RdsApi         rdsiface.RDSAPI
-	Ec2Api         ec2iface.EC2API
-	ElasticacheApi elasticacheiface.ElastiCacheAPI
-	Logger         *logrus.Entry
-	IsSTSCluster   bool
+	Client            client.Client
+	RdsClient         RDSAPI
+	Ec2Client         EC2API
+	ElasticacheClient ElastiCacheAPI
+	VpcWaiter         VpcWaiter
+	Logger            *logrus.Entry
+	IsSTSCluster      bool
 }
 
-func NewNetworkManager(session *session.Session, client client.Client, logger *logrus.Entry, isSTSCluster bool) *NetworkProvider {
+func NewNetworkManager(cfg aws.Config, client client.Client, logger *logrus.Entry, isSTSCluster bool) *NetworkProvider {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
 	return &NetworkProvider{
-		Client:         client,
-		RdsApi:         rds.New(session),
-		Ec2Api:         ec2.New(session),
-		ElasticacheApi: elasticache.New(session),
-		Logger:         logger.WithField("provider", "standalone_network_provider"),
-		IsSTSCluster:   isSTSCluster,
+		Client:            client,
+		Ec2Client:         NewEC2Client(cfg),
+		RdsClient:         NewRDSClient(cfg),
+		ElasticacheClient: NewElasticacheClient(cfg),
+		VpcWaiter:         NewRealVpcWaiter(ec2.NewFromConfig(cfg)),
+		Logger:            logger.WithField("provider", "standalone_network_provider"),
+		IsSTSCluster:      isSTSCluster,
 	}
 }
 
@@ -149,7 +152,7 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 	logger := n.Logger.WithField("action", "CreateNetwork")
 
 	// check if there is cluster specific vpc already created.
-	foundVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Api, logger)
+	foundVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "unable to get vpc")
 	}
@@ -161,7 +164,7 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 		//By default, `integreatly.org/clusterID`.
 		//
 		//NOTE - Once a VPC is created we do not want to update it. To avoid changing cidr block
-		clusterVPC, err := getClusterVpc(ctx, n.Client, n.Ec2Api, n.Logger)
+		clusterVPC, err := getClusterVpc(ctx, n.Client, n.Ec2Client, n.Logger)
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "failed to get cluster vpc")
 		}
@@ -184,43 +187,42 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 			CidrBlock: aws.String(vpcCidrBlock.String()),
 		}
 
-		tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultVpcNameTagValue}, ec2.ResourceTypeVpc)
+		tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultVpcNameTagValue}, string(ec2types.ResourceTypeVpc))
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "failed to get default tag spec")
 		}
-		vpcConfig.SetTagSpecifications(tagSpec)
+		vpcConfig.TagSpecifications = tagSpec
 
 		// create vpc using cidr string from _network
-		createVpcOutput, err := n.Ec2Api.CreateVpc(vpcConfig)
-
-		ec2Err, isAwsErr := err.(awserr.Error)
-		if err != nil && isAwsErr {
-			resources.SetVpcAction("create", "failed", ec2Err.Code(), 1)
-			if ec2Err.Code() == "InvalidVpcRange" {
-				return nil, errorUtil.New(fmt.Sprintf("%s is out of range, block sizes must be between `/16` and `/26`, please update `_network` strategy", vpcCidrBlock.String()))
-			}
-			if ec2Err.Code() == "VpcLimitExceeded" {
-				return nil, errorUtil.New("cannot create vpc - vpc limit exceeded")
-			}
-		}
+		createVpcOutput, err := n.Ec2Client.CreateVpc(ctx, vpcConfig)
 		if err != nil {
+			var apiErr smithy.APIError
+			if errors.As(err, &apiErr) {
+				resources.SetVpcAction("create", "failed", apiErr.ErrorCode(), 1)
+				if apiErr.ErrorCode() == "InvalidVpcRange" {
+					return nil, errorUtil.New(fmt.Sprintf("%s is out of range, block sizes must be between `/16` and `/26`, please update `_network` strategy", vpcCidrBlock.String()))
+				}
+				if apiErr.ErrorCode() == "VpcLimitExceeded" {
+					return nil, errorUtil.New("cannot create vpc - vpc limit exceeded")
+				}
+			}
 			return nil, errorUtil.Wrap(err, "unexpected error creating vpc")
 		}
-		logger.Infof("creating vpc: %s", *createVpcOutput.Vpc.VpcId)
 
-		waitVpcErr := n.Ec2Api.WaitUntilVpcExists(&ec2.DescribeVpcsInput{
-			VpcIds: []*string{
-				aws.String(*createVpcOutput.Vpc.VpcId),
-			},
-		})
+		logger.Infof("creating vpc: %s", aws.ToString(createVpcOutput.Vpc.VpcId))
+
+		waitVpcErr := n.VpcWaiter.Wait(context.TODO(), &ec2.DescribeVpcsInput{
+			VpcIds: []string{*createVpcOutput.Vpc.VpcId},
+		}, 1*time.Minute)
+
 		if waitVpcErr != nil {
 			logger.Warnf(
 				"timed out waiting to check if vpc %s with status %s exists, operator will delete the VPC and recreate another one: %v",
 				*createVpcOutput.Vpc.VpcId,
-				*createVpcOutput.Vpc.State,
+				createVpcOutput.Vpc.State,
 				waitVpcErr,
 			)
-			_, err = n.Ec2Api.DeleteVpc(&ec2.DeleteVpcInput{
+			_, err = n.Ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
 				VpcId: aws.String(*createVpcOutput.Vpc.VpcId),
 			})
 			if err != nil {
@@ -229,7 +231,7 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 			return &Network{}, nil
 		}
 
-		logger.Infof("vpc %s is created with state: %s", *createVpcOutput.Vpc.VpcId, *createVpcOutput.Vpc.State)
+		logger.Infof("vpc %s is created with state: %s", *createVpcOutput.Vpc.VpcId, createVpcOutput.Vpc.State)
 
 		// vpc created, reset metric
 		resources.ResetVpcAction()
@@ -295,7 +297,7 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 	logger := n.Logger.WithField("action", "DeleteNetwork")
 
 	//check if there is a standalone vpc already created.
-	foundVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Api, logger)
+	foundVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "unable to get vpc")
 	}
@@ -305,13 +307,13 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 	}
 
 	// remove all subnets created by cro
-	vpcSubs, err := getVPCAssociatedSubnets(n.Ec2Api, logger, foundVpc)
+	vpcSubs, err := getVPCAssociatedSubnets(ctx, n.Ec2Client, logger, foundVpc)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to get standalone vpc subnets")
 	}
 	for _, subnet := range vpcSubs {
 		logger.Infof("attempting to delete subnet with id: %s", *subnet.SubnetId)
-		_, err = n.Ec2Api.DeleteSubnet(&ec2.DeleteSubnetInput{
+		_, err = n.Ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
 			SubnetId: aws.String(*subnet.SubnetId),
 		})
 		if err != nil {
@@ -325,13 +327,13 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 	}
 
 	// remove rds subnet group created by cro
-	rdsSubnetGroup, err := getRDSSubnetGroup(n.RdsApi, subnetGroupName)
+	rdsSubnetGroup, err := getRDSSubnetGroup(ctx, n.RdsClient, subnetGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting subnet group on delete")
 	}
 	if rdsSubnetGroup != nil {
 		logger.Infof("attempting to delete subnetgroup name: %s for clusterID: %s", *rdsSubnetGroup.DBSubnetGroupName, *rdsSubnetGroup.VpcId)
-		_, err := n.RdsApi.DeleteDBSubnetGroup(&rds.DeleteDBSubnetGroupInput{
+		_, err := n.RdsClient.DeleteDBSubnetGroup(ctx, &rds.DeleteDBSubnetGroupInput{
 			DBSubnetGroupName: rdsSubnetGroup.DBSubnetGroupName,
 		})
 		if err != nil {
@@ -340,12 +342,12 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 	}
 
 	// remove elasticache subnet group created by cro
-	elasticacheSubnetGroup, err := getElasticacheSubnetByGroup(n.ElasticacheApi, subnetGroupName)
+	elasticacheSubnetGroup, err := getElasticacheSubnetByGroup(ctx, n.ElasticacheClient, subnetGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting subnet group on delete")
 	}
 	if elasticacheSubnetGroup != nil {
-		_, err := n.ElasticacheApi.DeleteCacheSubnetGroup(&elasticache.DeleteCacheSubnetGroupInput{
+		_, err := n.ElasticacheClient.DeleteCacheSubnetGroup(ctx, &elasticache.DeleteCacheSubnetGroupInput{
 			CacheSubnetGroupName: aws.String(*elasticacheSubnetGroup.CacheSubnetGroupName),
 		})
 		if err != nil {
@@ -355,7 +357,7 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 
 	// remove standalone vpc created by cro
 	logger.Infof("attempting to delete vpc id: %s", *foundVpc.VpcId)
-	_, err = n.Ec2Api.DeleteVpc(&ec2.DeleteVpcInput{
+	_, err = n.Ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
 		VpcId: aws.String(*foundVpc.VpcId),
 	})
 	if err != nil {
@@ -403,28 +405,29 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 	// declare cluster vpc route
 	// we require the destination cidr block to that of the standalone vpc cidr block
 	// we require the vpc connection id to be that of the vpc peering connection id
-	clusterVpcRoute := &ec2.Route{
+	clusterVpcRoute := &ec2types.Route{
 		VpcPeeringConnectionId: peeringConnection.VpcPeeringConnectionId,
 		DestinationCidrBlock:   network.Vpc.CidrBlock,
 	}
 
 	// as more than one route table may exist we need to ensure that the cluster vpc route exists for each
 	for _, routeTable := range clusterVpcRouteTables {
-		logger.Infof("checking if route already exists for vpc peering connection id %s in route table %s", aws.StringValue(clusterVpcRoute.VpcPeeringConnectionId), aws.StringValue(routeTable.RouteTableId))
+		logger.Infof("checking if route already exists for vpc peering connection id %s in route table %s", aws.ToString(clusterVpcRoute.VpcPeeringConnectionId), aws.ToString(routeTable.RouteTableId))
 		if !routeExists(routeTable.Routes, clusterVpcRoute) {
-			logger.Infof("creating route for vpc peering connection id %s in route table %s", aws.StringValue(clusterVpcRoute.VpcPeeringConnectionId), aws.StringValue(routeTable.RouteTableId))
-			if _, err := n.Ec2Api.CreateRoute(&ec2.CreateRouteInput{
+			logger.Infof("creating route for vpc peering connection id %s in route table %s", aws.ToString(clusterVpcRoute.VpcPeeringConnectionId), aws.ToString(routeTable.RouteTableId))
+			if _, err := n.Ec2Client.CreateRoute(ctx, &ec2.CreateRouteInput{
 				VpcPeeringConnectionId: clusterVpcRoute.VpcPeeringConnectionId,
 				DestinationCidrBlock:   clusterVpcRoute.DestinationCidrBlock,
 				RouteTableId:           routeTable.RouteTableId,
 			}); err != nil {
-				if awsErr, ok := err.(awserr.Error); ok {
-					if awsErr.Code() == "RouteNotSupported" {
-						logger.Infof("not adding route to %s route table because it is not supported/required", aws.StringValue(routeTable.RouteTableId))
+				var apiErr smithy.APIError
+				if errors.As(err, &apiErr) {
+					if apiErr.ErrorCode() == "RouteNotSupported" {
+						logger.Infof("not adding route to %s route table because it is not supported/required", *routeTable.RouteTableId)
 						continue
 					}
 				}
-				return nil, errorUtil.Wrap(err, "failure while adding route to route table")
+				return nil, errorUtil.Wrap(err, "unexpected error creating vpc")
 			}
 		}
 	}
@@ -437,7 +440,7 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 	}
 
 	// we require the cluster vpc cidr block for standalone vpc route
-	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, logger)
+	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting standalone vpc route tables")
 	}
@@ -445,7 +448,7 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 	// declare standalone vpc route
 	// we require the destination cidr block to that of the cluster vpc cidr block
 	// we require the vpc connection id to be that of the vpc peering connection id
-	standaloneVpcRoute := &ec2.Route{
+	standaloneVpcRoute := &ec2types.Route{
 		VpcPeeringConnectionId: peeringConnection.VpcPeeringConnectionId,
 		DestinationCidrBlock:   clusterVpc.CidrBlock,
 	}
@@ -453,10 +456,10 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 	// we expect a single route table to exist for the standalone vpc
 	// to handle the case where there is more than a single route found, loop through all them all and add the route
 	for _, routeTable := range standAloneVpcRouteTables {
-		logger.Infof("checking if route already exists for vpc peering connection id %s in route table %s", aws.StringValue(standaloneVpcRoute.VpcPeeringConnectionId), aws.StringValue(routeTable.RouteTableId))
+		logger.Infof("checking if route already exists for vpc peering connection id %s in route table %s", aws.ToString(standaloneVpcRoute.VpcPeeringConnectionId), aws.ToString(routeTable.RouteTableId))
 		if !routeExists(routeTable.Routes, standaloneVpcRoute) {
-			logger.Infof("creating route for vpc peering connection id %s in route table %s", aws.StringValue(standaloneVpcRoute.VpcPeeringConnectionId), aws.StringValue(routeTable.RouteTableId))
-			if _, err := n.Ec2Api.CreateRoute(&ec2.CreateRouteInput{
+			logger.Infof("creating route for vpc peering connection id %s in route table %s", aws.ToString(standaloneVpcRoute.VpcPeeringConnectionId), aws.ToString(routeTable.RouteTableId))
+			if _, err := n.Ec2Client.CreateRoute(ctx, &ec2.CreateRouteInput{
 				VpcPeeringConnectionId: standaloneVpcRoute.VpcPeeringConnectionId,
 				DestinationCidrBlock:   standaloneVpcRoute.DestinationCidrBlock,
 				RouteTableId:           routeTable.RouteTableId,
@@ -482,12 +485,12 @@ func (n *NetworkProvider) DeleteNetworkConnection(ctx context.Context, networkPe
 	}
 
 	// get standalone security group
-	standaloneSecGroup, err := getSecurityGroup(n.Ec2Api, standaloneSecurityGroupName)
+	standaloneSecGroup, err := getSecurityGroup(ctx, n.Ec2Client, standaloneSecurityGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to find standalone security group")
 	}
 	if standaloneSecGroup != nil {
-		if _, err := n.Ec2Api.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+		if _, err := n.Ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
 			GroupId: standaloneSecGroup.GroupId,
 		}); err != nil {
 			return errorUtil.Wrap(err, "failed to delete standalone security group")
@@ -503,7 +506,7 @@ func (n *NetworkProvider) DeleteNetworkConnection(ctx context.Context, networkPe
 	}
 	logger.Infof("found %d cluster vpc route tables", len(clusterVpcRouteTables))
 
-	standaloneVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Api, logger)
+	standaloneVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "could not find standalone vpc")
 	}
@@ -516,13 +519,13 @@ func (n *NetworkProvider) DeleteNetworkConnection(ctx context.Context, networkPe
 
 	// as more than one route table may exist we need to ensure that the cluster vpc route is deleted for each
 	for _, routeTable := range clusterVpcRouteTables {
-		logger.Infof("checking if route exists for standalone vpc id %s in route table %s", aws.StringValue(standaloneVpc.VpcId), aws.StringValue(routeTable.RouteTableId))
-		if routeExists(routeTable.Routes, &ec2.Route{
+		logger.Infof("checking if route exists for standalone vpc id %s in route table %s", aws.ToString(standaloneVpc.VpcId), aws.ToString(routeTable.RouteTableId))
+		if routeExists(routeTable.Routes, &ec2types.Route{
 			DestinationCidrBlock:   standaloneVpc.CidrBlock,
 			VpcPeeringConnectionId: networkPeering.PeeringConnection.VpcPeeringConnectionId,
 		}) {
-			logger.Infof("deleting route for standalone vpc id %s in route table %s", aws.StringValue(standaloneVpc.VpcId), aws.StringValue(routeTable.RouteTableId))
-			if _, err := n.Ec2Api.DeleteRoute(&ec2.DeleteRouteInput{
+			logger.Infof("deleting route for standalone vpc id %s in route table %s", aws.ToString(standaloneVpc.VpcId), aws.ToString(routeTable.RouteTableId))
+			if _, err := n.Ec2Client.DeleteRoute(ctx, &ec2.DeleteRouteInput{
 				DestinationCidrBlock: standaloneVpc.CidrBlock,
 				RouteTableId:         routeTable.RouteTableId,
 			}); err != nil {
@@ -540,7 +543,7 @@ func (n *NetworkProvider) DeleteNetworkConnection(ctx context.Context, networkPe
 func (n *NetworkProvider) CreateNetworkPeering(ctx context.Context, network *Network) (*NetworkPeering, error) {
 	logger := resources.NewActionLogger(n.Logger, "CreateNetworkPeering")
 
-	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, n.Logger)
+	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, n.Logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get cluster vpc, no vpc found")
 	}
@@ -558,14 +561,14 @@ func (n *NetworkProvider) CreateNetworkPeering(ctx context.Context, network *Net
 			VpcId:     network.Vpc.VpcId,
 		}
 		if n.IsSTSCluster {
-			tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultVpcPeeringConnectionNameTagValue}, ec2.ResourceTypeVpcPeeringConnection)
+			tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultVpcPeeringConnectionNameTagValue}, string(ec2types.ResourceTypeVpcPeeringConnection))
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "failed to get default tag spec")
 			}
-			peeringInput.SetTagSpecifications(tagSpec)
+			peeringInput.TagSpecifications = tagSpec
 		}
-		logger.Infof("creating cluster peering connection for vpc %s", aws.StringValue(network.Vpc.VpcId))
-		createPeeringConnOutput, err := n.Ec2Api.CreateVpcPeeringConnection(peeringInput)
+		logger.Infof("creating cluster peering connection for vpc %s", aws.ToString(network.Vpc.VpcId))
+		createPeeringConnOutput, err := n.Ec2Client.CreateVpcPeeringConnection(ctx, peeringInput)
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "failed to create vpc peering connection")
 		}
@@ -585,8 +588,8 @@ func (n *NetworkProvider) CreateNetworkPeering(ctx context.Context, network *Net
 		peeringConnectionTags := ec2TagListToGenericList(peeringConnection.Tags)
 		if !resources.TagsContainsAll(defaultTags, peeringConnectionTags) {
 			logger.Info("creating tags on peering connection")
-			_, err = n.Ec2Api.CreateTags(&ec2.CreateTagsInput{
-				Resources: []*string{peeringConnection.VpcPeeringConnectionId},
+			_, err = n.Ec2Client.CreateTags(ctx, &ec2.CreateTagsInput{
+				Resources: []string{*peeringConnection.VpcPeeringConnectionId},
 				Tags:      genericListToEc2TagList(defaultTags),
 			})
 			if err != nil {
@@ -598,20 +601,20 @@ func (n *NetworkProvider) CreateNetworkPeering(ctx context.Context, network *Net
 	}
 
 	// peering connection now exists, we need to accept it to complete the setup
-	logger.Infof("handling peering connection status %s", aws.StringValue(peeringConnection.Status.Code))
-	switch aws.StringValue(peeringConnection.Status.Code) {
-	case ec2.VpcPeeringConnectionStateReasonCodePendingAcceptance:
+	logger.Infof("handling peering connection status %s", peeringConnection.Status.Code)
+	switch peeringConnection.Status.Code {
+	case ec2types.VpcPeeringConnectionStateReasonCodePendingAcceptance:
 		logger.Info("accepting peering connection")
-		_, err = n.Ec2Api.AcceptVpcPeeringConnection(&ec2.AcceptVpcPeeringConnectionInput{
+		_, err = n.Ec2Client.AcceptVpcPeeringConnection(ctx, &ec2.AcceptVpcPeeringConnectionInput{
 			VpcPeeringConnectionId: peeringConnection.VpcPeeringConnectionId,
 		})
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "failed to accept vpc peering connection")
 		}
 		logger.Infof("accepted peering connection")
-	case ec2.VpcPeeringConnectionStateReasonCodeActive, ec2.VpcPeeringConnectionStateReasonCodeProvisioning, ec2.VpcPeeringConnectionStateReasonCodeInitiatingRequest:
+	case ec2types.VpcPeeringConnectionStateReasonCodeActive, ec2types.VpcPeeringConnectionStateReasonCodeProvisioning, ec2types.VpcPeeringConnectionStateReasonCodeInitiatingRequest:
 	default:
-		return nil, errorUtil.New(fmt.Sprintf("vpc peering connection %s is in an invalid state '%s' with message '%s'", aws.StringValue(peeringConnection.VpcPeeringConnectionId), aws.StringValue(peeringConnection.Status.Code), aws.StringValue(peeringConnection.Status.Message)))
+		return nil, errorUtil.New(fmt.Sprintf("vpc peering connection %s is in an invalid state '%s' with message '%s'", *peeringConnection.VpcPeeringConnectionId, peeringConnection.Status.Code, *peeringConnection.Status.Message))
 	}
 
 	// return a wrapped vpc peering connection
@@ -625,7 +628,7 @@ func (n *NetworkProvider) GetClusterNetworkPeering(ctx context.Context) (*Networ
 	logger := resources.NewActionLogger(n.Logger, "GetClusterNetworkPeering")
 
 	logger.Info("getting standalone vpc")
-	vpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Api, logger)
+	vpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get standalone vpc")
 	}
@@ -643,20 +646,20 @@ func (n *NetworkProvider) GetClusterNetworkPeering(ctx context.Context) (*Networ
 
 // DeleteNetworkPeering deletes a provided vpc peering connection
 // this will remove network connectivity between the vpcs that are part of the provided peering connection
-func (n *NetworkProvider) DeleteNetworkPeering(peering *NetworkPeering) error {
+func (n *NetworkProvider) DeleteNetworkPeering(ctx context.Context, peering *NetworkPeering) error {
 	logger := resources.NewActionLogger(n.Logger, "DeleteNetworkPeering")
 	if peering.PeeringConnection == nil {
 		logger.Info("networking peering connection nil, skipping delete network peering")
 		return nil
 	}
-	logger = logger.WithField("vpc_peering", aws.StringValue(peering.PeeringConnection.VpcPeeringConnectionId))
+	logger = logger.WithField("vpc_peering", peering.PeeringConnection.VpcPeeringConnectionId)
 
 	// describe the vpc peering connection first, it could be possible that the peering connection is already in a
 	// deleting state or is already deleted due to the way aws performs caching
 	// get the vpc peering connection, so we can have a look at it first to decide if a deletion request is required
 	logger.Info("getting vpc peering")
-	describePeeringOutput, err := n.Ec2Api.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
-		VpcPeeringConnectionIds: []*string{peering.PeeringConnection.VpcPeeringConnectionId},
+	describePeeringOutput, err := n.Ec2Client.DescribeVpcPeeringConnections(ctx, &ec2.DescribeVpcPeeringConnectionsInput{
+		VpcPeeringConnectionIds: []string{*peering.PeeringConnection.VpcPeeringConnectionId},
 	})
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to get vpc")
@@ -669,12 +672,12 @@ func (n *NetworkProvider) DeleteNetworkPeering(peering *NetworkPeering) error {
 	logger.Infof("found %d vpc peering connections, taking first", len(describePeeringOutput.VpcPeeringConnections))
 	toDelete := describePeeringOutput.VpcPeeringConnections[0]
 	// if the vpc peering connection is in a deleting/deleted state, ignore it as aws will handle it
-	switch aws.StringValue(toDelete.Status.Code) {
-	case ec2.VpcPeeringConnectionStateReasonCodeDeleting, ec2.VpcPeeringConnectionStateReasonCodeDeleted:
-		logger.Infof("vpc peering is in state %s, assuming deletion in progress, skipping", aws.StringValue(toDelete.Status.Code))
+	switch toDelete.Status.Code {
+	case ec2types.VpcPeeringConnectionStateReasonCodeDeleting, ec2types.VpcPeeringConnectionStateReasonCodeDeleted:
+		logger.Infof("vpc peering is in state %s, assuming deletion in progress, skipping", toDelete.Status.Code)
 		return nil
 	}
-	_, err = n.Ec2Api.DeleteVpcPeeringConnection(&ec2.DeleteVpcPeeringConnectionInput{
+	_, err = n.Ec2Client.DeleteVpcPeeringConnection(ctx, &ec2.DeleteVpcPeeringConnectionInput{
 		VpcPeeringConnectionId: toDelete.VpcPeeringConnectionId,
 	})
 	if err != nil {
@@ -694,7 +697,7 @@ func (n *NetworkProvider) IsEnabled(ctx context.Context) (bool, error) {
 	logger := n.Logger.WithField("action", "isEnabled")
 
 	//check if there is a cluster vpc already created.
-	foundVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, logger)
+	foundVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return false, errorUtil.Wrap(err, "unable to get vpc")
 	}
@@ -705,7 +708,7 @@ func (n *NetworkProvider) IsEnabled(ctx context.Context) (bool, error) {
 
 	// returning subnets from cluster vpc
 	logger.Info("getting cluster vpc subnets")
-	vpcSubnets, err := GetVPCSubnets(n.Ec2Api, logger, foundVpc)
+	vpcSubnets, err := GetVPCSubnets(ctx, n.Ec2Client, logger, foundVpc)
 	if err != nil {
 		return false, errorUtil.Wrap(err, "error happened while returning vpc subnets")
 	}
@@ -713,13 +716,13 @@ func (n *NetworkProvider) IsEnabled(ctx context.Context) (bool, error) {
 	// iterate all cluster vpc's checking for valid bundled vpc subnets
 	n.Logger.Infof("checking cluster vpc subnets for cluster id tag, %s", clusterID)
 	organizationTag := resources.GetOrganizationTag()
-	var validBundledVPCSubnets []*ec2.Subnet
+	var validBundledVPCSubnets []*ec2types.Subnet
 	for _, subnet := range vpcSubnets {
 		for _, tag := range subnet.Tags {
-			if aws.StringValue(tag.Key) == fmt.Sprintf("%sclusterID", organizationTag) &&
-				aws.StringValue(tag.Value) == clusterID {
+			if aws.ToString(tag.Key) == fmt.Sprintf("%sclusterID", organizationTag) &&
+				aws.ToString(tag.Value) == clusterID {
 				validBundledVPCSubnets = append(validBundledVPCSubnets, subnet)
-				logger.Infof("found bundled vpc subnet %s in cluster vpc %s", *subnet.SubnetId, *subnet.VpcId)
+				logger.Infof("found bundled vpc subnet %s in cluster vpc %s", aws.ToString(subnet.SubnetId), aws.ToString(subnet.VpcId))
 			}
 		}
 	}
@@ -744,20 +747,27 @@ func (n *NetworkProvider) DeleteBundledCloudResources(ctx context.Context) error
 		return errorUtil.Wrap(err, "error building bundle subnet group resource name on deletion")
 	}
 	logger.Infof("deleting bundled elasticache subnet group %s, if it's not found it's already deleted and will continue", subnetGroupName)
-	_, err = n.ElasticacheApi.DeleteCacheSubnetGroup(&elasticache.DeleteCacheSubnetGroupInput{
+	_, err = n.ElasticacheClient.DeleteCacheSubnetGroup(ctx, &elasticache.DeleteCacheSubnetGroupInput{
 		CacheSubnetGroupName: aws.String(subnetGroupName),
 	})
-	cacheSubnetErr, isAwsErr := err.(awserr.Error)
-	if err != nil && isAwsErr && cacheSubnetErr.Code() != elasticache.ErrCodeCacheSubnetGroupNotFoundFault {
-		return errorUtil.Wrap(err, "error deleting elasticache subnet group")
+	// Handle error for cache subnet group deletion
+	if err != nil {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() != "CacheSubnetGroupNotFoundFault" {
+			return errorUtil.Wrap(err, "error deleting elasticache subnet group")
+		}
 	}
 	logger.Infof("deleting bundled rds subnet group %s, if it's not found it's already deleted and will continue", subnetGroupName)
-	_, err = n.RdsApi.DeleteDBSubnetGroup(&rds.DeleteDBSubnetGroupInput{
+	// Delete RDS subnet group
+	_, err = n.RdsClient.DeleteDBSubnetGroup(ctx, &rds.DeleteDBSubnetGroupInput{
 		DBSubnetGroupName: aws.String(subnetGroupName),
 	})
-	dbSubnetErr, isAwsErr := err.(awserr.Error)
-	if err != nil && isAwsErr && dbSubnetErr.Code() != rds.ErrCodeDBSubnetGroupNotFoundFault {
-		return errorUtil.Wrap(err, "error deleting rds subnet group")
+	// Handle error for RDS subnet group deletion
+	if err != nil {
+		var dbSubnetErr smithy.APIError
+		if errors.As(err, &dbSubnetErr) && dbSubnetErr.ErrorCode() != "DBSubnetGroupNotFoundFault" {
+			return errorUtil.Wrap(err, "error deleting rds subnet group")
+		}
 	}
 	securityGroupName, err := resources.BuildInfraName(ctx, n.Client, "securitygroup", defaultAwsIdentifierLength)
 	if err != nil {
@@ -768,19 +778,19 @@ func (n *NetworkProvider) DeleteBundledCloudResources(ctx context.Context) error
 	// not connected with the default vpc. In order to delete it, it is required to describe them
 	// all in the account and then find the one with the correct group name and then request deletion
 	// using the group id of the matched security group
-	securityGroup, err := getSecurityGroup(n.Ec2Api, securityGroupName)
+	securityGroup, err := getSecurityGroup(ctx, n.Ec2Client, securityGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting ec2 security group")
 	}
 	if securityGroup == nil {
 		return nil
 	}
-	vpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, logger)
+	vpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting cluster vpc")
 	}
-	if securityGroup.VpcId != nil && vpc.VpcId != nil && aws.StringValue(securityGroup.VpcId) == aws.StringValue(vpc.VpcId) {
-		if _, err = n.Ec2Api.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+	if securityGroup.VpcId != nil && vpc.VpcId != nil && aws.ToString(securityGroup.VpcId) == aws.ToString(vpc.VpcId) {
+		if _, err = n.Ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
 			GroupId: securityGroup.GroupId,
 		}); err != nil {
 			return errorUtil.Wrap(err, "error deleting bundled security group")
@@ -789,31 +799,31 @@ func (n *NetworkProvider) DeleteBundledCloudResources(ctx context.Context) error
 	return nil
 }
 
-func (n *NetworkProvider) getNetworkPeering(ctx context.Context, network *Network) (*ec2.VpcPeeringConnection, error) {
+func (n *NetworkProvider) getNetworkPeering(ctx context.Context, network *Network) (*ec2types.VpcPeeringConnection, error) {
 	logger := resources.NewActionLogger(n.Logger, "getNetworkPeering")
 	// we will always peer with the openshift/kubernetes cluster vpc that this operator is running on
 	logger.Info("getting cluster vpc")
-	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, logger)
+	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get cluster vpc")
 	}
-	logger.Infof("found cluster vpc %s", aws.StringValue(clusterVpc.VpcId))
+	logger.Infof("found cluster vpc %s", *clusterVpc.VpcId)
 
 	// the peering connection will either be found or created below
-	var peeringConnection *ec2.VpcPeeringConnection
+	var peeringConnection *ec2types.VpcPeeringConnection
 
 	// check if a peering connection already exists between the two networks
 	logger.Info("checking for an existing peering connection")
-	describeVpcPeerOutput, err := n.Ec2Api.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
+	describeVpcPeerOutput, err := n.Ec2Client.DescribeVpcPeeringConnections(ctx, &ec2.DescribeVpcPeeringConnectionsInput{
 		DryRun: nil,
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String(filterVpcPeeringRequesterId),
-				Values: []*string{network.Vpc.VpcId},
+				Values: []string{*network.Vpc.VpcId},
 			},
 			{
 				Name:   aws.String(filterVpcPeeringAccepterId),
-				Values: []*string{clusterVpc.VpcId},
+				Values: []string{*clusterVpc.VpcId},
 			},
 		},
 	})
@@ -824,10 +834,10 @@ func (n *NetworkProvider) getNetworkPeering(ctx context.Context, network *Networ
 		// vpc peering connections exist between the two vpcs, now find one in a healthy state
 		for peeringConnIdx, peeringConn := range describeVpcPeerOutput.VpcPeeringConnections {
 			// deleted peering connections can stay around for quite a while, ignore them
-			if aws.StringValue(peeringConn.Status.Code) != ec2.VpcPeeringConnectionStateReasonCodeDeleted &&
-				aws.StringValue(peeringConn.Status.Code) != ec2.VpcPeeringConnectionStateReasonCodeDeleting {
-				peeringConnection = describeVpcPeerOutput.VpcPeeringConnections[peeringConnIdx]
-				logger.Infof("existing vpc peering connection found %s", aws.StringValue(peeringConnection.VpcPeeringConnectionId))
+			if peeringConn.Status.Code != ec2types.VpcPeeringConnectionStateReasonCodeDeleted &&
+				peeringConn.Status.Code != ec2types.VpcPeeringConnectionStateReasonCodeDeleting {
+				peeringConnection = &describeVpcPeerOutput.VpcPeeringConnections[peeringConnIdx]
+				logger.Infof("existing vpc peering connection found %s", *peeringConnection.VpcPeeringConnectionId)
 				break
 			}
 		}
@@ -840,7 +850,7 @@ func (n *NetworkProvider) getNetworkPeering(ctx context.Context, network *Networ
 // this security group should allow all ingress traffic from the cluster
 // as the cluster vpc and the standalone vpc are peered we need to use the cluster cidr block as an ip permission to allow ingress traffic
 // see -> https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-security-groups.html
-func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, logger *logrus.Entry) (*ec2.SecurityGroup, error) {
+func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, logger *logrus.Entry) (*ec2types.SecurityGroup, error) {
 	// build security group name
 	standaloneSecurityGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	logger.Info(fmt.Sprintf("setting resource security group %s", standaloneSecurityGroupName))
@@ -849,13 +859,13 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 	}
 
 	// get standalone security group
-	standaloneSecGroup, err := getSecurityGroup(n.Ec2Api, standaloneSecurityGroupName)
+	standaloneSecGroup, err := getSecurityGroup(ctx, n.Ec2Client, standaloneSecurityGroupName)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to find standalone security group")
 	}
 
 	// get the cro standalone vpc
-	standaloneVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Api, logger)
+	standaloneVpc, err := getStandaloneVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get standalone vpc")
 	}
@@ -864,7 +874,7 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 	}
 
 	// get the cluster bundled vpc
-	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, logger)
+	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get cluster vpc")
 	}
@@ -878,22 +888,22 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 		}
 
 		if n.IsSTSCluster {
-			tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultSecurityGroupNameTagValue}, ec2.ResourceTypeSecurityGroup)
+			tagSpec, err := getDefaultTagSpec(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultSecurityGroupNameTagValue}, string(ec2types.ResourceTypeSecurityGroup))
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "failed to get default tag spec")
 			}
-			securityGroup.SetTagSpecifications(tagSpec)
+			securityGroup.TagSpecifications = tagSpec
 		}
 		// create security group
 		logger.Infof("creating security group for standalone vpc")
-		createdSecurityGroupOutput, err := n.Ec2Api.CreateSecurityGroup(securityGroup)
+		createdSecurityGroupOutput, err := n.Ec2Client.CreateSecurityGroup(ctx, securityGroup)
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "error creating security group")
 		}
 		// get created security group as we expect it to exist before beginning to provision a resource
-		secGroup, err := n.Ec2Api.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
-			GroupIds: []*string{
-				createdSecurityGroupOutput.GroupId,
+		secGroup, err := n.Ec2Client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
+			GroupIds: []string{
+				*createdSecurityGroupOutput.GroupId,
 			},
 		})
 		if err != nil {
@@ -903,10 +913,10 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 		if len(secGroup.SecurityGroups) == 0 {
 			return nil, errorUtil.New(fmt.Sprintf("expected to find created security group %s", standaloneSecurityGroupName))
 		}
-		logger.Infof("created security group %s", aws.StringValue(secGroup.SecurityGroups[0].GroupName))
+		logger.Infof("created security group %s", aws.ToString(secGroup.SecurityGroups[0].GroupName))
 		// if the security group has created successfully, set the standaloneSecGroup to newly created group
 		// this is because we require the correct tags and permissions to be added
-		standaloneSecGroup = secGroup.SecurityGroups[0]
+		standaloneSecGroup = &secGroup.SecurityGroups[0]
 	}
 	logger.Infof("found security group %s", *standaloneSecGroup.GroupId)
 
@@ -919,10 +929,10 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 		}
 		securityGroupTags := ec2TagListToGenericList(standaloneSecGroup.Tags)
 		if !resources.TagsContainsAll(defaultTags, securityGroupTags) {
-			logger.Infof("tagging security group %s", aws.StringValue(standaloneSecGroup.GroupId))
-			_, err := n.Ec2Api.CreateTags(&ec2.CreateTagsInput{
-				Resources: []*string{
-					standaloneSecGroup.GroupId,
+			logger.Infof("tagging security group %s", aws.ToString(standaloneSecGroup.GroupId))
+			_, err := n.Ec2Client.CreateTags(ctx, &ec2.CreateTagsInput{
+				Resources: []string{
+					*standaloneSecGroup.GroupId,
 				},
 				Tags: genericListToEc2TagList(defaultTags),
 			})
@@ -939,9 +949,9 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 	// it is recommended by aws docs to use the cidr block from the peered vpc
 
 	// build ip permission
-	ipPermission := &ec2.IpPermission{
+	ipPermission := &ec2types.IpPermission{
 		IpProtocol: aws.String("-1"),
-		IpRanges: []*ec2.IpRange{
+		IpRanges: []ec2types.IpRange{
 			{
 				CidrIp: clusterVpc.CidrBlock,
 			},
@@ -957,28 +967,38 @@ func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, 
 	}
 
 	// authorize the security group ingres if it is not as expected
-	if _, err := n.Ec2Api.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+	_, err = n.Ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: aws.String(*standaloneSecGroup.GroupId),
-		IpPermissions: []*ec2.IpPermission{
-			ipPermission,
+		IpPermissions: []ec2types.IpPermission{
+			*ipPermission,
 		},
-	}); err != nil {
-		return nil, errorUtil.Wrap(err, "error authorizing security group ingress")
+	})
+	if err != nil {
+		var apiErr interface {
+			ErrorCode() string
+		}
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "InvalidPermission.Duplicate" {
+			logger.Infof("Security group rule 'peer: 10.0.0.0/16, ALL, ALLOW' already exists for group %s. Skipping authorization.", *standaloneSecGroup.GroupId)
+		} else {
+			logger.Errorf("Failed to authorize security group ingress for group %s: %v", *standaloneSecGroup.GroupId, err)
+			return nil, errorUtil.Wrap(err, "error authorizing security group ingress")
+		}
 	}
+
 	logger.Infof("ip permissions have been updated to expected permissions for security group %s", *standaloneSecGroup.GroupName)
 	return standaloneSecGroup, nil
 }
 
 // reconcileStandaloneRouteTableTags adds cro owner tag on standalone route table
 // we require owner tag for easy identification and filtering of route tables
-func (n *NetworkProvider) reconcileStandaloneRouteTableTags(ctx context.Context, vpc *ec2.Vpc, logger *logrus.Entry) error {
-	logger.Infof("checking vpc %s route table has correct tags", aws.StringValue(vpc.VpcId))
+func (n *NetworkProvider) reconcileStandaloneRouteTableTags(ctx context.Context, vpc *ec2types.Vpc, logger *logrus.Entry) error {
+	logger.Infof("checking vpc %s route table has correct tags", aws.ToString(vpc.VpcId))
 
-	routeTableOutput, err := n.Ec2Api.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
-		Filters: []*ec2.Filter{
+	routeTableOutput, err := n.Ec2Client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{vpc.VpcId},
+				Values: []string{*vpc.VpcId},
 			},
 		},
 	})
@@ -998,16 +1018,16 @@ func (n *NetworkProvider) reconcileStandaloneRouteTableTags(ctx context.Context,
 	for _, routeTable := range routeTables {
 		routeTableTags := ec2TagListToGenericList(routeTable.Tags)
 		if !resources.TagsContainsAll(defaultTags, routeTableTags) {
-			_, err := n.Ec2Api.CreateTags(&ec2.CreateTagsInput{
-				Resources: []*string{
-					aws.String(*routeTable.RouteTableId),
+			_, err := n.Ec2Client.CreateTags(ctx, &ec2.CreateTagsInput{
+				Resources: []string{
+					*routeTable.RouteTableId,
 				},
 				Tags: genericListToEc2TagList(defaultTags),
 			})
 			if err != nil {
 				return errorUtil.Wrap(err, "unable to tag route table")
 			}
-			logger.Infof("successfully tagged route table: %s", aws.StringValue(routeTable.RouteTableId))
+			logger.Infof("successfully tagged route table: %s", aws.ToString(routeTable.RouteTableId))
 		}
 	}
 	return nil
@@ -1018,7 +1038,7 @@ func (n *NetworkProvider) reconcileStandaloneRouteTableTags(ctx context.Context,
 // each standalone vpc cidr block is split in half, to create two private subnets.
 // these subnets are located in different az's
 // the az is determined by the cro strategy, either provided by override config map or provided by the infrastructure CR
-func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, logger *logrus.Entry, vpc *ec2.Vpc) ([]*ec2.Subnet, error) {
+func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, logger *logrus.Entry, vpc *ec2types.Vpc) ([]ec2types.Subnet, error) {
 	logger.Info("gathering all private subnets in cluster vpc")
 
 	// build our subnets, so we know if the vpc /26 then we /27
@@ -1057,21 +1077,23 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 	}
 
 	// get a list of valid availability zones
-	var validAzs []*ec2.AvailabilityZone
-	azs, err := n.Ec2Api.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+	var validAzs []ec2types.AvailabilityZone
+	azs, err := n.Ec2Client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting availability zones")
 	}
 
 	// get availability zones that support the current default rds and elasticache instance sizes.
-	describeInstanceTypeOfferingsOutput, err := n.Ec2Api.DescribeInstanceTypeOfferings(&ec2.DescribeInstanceTypeOfferingsInput{
-		Filters: []*ec2.Filter{
+	describeInstanceTypeOfferingsOutput, err := n.Ec2Client.DescribeInstanceTypeOfferings(ctx, &ec2.DescribeInstanceTypeOfferingsInput{
+		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("instance-type"),
-				Values: aws.StringSlice([]string{strings.Replace(defaultCacheNodeType, "cache.", "", 1), strings.Replace(defaultAwsDBInstanceClass, "db.", "", 1)}),
+				Name: aws.String("instance-type"),
+				Values: []string{
+					strings.Replace(defaultCacheNodeType, "cache.", "", 1),
+					strings.Replace(defaultAwsDBInstanceClass, "db.", "", 1)},
 			},
 		},
-		LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
+		LocationType: ec2types.LocationTypeAvailabilityZone,
 	})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to list ")
@@ -1079,11 +1101,11 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 
 	// filter the availability zones to only include ones that support the default instance types.
 	// ensure if any duplicate regions are returned, they are removed.
-	var supportedAzs []*ec2.AvailabilityZone
+	var supportedAzs []ec2types.AvailabilityZone
 	for _, az := range azs.AvailabilityZones {
 		foundAz := false
 		for _, instanceTypeOffering := range describeInstanceTypeOfferingsOutput.InstanceTypeOfferings {
-			if aws.StringValue(instanceTypeOffering.Location) == aws.StringValue(az.ZoneName) {
+			if aws.ToString(instanceTypeOffering.Location) == aws.ToString(az.ZoneName) {
 				foundAz = true
 				break
 			}
@@ -1103,7 +1125,7 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 		}
 	}
 	if len(validAzs) != defaultNumberOfExpectedSubnets {
-		return nil, errorUtil.New(fmt.Sprintf("expected 2 availability zones, found %s", validAzs))
+		return nil, errorUtil.New(fmt.Sprintf("expected 2 availability zones, found %+v", validAzs))
 	}
 
 	// validSubnets and validAzs contain the same index (2 items)
@@ -1112,10 +1134,11 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 	var expectedAZSubnets []*NetworkAZSubnet
 	for subnetIndex, subnet := range validSubnets {
 		for azIndex, az := range validAzs {
+			currentAz := az
 			if azIndex == subnetIndex {
 				azSubnet := &NetworkAZSubnet{
 					IP: subnet,
-					AZ: az,
+					AZ: &currentAz,
 				}
 				expectedAZSubnets = append(expectedAZSubnets, azSubnet)
 			}
@@ -1125,20 +1148,20 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 	// check expected subnets exist in expect az
 	// filter based on a tag key attached to private subnets
 	// get subnets in vpc
-	subs, err := getVPCAssociatedSubnets(n.Ec2Api, logger, vpc)
+	subs, err := getVPCAssociatedSubnets(ctx, n.Ec2Client, logger, vpc)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting vpc subnets")
 	}
 
-	tagSpec := &ec2.TagSpecification{}
+	tagSpec := &ec2types.TagSpecification{}
 	if n.IsSTSCluster {
 		subnetTags, err := getDefaultSubnetTags(ctx, n.Client)
 		if err != nil {
 			errMsg := "failed to get default tags for subnet"
 			return nil, errorUtil.Wrap(err, errMsg)
 		}
-		tagSpec = &ec2.TagSpecification{
-			ResourceType: aws.String("subnet"),
+		tagSpec = &ec2types.TagSpecification{
+			ResourceType: "subnet",
 			Tags:         subnetTags,
 		}
 	}
@@ -1154,28 +1177,30 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 				VpcId:            aws.String(*vpc.VpcId),
 			}
 			if n.IsSTSCluster {
-				subnetConfig.SetTagSpecifications([]*ec2.TagSpecification{
-					tagSpec,
-				})
+				subnetConfig.TagSpecifications = []ec2types.TagSpecification{
+					*tagSpec,
+				}
 			}
-			createOutput, err := n.Ec2Api.CreateSubnet(subnetConfig)
-			ec2err, isAwsErr := err.(awserr.Error)
-			if err != nil && isAwsErr && ec2err.Code() == "InvalidSubnet.Conflict" {
-				// if two or more crs are created at the same time the network provider may run in parallel
-				// in this case it's expected that there will be a conflict as they will each be reconciling the required subnets
-				// one will get in first and the following ones will see the expected conflict as the subnet is already created
-				logger.Debugf("%s conflicts with a current subnet", expectedAZSubnet.IP.String())
+			createOutput, err := n.Ec2Client.CreateSubnet(ctx, subnetConfig)
+			if err != nil {
+				var apiErr *smithy.GenericAPIError
+				if errors.As(err, &apiErr) && apiErr.Code == "InvalidSubnet.Conflict" {
+					// If two or more CRs are created at the same time, the network provider may run in parallel.
+					// In this case, it's expected that there will be a conflict as they will each be reconciling the required subnets.
+					// One will get in first, and the following ones will see the expected conflict as the subnet is already created.
+					logger.Debugf("%s conflicts with a current subnet", expectedAZSubnet.IP.String())
+				}
 			}
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "error creating new subnet")
 			}
 			if !n.IsSTSCluster {
-				if newErr := tagPrivateSubnet(ctx, n.Client, n.Ec2Api, createOutput.Subnet, logger); newErr != nil {
+				if newErr := tagPrivateSubnet(ctx, n.Client, n.Ec2Client, createOutput.Subnet, logger); newErr != nil {
 					return nil, newErr
 				}
 			}
 
-			subs = append(subs, createOutput.Subnet)
+			subs = append(subs, *createOutput.Subnet)
 			logger.Infof("created new subnet %s in %s", expectedAZSubnet.IP.String(), *vpc.VpcId)
 		}
 	}
@@ -1189,9 +1214,10 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 
 		// ensure subnets have the correct tags
 		for _, sub := range subs {
+			currentSub := sub //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
 			logger.Infof("validating subnet %s", *sub.SubnetId)
-			if !resources.TagsContainsAll(ec2TagListToGenericList(subnetTags), ec2TagListToGenericList(sub.Tags)) {
-				if err := tagPrivateSubnet(ctx, n.Client, n.Ec2Api, sub, logger); err != nil {
+			if !resources.TagsContainsAll(ec2TagListToGenericList(subnetTags), ec2TagListToGenericList(currentSub.Tags)) {
+				if err := tagPrivateSubnet(ctx, n.Client, n.Ec2Client, &currentSub, logger); err != nil {
 					return nil, errorUtil.Wrap(err, "failed to tag subnet")
 				}
 			}
@@ -1201,43 +1227,45 @@ func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, log
 	return subs, nil
 }
 
-func (n *NetworkProvider) getClusterRouteTables(ctx context.Context) ([]*ec2.RouteTable, error) {
-	routeTables, err := n.Ec2Api.DescribeRouteTables(&ec2.DescribeRouteTablesInput{})
+func (n *NetworkProvider) getClusterRouteTables(ctx context.Context) ([]ec2types.RouteTable, error) {
+	routeTables, err := n.Ec2Client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get route tables")
 	}
 
-	clusterVPC, err := getClusterVpc(ctx, n.Client, n.Ec2Api, n.Logger)
+	clusterVPC, err := getClusterVpc(ctx, n.Client, n.Ec2Client, n.Logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get cluster vpc")
 	}
-	var foundRouteTables []*ec2.RouteTable
-	for _, routeTable := range routeTables.RouteTables {
-		if routeTable != nil && *routeTable.VpcId == *clusterVPC.VpcId {
-			foundRouteTables = append(foundRouteTables, routeTable)
+	var foundRouteTables []ec2types.RouteTable
+	if routeTables.RouteTables != nil {
+		for _, routeTable := range routeTables.RouteTables {
+			if routeTable.VpcId != nil && clusterVPC.VpcId != nil && *routeTable.VpcId == *clusterVPC.VpcId {
+				foundRouteTables = append(foundRouteTables, routeTable)
+			}
 		}
 	}
 	if len(foundRouteTables) == 0 {
-		return nil, errorUtil.New(fmt.Sprintf("could not find any route table with the associated vpc id %s", aws.StringValue(clusterVPC.VpcId)))
+		return nil, errorUtil.New(fmt.Sprintf("could not find any route table with the associated vpc id %s", aws.ToString(clusterVPC.VpcId)))
 	}
 	return foundRouteTables, nil
 }
 
 // getCRORouteTables will return a list of route tables based on a route table tag
 // we expect there to be route tables, if none are found we return an error
-func (n *NetworkProvider) getCRORouteTables(ctx context.Context) ([]*ec2.RouteTable, error) {
+func (n *NetworkProvider) getCRORouteTables(ctx context.Context) ([]ec2types.RouteTable, error) {
 	// get croOwner tag to use in getting standalone vpc route tables
 	croOwnerTag, err := getCloudResourceOperatorOwnerTag(ctx, n.Client)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error generating cloud resource owner tag")
 	}
 
-	routeTables, err := n.Ec2Api.DescribeRouteTables(&ec2.DescribeRouteTablesInput{})
+	routeTables, err := n.Ec2Client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get route tables")
 	}
 
-	var foundRouteTables []*ec2.RouteTable
+	var foundRouteTables []ec2types.RouteTable
 	for _, routeTable := range routeTables.RouteTables {
 		routeTableTags := ec2TagListToGenericList(routeTable.Tags)
 		if resources.TagsContains(routeTableTags, croOwnerTag.Key, croOwnerTag.Value) {
@@ -1255,7 +1283,7 @@ func (n *NetworkProvider) getCRORouteTables(ctx context.Context) ([]*ec2.RouteTa
 //
 // VPCs are tagged with the name `<organizationTag>/clusterID`.
 // By default, `integreatly.org/clusterID`.
-func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2.Vpc) error {
+func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2types.Vpc) error {
 	logger := n.Logger.WithField("action", "reconcileVPCTags")
 
 	defaultTags, err := getDefaultNetworkTags(ctx, n.Client, &resources.Tag{Key: resources.TagDisplayName, Value: defaultVpcNameTagValue})
@@ -1264,16 +1292,16 @@ func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2.Vpc) er
 	}
 	vpcTags := ec2TagListToGenericList(vpc.Tags)
 	if !resources.TagsContainsAll(defaultTags, vpcTags) {
-		_, err := n.Ec2Api.CreateTags(&ec2.CreateTagsInput{
-			Resources: []*string{
-				aws.String(*vpc.VpcId),
+		_, err := n.Ec2Client.CreateTags(ctx, &ec2.CreateTagsInput{
+			Resources: []string{
+				*vpc.VpcId,
 			},
 			Tags: genericListToEc2TagList(defaultTags),
 		})
 		if err != nil {
-			return errorUtil.Wrapf(err, "unable to tag vpc %s with state %s", *vpc.VpcId, *vpc.State)
+			return errorUtil.Wrapf(err, "unable to tag vpc %s with state %s", *vpc.VpcId, vpc.State)
 		}
-		logger.Infof("successfully tagged vpc: %s with state %s", *vpc.VpcId, *vpc.State)
+		logger.Infof("successfully tagged vpc: %s with state %s", *vpc.VpcId, vpc.State)
 	}
 	return nil
 }
@@ -1281,7 +1309,7 @@ func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2.Vpc) er
 // an rds subnet group is required to be in place when provisioning rds resources
 //
 // reconcileRDSVpcConfiguration ensures that an rds subnet group is created with 2 private subnets
-func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, privateVPCSubnets []*ec2.Subnet) error {
+func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, privateVPCSubnets []ec2types.Subnet) error {
 	logger := n.Logger.WithField("action", "reconcileRDSVpcConfiguration")
 	logger.Info("ensuring rds subnet groups in vpc are as expected")
 	// get subnet group id
@@ -1291,9 +1319,9 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 	}
 
 	// build array list of all vpc private subnets
-	var subnetIds []*string
+	var subnetIds []string
 	for _, subnet := range privateVPCSubnets {
-		subnetIds = append(subnetIds, subnet.SubnetId)
+		subnetIds = append(subnetIds, *subnet.SubnetId)
 	}
 
 	// in the case of no private subnets being found, we return a less verbose error message compared to obscure aws error message
@@ -1306,7 +1334,7 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 		return errorUtil.Wrap(err, "failed to get default tags for rds subnet group")
 	}
 
-	foundSubnetGroup, err := getRDSSubnetGroup(n.RdsApi, subnetGroupName)
+	foundSubnetGroup, err := getRDSSubnetGroup(ctx, n.RdsClient, subnetGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed getting rds subnet group")
 	}
@@ -1322,9 +1350,9 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 			}
 		}
 
-		if !subnetExists || aws.StringValue(foundSubnetGroup.DBSubnetGroupDescription) != defaultSubnetGroupDesc {
+		if !subnetExists || aws.ToString(foundSubnetGroup.DBSubnetGroupDescription) != defaultSubnetGroupDesc {
 			logger.Info("rds subnet group not as expected, updating.")
-			if _, err := n.RdsApi.ModifyDBSubnetGroup(&rds.ModifyDBSubnetGroupInput{
+			if _, err := n.RdsClient.ModifyDBSubnetGroup(ctx, &rds.ModifyDBSubnetGroupInput{
 				DBSubnetGroupDescription: aws.String(defaultSubnetGroupDesc),
 				DBSubnetGroupName:        foundSubnetGroup.DBSubnetGroupName,
 				SubnetIds:                subnetIds,
@@ -1335,7 +1363,7 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 
 		if !n.IsSTSCluster {
 			// get tags for rds subnet group
-			tags, err := n.RdsApi.ListTagsForResource(&rds.ListTagsForResourceInput{
+			tags, err := n.RdsClient.ListTagsForResource(ctx, &rds.ListTagsForResourceInput{
 				ResourceName: foundSubnetGroup.DBSubnetGroupArn,
 			})
 			if err != nil {
@@ -1345,7 +1373,7 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 			// ensure tags exist on rds subnet group
 			subnetTags := rdsTagListToGenericList(tags.TagList)
 			if !resources.TagsContainsAll(defaultTags, subnetTags) {
-				err := n.updateRdsSubnetGroupTags(foundSubnetGroup, genericToRdsTags(defaultTags))
+				err := n.updateRdsSubnetGroupTags(ctx, foundSubnetGroup, genericToRdsTags(defaultTags))
 				if err != nil {
 					return errorUtil.Wrap(err, "error updating subnet group tags")
 				}
@@ -1364,26 +1392,26 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 
 	// create db subnet group
 	logger.Infof("creating resource subnet group %s", *subnetGroupInput.DBSubnetGroupName)
-	if _, err := n.RdsApi.CreateDBSubnetGroup(subnetGroupInput); err != nil {
+	if _, err := n.RdsClient.CreateDBSubnetGroup(ctx, subnetGroupInput); err != nil {
 		return errorUtil.Wrap(err, "unable to create db subnet group")
 	}
 	return nil
 }
 
-// this function removes tags and reads them to an rds subnet group
-func (n *NetworkProvider) updateRdsSubnetGroupTags(foundSubnet *rds.DBSubnetGroup, rdsTags []*rds.Tag) error {
-	var tagKeys []*string
+// this function removes tags and reads them to a rds subnet group
+func (n *NetworkProvider) updateRdsSubnetGroupTags(ctx context.Context, foundSubnet *rdstypes.DBSubnetGroup, rdsTags []rdstypes.Tag) error {
+	var tagKeys []string
 	for _, tag := range rdsTags {
-		tagKeys = append(tagKeys, tag.Key)
+		tagKeys = append(tagKeys, *tag.Key)
 	}
-	_, err := n.RdsApi.RemoveTagsFromResource(&rds.RemoveTagsFromResourceInput{
+	_, err := n.RdsClient.RemoveTagsFromResource(ctx, &rds.RemoveTagsFromResourceInput{
 		ResourceName: foundSubnet.DBSubnetGroupArn,
 		TagKeys:      tagKeys,
 	})
 	if err != nil {
 		return errorUtil.Wrap(err, "error updating db subnet group tags")
 	}
-	_, err = n.RdsApi.AddTagsToResource(&rds.AddTagsToResourceInput{
+	_, err = n.RdsClient.AddTagsToResource(ctx, &rds.AddTagsToResourceInput{
 		ResourceName: foundSubnet.DBSubnetGroupArn,
 		Tags:         rdsTags,
 	})
@@ -1396,7 +1424,7 @@ func (n *NetworkProvider) updateRdsSubnetGroupTags(foundSubnet *rds.DBSubnetGrou
 // It is required to have an elasticache subnet group in place when provisioning elasticache resources
 //
 // reconcileElasticacheVPCConfiguration ensures that an elasticache subnet group is created with 2 private subnets
-func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Context, privateVPCSubnets []*ec2.Subnet) error {
+func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Context, privateVPCSubnets []ec2types.Subnet) error {
 	logger := n.Logger.WithField("action", "reconcileElasticacheVPCConfiguration")
 	logger.Info("ensuring elasticache subnet groups in vpc are as expected")
 	// get subnet group id
@@ -1406,13 +1434,13 @@ func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Conte
 	}
 
 	// build array list of all vpc private subnets
-	var subnetIDs []*string
+	var subnetIDs []string
 	for _, subnet := range privateVPCSubnets {
-		subnetIDs = append(subnetIDs, subnet.SubnetId)
+		subnetIDs = append(subnetIDs, *subnet.SubnetId)
 	}
 
 	// check if group exists
-	foundSubnetGroup, err := getElasticacheSubnetByGroup(n.ElasticacheApi, subnetGroupName)
+	foundSubnetGroup, err := getElasticacheSubnetByGroup(ctx, n.ElasticacheClient, subnetGroupName)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting elasticache subnet group on reconcile")
 	}
@@ -1429,9 +1457,9 @@ func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Conte
 			}
 		}
 
-		if !subnetExists || aws.StringValue(foundSubnetGroup.CacheSubnetGroupDescription) != defaultSubnetGroupDesc {
+		if !subnetExists || aws.ToString(foundSubnetGroup.CacheSubnetGroupDescription) != defaultSubnetGroupDesc {
 			logger.Infof("elasticache subnet group not as expected, updating.")
-			if _, err = n.ElasticacheApi.ModifyCacheSubnetGroup(&elasticache.ModifyCacheSubnetGroupInput{
+			if _, err = n.ElasticacheClient.ModifyCacheSubnetGroup(ctx, &elasticache.ModifyCacheSubnetGroupInput{
 				CacheSubnetGroupDescription: aws.String(defaultSubnetGroupDesc),
 				CacheSubnetGroupName:        foundSubnetGroup.CacheSubnetGroupName,
 				SubnetIds:                   subnetIDs,
@@ -1460,7 +1488,7 @@ func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Conte
 	}
 
 	logger.Infof("creating resource subnet group %s", subnetGroupName)
-	if _, err := n.ElasticacheApi.CreateCacheSubnetGroup(subnetGroupInput); err != nil {
+	if _, err := n.ElasticacheClient.CreateCacheSubnetGroup(ctx, subnetGroupInput); err != nil {
 		return errorUtil.Wrap(err, "unable to create cache subnet group")
 	}
 	return nil
@@ -1472,9 +1500,9 @@ func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Conte
 // By default, `integreatly.org/clusterID`.
 //
 // This tag is used to identify a standalone vpc
-func getStandaloneVpc(ctx context.Context, client client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) (*ec2.Vpc, error) {
+func getStandaloneVpc(ctx context.Context, client client.Client, ec2Client EC2API, logger *logrus.Entry) (*ec2types.Vpc, error) {
 	// get all vpcs
-	vpcs, err := ec2Svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
+	vpcs, err := ec2Client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting vpcs")
 	}
@@ -1486,12 +1514,14 @@ func getStandaloneVpc(ctx context.Context, client client.Client, ec2Svc ec2iface
 	}
 
 	// find associated vpc to tag
-	var foundVPC *ec2.Vpc
+	var foundVPC *ec2types.Vpc
 	for _, vpc := range vpcs.Vpcs {
-		for _, tag := range vpc.Tags {
-			if *tag.Key == croOwnerTag.Key && *tag.Value == croOwnerTag.Value {
-				logger.Infof("found vpc: %s", *vpc.VpcId)
-				foundVPC = vpc
+		currentVpc := vpc //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+		for _, tag := range currentVpc.Tags {
+			currentTag := tag //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+			if *currentTag.Key == croOwnerTag.Key && *currentTag.Value == croOwnerTag.Value {
+				logger.Infof("found vpc: %s", *currentVpc.VpcId)
+				foundVPC = &currentVpc
 			}
 		}
 	}
@@ -1504,10 +1534,10 @@ getVPCAssociatedSubnets will return a list of subnets or an error
 this is used twice, to find all subnets associated with a vpc in order to remove all subnets on deletion
 it is also used as a helper function when we filter private associated subnets
 */
-func getVPCAssociatedSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *ec2.Vpc) ([]*ec2.Subnet, error) {
+func getVPCAssociatedSubnets(ctx context.Context, ec2Client EC2API, logger *logrus.Entry, vpc *ec2types.Vpc) ([]ec2types.Subnet, error) {
 	logger.Info("gathering cluster vpc and subnet information")
 	// poll subnets to ensure credentials have reconciled
-	subs, err := getSubnets(ec2Svc)
+	subs, err := getSubnets(ctx, ec2Client)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting subnets")
 	}
@@ -1518,7 +1548,7 @@ func getVPCAssociatedSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *
 	}
 
 	// find associated subnets
-	var associatedSubs []*ec2.Subnet
+	var associatedSubs []ec2types.Subnet
 	for _, sub := range subs {
 		if *sub.VpcId == *vpc.VpcId {
 			logger.Infof("found subnet: %s in vpc %s", *sub.SubnetId, *sub.VpcId)
@@ -1529,30 +1559,30 @@ func getVPCAssociatedSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *
 }
 
 // getRDSSubnetGroup returns rds db subnet group by the group name or an error
-func getRDSSubnetGroup(rdsApi rdsiface.RDSAPI, subnetGroupName string) (*rds.DBSubnetGroup, error) {
+func getRDSSubnetGroup(ctx context.Context, rdsClient RDSAPI, subnetGroupName string) (*rdstypes.DBSubnetGroup, error) {
 	// check if group exists
-	groups, err := rdsApi.DescribeDBSubnetGroups(&rds.DescribeDBSubnetGroupsInput{})
+	groups, err := rdsClient.DescribeDBSubnetGroups(ctx, &rds.DescribeDBSubnetGroupsInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error describing subnet groups")
 	}
 	for _, sub := range groups.DBSubnetGroups {
 		if *sub.DBSubnetGroupName == subnetGroupName {
-			return sub, nil
+			return &sub, nil
 		}
 	}
 	return nil, nil
 }
 
 // getElasticacheSubnetByGroup returns elasticache subnet group by the group name or an error
-func getElasticacheSubnetByGroup(elasticacheApi elasticacheiface.ElastiCacheAPI, subnetGroupName string) (*elasticache.CacheSubnetGroup, error) {
+func getElasticacheSubnetByGroup(ctx context.Context, elasticacheClient ElastiCacheAPI, subnetGroupName string) (*elasticachetypes.CacheSubnetGroup, error) {
 	// check if group exists
-	groups, err := elasticacheApi.DescribeCacheSubnetGroups(&elasticache.DescribeCacheSubnetGroupsInput{})
+	groups, err := elasticacheClient.DescribeCacheSubnetGroups(ctx, &elasticache.DescribeCacheSubnetGroupsInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error describing subnet groups")
 	}
 	for _, sub := range groups.CacheSubnetGroups {
 		if *sub.CacheSubnetGroupName == subnetGroupName {
-			return sub, nil
+			return &sub, nil
 		}
 	}
 	return nil, nil
@@ -1603,12 +1633,12 @@ func (n *NetworkProvider) ReconcileNetworkProviderConfig(ctx context.Context, co
 // the default mask is /26
 // for other masks the user is required to provide their own via config
 func (n *NetworkProvider) getNonOverlappingDefaultCIDR(ctx context.Context) (*net.IPNet, error) {
-	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Api, n.Logger)
+	clusterVpc, err := getClusterVpc(ctx, n.Client, n.Ec2Client, n.Logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get cluster vpc for cidr block")
 	}
 	//parse the cidr to an ipnet cidr in order to manipulate the ip
-	_, clusterNet, err := net.ParseCIDR(aws.StringValue(clusterVpc.CidrBlock))
+	_, clusterNet, err := net.ParseCIDR(aws.ToString(clusterVpc.CidrBlock))
 
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error parsing cluster cidr block")
@@ -1740,7 +1770,7 @@ func getServiceCIDR(networkConf *configv1.Network) (*net.IPNet, bool, error) {
 }
 
 // subnetExists is a helper function for checking if a subnet exists with a specific cidr block
-func subnetExists(subnets []*ec2.Subnet, cidr string) bool {
+func subnetExists(subnets []ec2types.Subnet, cidr string) bool {
 	for _, subnet := range subnets {
 		if *subnet.CidrBlock == cidr {
 			return true
@@ -1799,22 +1829,23 @@ func getCloudResourceOperatorOwnerTag(ctx context.Context, client client.Client)
 		return nil, errorUtil.Wrap(err, "error getting clusterID")
 	}
 	organizationTag := resources.GetOrganizationTag()
-	genericTag := ec2TagToGeneric(&ec2.Tag{
+	genericTag := ec2TagToGeneric(&ec2types.Tag{
 		Key:   aws.String(fmt.Sprintf("%sclusterID", organizationTag)),
 		Value: aws.String(clusterID),
 	})
 	return genericTag, nil
 }
 
-func getDefaultTagSpec(ctx context.Context, client client.Client, customTag *resources.Tag, resourceType string) ([]*ec2.TagSpecification, error) {
+func getDefaultTagSpec(ctx context.Context, client client.Client, customTag *resources.Tag, resourceType string) ([]ec2types.TagSpecification, error) {
 	tags, err := getDefaultNetworkTags(ctx, client, customTag)
 	if err != nil {
 		return nil, err
 	}
-	return []*ec2.TagSpecification{
+	ec2tag := genericListToEc2TagList(tags)
+	return []ec2types.TagSpecification{
 		{
-			ResourceType: aws.String(resourceType),
-			Tags:         genericListToEc2TagList(tags),
+			ResourceType: ec2types.ResourceType(resourceType),
+			Tags:         ec2tag,
 		},
 	}, nil
 }
@@ -1860,21 +1891,22 @@ func isSTSCluster(ctx context.Context, client client.Client) bool {
 
 // this utility function verifies if a route already exists in a list of routes
 // we require a route setup in both cluster vpc route table and standalone vpc route table
-func routeExists(routes []*ec2.Route, checkRoute *ec2.Route) bool {
+func routeExists(routes []ec2types.Route, checkRoute *ec2types.Route) bool {
 	for _, route := range routes {
 		if route.DestinationCidrBlock == nil || route.VpcPeeringConnectionId == nil {
 			continue
 		}
-		if aws.StringValue(route.DestinationCidrBlock) == aws.StringValue(checkRoute.DestinationCidrBlock) && aws.StringValue(route.VpcPeeringConnectionId) == aws.StringValue(checkRoute.VpcPeeringConnectionId) {
+		if aws.ToString(route.DestinationCidrBlock) == aws.ToString(checkRoute.DestinationCidrBlock) && aws.ToString(route.VpcPeeringConnectionId) == aws.ToString(checkRoute.VpcPeeringConnectionId) {
 			return true
 		}
 	}
 	return false
 }
 
-func contains(strs []*string, str *string) bool {
+func contains(strs []string, str *string) bool {
 	for _, s := range strs {
-		if aws.StringValue(str) == aws.StringValue(s) {
+		currentS := s
+		if aws.ToString(str) == aws.ToString(&currentS) {
 			return true
 		}
 	}

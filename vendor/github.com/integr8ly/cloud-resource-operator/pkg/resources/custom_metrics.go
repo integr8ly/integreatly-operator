@@ -40,6 +40,7 @@ const (
 	PostgresFreeableMemoryAverageMetricName = "cro_postgres_freeable_memory_average"
 	PostgresMaxMemoryMetricName             = "cro_postgres_max_memory"
 	PostgresAllocatedStorageMetricName      = "cro_postgres_current_allocated_storage"
+	PostgresUpgradeAvailableMetricName      = "cro_postgres_upgrade_available"
 
 	RedisMemoryUsagePercentageAverageMetricName = "cro_redis_memory_usage_percentage_average"
 	RedisFreeableMemoryAverageMetricName        = "cro_redis_freeable_memory_average"

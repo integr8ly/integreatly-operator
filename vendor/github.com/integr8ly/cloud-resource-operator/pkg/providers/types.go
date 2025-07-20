@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	croType "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 )
 
 //go:generate moq -out types_moq.go . DeploymentDetails BlobStorageProvider
@@ -15,7 +15,6 @@ type ResourceType string
 const (
 	AWSDeploymentStrategy       = "aws"
 	OpenShiftDeploymentStrategy = "openshift"
-	GCPDeploymentStrategy       = "gcp"
 
 	BlobStorageResourceType ResourceType = "blobstorage"
 	PostgresResourceType    ResourceType = "postgres"

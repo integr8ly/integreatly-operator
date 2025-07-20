@@ -4,7 +4,7 @@ import (
 	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	threescaleAppsv1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"

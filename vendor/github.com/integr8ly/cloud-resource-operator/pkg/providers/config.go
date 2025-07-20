@@ -81,7 +81,6 @@ func (m *ConfigMapConfigManager) buildDefaultConfigMap() *v1.ConfigMap {
 		Data: map[string]string{
 			"openshift": "{\"blobstorage\":\"openshift\", \"redis\":\"openshift\", \"postgres\":\"openshift\"}",
 			"aws":       "{\"blobstorage\":\"aws\", \"redis\":\"aws\", \"postgres\":\"aws\"}",
-			"gcp":       "{\"blobstorage\":\"gcp\", \"redis\":\"gcp\", \"postgres\":\"gcp\"}",
 		},
 	}
 }
