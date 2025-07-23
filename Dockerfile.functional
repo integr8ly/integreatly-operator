@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/openshift/release:golang-1.23 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.20 AS builder
 
 ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
 WORKDIR ${PKG}
@@ -14,8 +14,8 @@ COPY test ./test
 RUN go mod download
 
 # Copy the go source
-COPY apis/ apis/
-COPY controllers/ controllers/
+COPY api/ api/
+COPY internal/controller/ internal/controller/
 COPY pkg ./pkg
 COPY manifests ./manifests
 COPY version ./version

@@ -1,5 +1,6 @@
 # Build the manager binary
-FROM registry.access.redhat.com/ubi9/go-toolset:1.23.6 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.24 AS builder
+
 
 # this is required for podman
 USER root
@@ -15,15 +16,15 @@ COPY vendor/ vendor/
 RUN go mod download
 
 # Copy the go source
-COPY main.go main.go
-COPY apis/ apis/
-COPY controllers/ controllers/
+COPY cmd/main.go cmd/main.go
+COPY api/ api/
+COPY internal/controller/ internal/controller/
 COPY pkg/ pkg/
 COPY version/ version/
 COPY utils/ utils/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o rhmi-operator main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o rhmi-operator cmd/main.go
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 

@@ -2,6 +2,7 @@ package logger
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -18,9 +19,8 @@ func TestLogger(t *testing.T) {
 	log.Warningf("This is a Warningf log", Fields{"agr1": "agr1"})
 
 	err := errors.New("This is an error")
-	log.Error("This is a Error log", err)
-	log.Errorf("This is a Errorf log", Fields{"agr1": "agr1"}, err)
+	log.Error("This is a Error log", nil, err)
+	log.Error(fmt.Sprintf("formatted message: %v", err), nil, err)
 
-	log.Error("This is a Error log with nil err object", nil)
-	log.Errorf("This is a Errorf log with nil err object", nil, nil)
+	log.Error("This is a Error log with nil err object", nil, nil)
 }

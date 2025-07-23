@@ -320,6 +320,8 @@ func (m *DnsCacheConfig) validate(all bool) error {
 
 	}
 
+	// no validation rules for DisableDnsRefreshOnFailure
+
 	if all {
 		switch v := interface{}(m.GetDnsFailureRefreshRate()).(type) {
 		case interface{ ValidateAll() error }:
@@ -486,12 +488,12 @@ func (m *DnsCacheConfig) validate(all bool) error {
 			errors = append(errors, err)
 		} else {
 
-			gt := time.Duration(0*time.Second + 0*time.Nanosecond)
+			gte := time.Duration(0*time.Second + 0*time.Nanosecond)
 
-			if dur <= gt {
+			if dur < gte {
 				err := DnsCacheConfigValidationError{
 					field:  "DnsQueryTimeout",
-					reason: "value must be greater than 0s",
+					reason: "value must be greater than or equal to 0s",
 				}
 				if !all {
 					return err

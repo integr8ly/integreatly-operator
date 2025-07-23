@@ -8,7 +8,7 @@ import (
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

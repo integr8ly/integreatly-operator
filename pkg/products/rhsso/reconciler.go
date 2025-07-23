@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -396,7 +396,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	err = r.SyncOpenshiftIDPClientSecret(ctx, serverClient, authenticated, r.Config, keycloakRealmName)
 	if err != nil {
-		r.Log.Error("Failed to sync openshift idp client secret", err)
+		r.Log.Error("Failed to sync openshift idp client secret", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to sync openshift idp client secret: %w", err)
 	}
 
@@ -424,7 +424,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			r.Log.Infof("Conflict error found", l.Fields{"keycloak-user": user.UserName})
 			err := authenticated.DeleteUser(user.UserName, keycloakRealmName)
 			if err != nil {
-				r.Log.Error(fmt.Sprintf("failed to delete keycloak-user %s using the keycloak authenticated client", user.UserName), err)
+				r.Log.Error(fmt.Sprintf("failed to delete keycloak-user %s using the keycloak authenticated client", user.UserName), nil, err)
 			}
 		}
 	}
@@ -461,7 +461,7 @@ func (r *Reconciler) CheckCPUUsage(ctx context.Context, serverClient k8sclient.C
 		Namespace: ns,
 	}, ss)
 	if err != nil {
-		r.Log.Error("Error getting stateful set", err)
+		r.Log.Error("Error getting stateful set", nil, err)
 		return
 	}
 	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
@@ -476,19 +476,19 @@ func (r *Reconciler) CheckCPUUsage(ctx context.Context, serverClient k8sclient.C
 	var kubeconfig, master string //empty, assuming inClusterConfig
 	config, err := clientcmd.BuildConfigFromFlags(master, kubeconfig)
 	if err != nil {
-		r.Log.Error("Error building config", err)
+		r.Log.Error("Error building config", nil, err)
 		return
 	}
 
 	mc, err := metrics.NewForConfig(config)
 	if err != nil {
-		r.Log.Error("Error building metrics config", err)
+		r.Log.Error("Error building metrics config", nil, err)
 		return
 	}
 
 	podMetrics, err := mc.MetricsV1beta1().PodMetricses(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		r.Log.Error("Error getting pod metrics", err)
+		r.Log.Error("Error getting pod metrics", nil, err)
 		return
 	}
 
@@ -513,7 +513,7 @@ func (r *Reconciler) CheckCPUUsage(ctx context.Context, serverClient k8sclient.C
 
 				cpuInt, err := strconv.Atoi(cpu)
 				if err != nil {
-					r.Log.Error("Error converting cpu string to int", err)
+					r.Log.Error("Error converting cpu string to int", nil, err)
 					continue
 				}
 
@@ -528,7 +528,7 @@ func (r *Reconciler) CheckCPUUsage(ctx context.Context, serverClient k8sclient.C
 							Namespace: ns,
 						},
 					}); err != nil {
-						r.Log.Errorf("Error deleting pod", l.Fields{"pod": podMetric.Name}, err)
+						r.Log.Error("Error deleting pod", l.Fields{"pod": podMetric.Name}, err)
 					}
 					lastPodRestart = time.Now()
 					// Return as we don't want to restart 2 pods at the same time
@@ -543,7 +543,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	githubCreds := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.ConfigManager.GetGHOauthClientsSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
 	if err != nil {
-		r.Log.Errorf("Unable to find Github oauth credentials secret", l.Fields{"ns": r.ConfigManager.GetOperatorNamespace()}, err)
+		r.Log.Error("Unable to find Github oauth credentials secret", l.Fields{"ns": r.ConfigManager.GetOperatorNamespace()}, err)
 		return err
 	}
 

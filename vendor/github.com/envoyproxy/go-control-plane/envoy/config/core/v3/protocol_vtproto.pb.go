@@ -137,6 +137,16 @@ func (m *QuicProtocolOptions) MarshalToSizedBufferVTStrict(dAtA []byte) (int, er
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.MaxPacketLength != nil {
+		size, err := (*wrapperspb.UInt64Value)(m.MaxPacketLength).MarshalToSizedBufferVTStrict(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x4a
+	}
 	if m.IdleNetworkTimeout != nil {
 		size, err := (*durationpb.Duration)(m.IdleNetworkTimeout).MarshalToSizedBufferVTStrict(dAtA[:i])
 		if err != nil {
@@ -429,6 +439,16 @@ func (m *HttpProtocolOptions) MarshalToSizedBufferVTStrict(dAtA []byte) (int, er
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.MaxResponseHeadersKb != nil {
+		size, err := (*wrapperspb.UInt32Value)(m.MaxResponseHeadersKb).MarshalToSizedBufferVTStrict(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x3a
 	}
 	if m.MaxRequestsPerConnection != nil {
 		size, err := (*wrapperspb.UInt32Value)(m.MaxRequestsPerConnection).MarshalToSizedBufferVTStrict(dAtA[:i])
@@ -912,6 +932,18 @@ func (m *Http2ProtocolOptions) MarshalToSizedBufferVTStrict(dAtA []byte) (int, e
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.MaxMetadataSize != nil {
+		size, err := (*wrapperspb.UInt64Value)(m.MaxMetadataSize).MarshalToSizedBufferVTStrict(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x8a
+	}
 	if m.UseOghttp2Codec != nil {
 		size, err := (*wrapperspb.BoolValue)(m.UseOghttp2Codec).MarshalToSizedBufferVTStrict(dAtA[:i])
 		if err != nil {
@@ -1225,6 +1257,16 @@ func (m *SchemeHeaderTransformation) MarshalToSizedBufferVTStrict(dAtA []byte) (
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.MatchUpstream {
+		i--
+		if m.MatchUpstream {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
 	if msg, ok := m.Transformation.(*SchemeHeaderTransformation_SchemeToOverwrite); ok {
 		size, err := msg.MarshalToSizedBufferVTStrict(dAtA[:i])
 		if err != nil {
@@ -1313,6 +1355,10 @@ func (m *QuicProtocolOptions) SizeVT() (n int) {
 	}
 	if m.IdleNetworkTimeout != nil {
 		l = (*durationpb.Duration)(m.IdleNetworkTimeout).SizeVT()
+		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.MaxPacketLength != nil {
+		l = (*wrapperspb.UInt64Value)(m.MaxPacketLength).SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
@@ -1417,6 +1463,10 @@ func (m *HttpProtocolOptions) SizeVT() (n int) {
 	}
 	if m.MaxRequestsPerConnection != nil {
 		l = (*wrapperspb.UInt32Value)(m.MaxRequestsPerConnection).SizeVT()
+		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.MaxResponseHeadersKb != nil {
+		l = (*wrapperspb.UInt32Value)(m.MaxResponseHeadersKb).SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
@@ -1638,6 +1688,10 @@ func (m *Http2ProtocolOptions) SizeVT() (n int) {
 		l = (*wrapperspb.BoolValue)(m.UseOghttp2Codec).SizeVT()
 		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
+	if m.MaxMetadataSize != nil {
+		l = (*wrapperspb.UInt64Value)(m.MaxMetadataSize).SizeVT()
+		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1688,6 +1742,9 @@ func (m *SchemeHeaderTransformation) SizeVT() (n int) {
 	_ = l
 	if vtmsg, ok := m.Transformation.(interface{ SizeVT() int }); ok {
 		n += vtmsg.SizeVT()
+	}
+	if m.MatchUpstream {
+		n += 2
 	}
 	n += len(m.unknownFields)
 	return n
