@@ -17,6 +17,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"math"
 	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -442,7 +443,9 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 	if err != nil {
 		return 0, fmt.Errorf("error converting limit per tenant value %w", err)
 	}
-
+	if limitPerTenant < 0 || limitPerTenant > math.MaxUint32 {
+		return 0, fmt.Errorf("rate limit value %d is out of the valid range for uint32", limitPerTenant)
+	}
 	return uint32(limitPerTenant), nil
 }
 

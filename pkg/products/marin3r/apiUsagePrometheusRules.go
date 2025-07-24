@@ -8,6 +8,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -195,8 +196,11 @@ func intervalToMinutes(interval string) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	return uint32(intervalValue * multiplier), nil
+	result := int64(intervalValue) * int64(multiplier)
+	if result < 0 || result > math.MaxUint32 {
+		return 0, fmt.Errorf("calculated interval value %d is out of the valid range for uint32", result)
+	}
+	return uint32(result), nil
 }
 
 // parsePercentage parses and validates a percentage string by extracting
