@@ -57,10 +57,10 @@
 #
 products:
     3scale:
-        channel: threescale-2.15
+        channel: threescale-2.16
         installFrom: index
         package: 3scale-operator
-        index: quay.io/integreatly/3scale-index:v0.12.2
+        index: quay.io/integreatly/3scale-index:v0.13.0
     cloud-resources:
         channel: rhmi
         installFrom: index
