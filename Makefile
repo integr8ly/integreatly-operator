@@ -125,7 +125,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	go install github.com/matryer/moq@v0.5.0
+	go install github.com/matryer/moq@v0.5.3
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
@@ -190,9 +190,9 @@ code/gen: setup/moq apis/integreatly/v1alpha1/zz_generated.deepcopy.go
 	mv ./config/crd/bases/integreatly.org_apimanagementtenants.yaml ./config/crd-sandbox/bases
 
 .PHONY: code/check
-code/check:
+code/check: golangci-lint
 	@diff -u <(echo -n) <(gofmt -d `find . -type f -name '*.go' -not -path "./vendor/*"`)
-	golint ./pkg/... | grep -v  "comment on" | grep -v "or be unexported"
+	GOLANGCI_LINT_CACHE=/tmp/.cache $(GOLANGCI_LINT) run ./...
 	go vet ./...
 
 
@@ -584,8 +584,12 @@ coverage:
 commits/check:
 	@./scripts/commits-check.sh
 
+.PHONY: install-gosec
+install-gosec:
+	GOBIN=$(PWD)/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
+
 .PHONY: gosec
-gosec:
+gosec: install-gosec
 	# Module layout causes issues if not using go workspace but is not supported in Cachito for now
 	# https://github.com/securego/gosec/issues/682
 	gosec -exclude-dir test ./...
