@@ -15,6 +15,7 @@ import (
 )
 
 func TestStatusConditions(t TestingTB, ctx *TestingContext) {
+
 	installed, err := status.IsAddonOperatorInstalled(ctx.Client)
 	if err != nil {
 		t.Fatal(err)

@@ -126,6 +126,7 @@ func (envoyProxy *envoyProxyServer) patchService(svcName, namespace, portName st
 	ports := service.Spec.Ports
 	for i, port := range ports {
 		if port.Name == portName {
+			// #nosec G115 -- Port numbers are guaranteed to be within the valid range.
 			service.Spec.Ports[i].Port = int32(svcPort)
 			service.Spec.Ports[i].TargetPort = intstr.FromInt(svcPort)
 			break

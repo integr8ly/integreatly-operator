@@ -25,6 +25,7 @@ func newCryptoRandSource() cryptoRandSource {
 }
 
 func (s cryptoRandSource) Int63() int64 {
+	// #nosec G115 -- This is a standard implementation of rand.Source, the bitwise operation ensures the value fits in an int64.
 	return int64(s.Uint64() & ^uint64(1<<63))
 }
 

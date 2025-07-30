@@ -2,6 +2,8 @@ module github.com/integr8ly/integreatly-operator
 
 go 1.24
 
+toolchain go1.24.0
+
 require (
 	github.com/3scale-ops/marin3r v0.13.0
 	github.com/3scale/3scale-operator v0.10.1-0.20240624092157-a842b26b729f
