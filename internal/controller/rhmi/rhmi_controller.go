@@ -1436,7 +1436,10 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 	}
 
 	err = r.controller.Watch(
-		&source.Informer{Informer: informer},
+		&source.Informer{
+			Informer: informer,
+			Handler:  &handler.EnqueueRequestForObject{},
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
