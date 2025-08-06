@@ -268,7 +268,7 @@ func (i *RHMI) IsInstalled() bool {
 
 // IsInstallBlocked if the creation timestamp is over 2 hours old and installation has not completed and is also not uninstalling
 func (i *RHMI) IsInstallBlocked() bool {
-	return i.CreationTimestamp.Add(2*time.Hour).Before(time.Now()) && !i.IsInstalled() && !i.IsUninstalling()
+	return i.ObjectMeta.CreationTimestamp.Add(2*time.Hour).Before(time.Now()) && !i.IsInstalled() && !i.IsUninstalling()
 }
 
 // IsDegraded if not uninstalling and the overall status stage is not complete
@@ -278,12 +278,12 @@ func (i *RHMI) IsDegraded() bool {
 
 // IsUninstalling when there is a deletion timestamp
 func (i *RHMI) IsUninstalling() bool {
-	return i.DeletionTimestamp != nil
+	return i.ObjectMeta.DeletionTimestamp != nil
 }
 
 // IsUninstallBlocked when IsUninstalling and deletion timestamp is over 2 hours old
 func (i *RHMI) IsUninstallBlocked() bool {
-	return i.IsUninstalling() && i.DeletionTimestamp.Add(2*time.Hour).Before(time.Now())
+	return i.IsUninstalling() && i.ObjectMeta.DeletionTimestamp.Add(2*time.Hour).Before(time.Now())
 }
 
 // IsCoreComponentsHealthy Helper for checking if core components affecting SLO are healthy

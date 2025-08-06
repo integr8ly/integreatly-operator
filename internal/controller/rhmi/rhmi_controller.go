@@ -1390,7 +1390,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 	}
 	//TODO confirm that this works, the change is due to generics in controller-runtime 0.20.4
 	myHandler := &EnqueueIntegreatlyOwner{log: log}
-	informer.AddEventHandler(clientgocache.ResourceEventHandlerFuncs{
+	_, err = informer.AddEventHandler(clientgocache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			co, ok := obj.(k8sclient.Object)
 			if !ok {
@@ -1431,6 +1431,9 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 			}
 		},
 	})
+	if err != nil {
+		return fmt.Errorf("failed to add event handler for %v: %v", crd, err)
+	}
 
 	err = r.controller.Watch(
 		&source.Informer{Informer: informer},

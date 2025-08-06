@@ -332,11 +332,6 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	return status, nil
 }
 
-type stringSecret string
-
-func (s stringSecret) Description() string         { return "inline secret" }
-func (s stringSecret) ReadSecret() ([]byte, error) { return []byte(s), nil }
-
 type inlineSecret struct {
 	text string
 }
