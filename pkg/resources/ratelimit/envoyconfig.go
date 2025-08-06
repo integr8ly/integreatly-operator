@@ -216,6 +216,7 @@ func CreateClusterResource(containerAddress, clusterName string, containerPort i
 				Address:  containerAddress,
 				Protocol: envoycorev3.SocketAddress_TCP,
 				PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+					// #nosec G115 -- Port numbers are guaranteed to be within the valid range.
 					PortValue: uint32(containerPort),
 				},
 			},
@@ -265,6 +266,7 @@ func CreateListenerResource(listenerName, listenerAddress string, listenerPort i
 					Protocol: envoycorev3.SocketAddress_TCP,
 					Address:  listenerAddress,
 					PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+						// #nosec G115 -- Port numbers are guaranteed to be within the valid range.
 						PortValue: uint32(listenerPort),
 					},
 				},
