@@ -170,7 +170,7 @@ code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/
 
 .PHONY: code/compile
 code/compile: code/gen
-	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) .
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/main.go
 
 pkg/api/integreatly/v1alpha1/zz_generated.openapi.go: api/v1alpha1/rhmi_types.go
 	$(OPENAPI_GEN) --logtostderr=true -o "" \
@@ -619,7 +619,7 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.5.0
+KUSTOMIZE_VERSION = v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
 GOLANGCI_LINT_VERSION ?= 1.64.8
@@ -644,7 +644,14 @@ KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/k
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
+	@[ -f "$(KUSTOMIZE)-$(KUSTOMIZE_VERSION)" ] || { \
+		set -e; \
+		echo "Downloading kustomize $(KUSTOMIZE_VERSION)" ;\
+		rm -f $(KUSTOMIZE) || true ;\
+		GOBIN=$(LOCALBIN) GOFLAGS= GOPROXY=direct go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION) ;\
+		mv $(LOCALBIN)/kustomize $(KUSTOMIZE)-$(KUSTOMIZE_VERSION) ;\
+	} ;\
+	ln -sf $(KUSTOMIZE)-$(KUSTOMIZE_VERSION) $(KUSTOMIZE)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.

@@ -13,4 +13,4 @@ resources:
   kind: RHMI
   path: github.com/integr8ly/integreatly-operator/api/v1alpha1
   version: v1alpha1
-version: "3"
+version: "4"

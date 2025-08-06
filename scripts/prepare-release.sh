@@ -31,8 +31,13 @@ else
 fi
 
 # Optional environment variable to set a different Kustomize path. If this
-# variable is not set, it will use the one from the $PATH or try a default Kustomize path
-if [[ -z $KUSTOMIZE_PATH ]]; then
+# variable is not set, it will use the one from the $PATH or try default locations
+if [[ -n $KUSTOMIZE_PATH ]]; then
+  KUSTOMIZE=$KUSTOMIZE_PATH
+elif [[ -f "/go/bin/kustomize" ]]; then
+  # Use CI-installed kustomize from Dockerfile.tools
+  KUSTOMIZE="/go/bin/kustomize"
+elif [[ -f "/usr/local/bin/kustomize" ]]; then
   KUSTOMIZE="/usr/local/bin/kustomize"
 else
   KUSTOMIZE=$(which kustomize)
