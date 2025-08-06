@@ -170,7 +170,7 @@ code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/
 
 .PHONY: code/compile
 code/compile: code/gen
-	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) .
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/main.go
 
 pkg/api/integreatly/v1alpha1/zz_generated.openapi.go: api/v1alpha1/rhmi_types.go
 	$(OPENAPI_GEN) --logtostderr=true -o "" \
@@ -619,10 +619,10 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.5.0
+KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= 1.64.8
+GOLANGCI_LINT_VERSION ?= v1.64.2
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
@@ -644,7 +644,11 @@ KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/k
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
+	@if [ ! -f $(KUSTOMIZE) ]; then \
+		echo "Downloading kustomize $(KUSTOMIZE_VERSION) binary..."; \
+		curl -s -L "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_linux_amd64.tar.gz" \
+		  | tar -xz -C $(LOCALBIN) kustomize; \
+	fi
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
@@ -657,12 +661,12 @@ $(ENVTEST): $(LOCALBIN)
 	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
 
 .PHONY: golangci-lint
-golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint binary locally if necessary.
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
 	@if [ ! -f $(GOLANGCI_LINT) ]; then \
-		echo "Downloading golangci-lint v$(GOLANGCI_LINT_VERSION) binary..."; \
-		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-amd64.tar.gz \
-		  | tar -xz -C $(LOCALBIN) --strip-components=1 golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-amd64/golangci-lint; \
+		echo "Downloading golangci-lint $(GOLANGCI_LINT_VERSION) binary..."; \
+		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION:v%=%)-linux-amd64.tar.gz \
+		  | tar -xz -C $(LOCALBIN) --strip-components=1 golangci-lint-$(GOLANGCI_LINT_VERSION:v%=%)-linux-amd64/golangci-lint; \
 	fi
 
 
