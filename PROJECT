@@ -1,6 +1,6 @@
 domain: integreatly.org
 layout:
-- go.kubebuilder.io/v2
+- go.kubebuilder.io/v4
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
@@ -13,4 +13,4 @@ resources:
   kind: RHMI
   path: github.com/integr8ly/integreatly-operator/api/v1alpha1
   version: v1alpha1
-version: "3"
+version: "4"
