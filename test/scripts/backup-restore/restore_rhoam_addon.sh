@@ -108,6 +108,34 @@ restore_redis_instance() {
   local snapshot_id=$2
   log "Processing Redis Replication Group: $redis_id"
 
+  log "Capturing config from snapshot $snapshot_id..."
+  local snapshot_info=$(aws elasticache describe-snapshots --snapshot-name "$snapshot_id" --region "$AWS_REGION" --query "Snapshots[0]")
+  local engine=$(echo "$snapshot_info" | jq -r '.Engine')
+  local engine_version=$(echo "$snapshot_info" | jq -r '.EngineVersion')
+  local subnet_group=$(echo "$snapshot_info" | jq -r '.NodeSnapshots[0].CacheSubnetGroupName')
+
+  if [[ -z "$engine" || "$engine" == "null" ]]; then
+    echo; log "⚠️ WARNING: Could not automatically determine the Engine from the snapshot."
+    read -p "Enter the engine (e.g., redis): " engine
+    if [[ -z "$engine" ]]; then echo "Aborting."; exit 1; fi
+  fi
+
+  if [[ -z "$engine_version" || "$engine_version" == "null" ]]; then
+    echo; log "⚠️ WARNING: Could not automatically determine the Engine Version from the snapshot."
+    read -p "Enter the engine version (e.g., 7.1): " engine_version
+    if [[ -z "$engine_version" ]]; then echo "Aborting."; exit 1; fi
+  else
+    # If version is found, truncate it to major.minor (e.g., 7.1.0 -> 7.1)
+    engine_version=$(echo "$engine_version" | cut -d'.' -f1,2)
+  fi
+
+  if [[ -z "$subnet_group" || "$subnet_group" == "null" ]]; then
+    echo; log "⚠️ WARNING: Could not automatically determine the Cache Subnet Group from the snapshot."
+    echo "(To list available groups, run this in another terminal: aws elasticache describe-cache-subnet-groups --region $AWS_REGION)"
+    read -p "Enter Cache Subnet Group Name: " subnet_group
+    if [[ -z "$subnet_group" ]]; then echo "Aborting."; exit 1; fi
+  fi
+
   log "Checking existence of Redis replication group $redis_id..."
   if aws elasticache describe-replication-groups --replication-group-id "$redis_id" --region "$AWS_REGION" --no-cli-pager > /dev/null 2>&1; then
       log "Replication group found. Proceeding with deletion..."
@@ -125,9 +153,18 @@ restore_redis_instance() {
 
   log "Restoring $redis_id from snapshot $snapshot_id..."
   aws elasticache create-replication-group \
-    --replication-group-id "$redis_id" --snapshot-name "$snapshot_id" --region "$AWS_REGION" \
-    --replication-group-description "Restored Redis for RHOAM" --no-cli-pager
-  aws elasticache wait replication-group-available --replication-group-id "$redis_id" --region "$AWS_REGION" --no-cli-pager
+    --replication-group-id "$redis_id" \
+    --snapshot-name "$snapshot_id" \
+    --region "$AWS_REGION" \
+    --replication-group-description "Restored Redis for RHOAM" \
+    --engine "$engine" \
+    --engine-version "$engine_version" \
+    --cache-subnet-group-name "$subnet_group" \
+    --no-cli-pager
+
+  aws elasticache wait replication-group-available --replication-group-id "$redis_id" --region "$AWS_REGION" --max-items 100 --no-cli-pager
+
+
   log "✅ Redis group $redis_id restored."
 }
 
@@ -155,18 +192,28 @@ esac
 # --- 1. PRE-RESTORE STEPS ---
 log "STEP 1: PRE-RESTORE - Scaling down components and pausing operators"
 
-log "Scaling down Keycloak instances..."
+log "Scaling down all application pods (Keycloak and 3scale)..."
+# Scale down Keycloak
 oc patch keycloak/rhsso -n redhat-rhoam-rhsso --type merge -p '{"spec":{"instances":0}}'
 oc patch keycloak/rhssouser -n redhat-rhoam-user-sso --type merge -p '{"spec":{"instances":0}}'
+
+# Scale down 3scale
+oc scale deployment/threescale-operator-controller-manager-v2 --replicas=0 -n redhat-rhoam-3scale-operator
+echo "Waiting for the 3scale operator to scale down..."
+# oc wait deployment/threescale-operator-controller-manager-v2 --for=jsonpath='{.status.replicas}'=0 --timeout=120s -n redhat-rhoam-3scale-operator
+
+for deployment in $(oc get deployment -n redhat-rhoam-3scale -o jsonpath='{.items[*].metadata.name}'); do
+  oc scale deployment/"$deployment" --replicas=0 -n redhat-rhoam-3scale
+done
 
 log "Pausing Postgres and Redis operators (skipCreate:true)..."
 oc patch postgres rhsso-postgres-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
 oc patch postgres rhssouser-postgres-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
 oc patch postgres threescale-postgres-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
+
 oc patch redis ratelimit-service-redis-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
 oc patch redis threescale-backend-redis-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
 oc patch redis threescale-redis-rhoam -n redhat-rhoam-operator -p '{"spec":{"skipCreate":true}}' --type=merge
-
 
 # --- 2. RESTORE RDS DATABASES ---
 log "STEP 2: RESTORE - RDS Databases"
@@ -232,9 +279,12 @@ fi
 log "STEP 4: RESTORE - S3 Bucket"
 PROCEED_S3=true
 if [ "$INTERACTIVE_MODE" = true ]; then
-    read -p "Do you want to restore the S3 bucket? (y/n): " schoice
-    if [[ ! "$s3_choice" =~ ^[Yy]$ ]]; then PROCEED_S3=false; fi
+    read -p "Do you want to restore the S3 bucket? (y/n): " s3_choice
+    if [[ ! "$s3_choice" =~ ^[Yy]$ ]]; then
+        PROCEED_S3=false
+    fi
 fi
+
 if [ "$PROCEED_S3" = true ]; then
     log "Syncing data from $S3_BACKUP_BUCKET to $S3_TARGET_BUCKET..."
     aws s3 sync s3://"$S3_BACKUP_BUCKET" s3://"$S3_TARGET_BUCKET" --delete --no-cli-pager
@@ -259,13 +309,14 @@ log "Scaling up Keycloak instances..."
 oc patch keycloak/rhsso -n redhat-rhoam-rhsso --type merge -p '{"spec":{"instances":2}}'
 oc patch keycloak/rhssouser -n redhat-rhoam-user-sso --type merge -p '{"spec":{"instances":2}}'
 
+log "Scale up 3scale operator..."
+oc scale deployment/threescale-operator-controller-manager-v2 --replicas=1 -n redhat-rhoam-3scale-operator
+echo "Waiting for the 3scale operator to become available..."
+oc wait deployment/threescale-operator-controller-manager-v2 --for=condition=Available=True --timeout=120s -n redhat-rhoam-3scale-operator
+
 log "Restarting 3scale deployments..."
-oc rollout restart deployment/apicast-production -n redhat-rhoam-3scale
-oc rollout restart deployment/apicast-staging -n redhat-rhoam-3scale
-oc rollout restart deployment/backend-listener -n redhat-rhoam-3scale
-oc rollout restart deployment/system-app -n redhat-rhoam-3scale
-oc rollout restart deployment/system-sidekiq -n redhat-rhoam-3scale
-oc rollout restart deployment/zync-que -n redhat-rhoam-3scale
-oc rollout restart deployment/zync -n redhat-rhoam-3scale
+for deployment in $(oc get deployment -n redhat-rhoam-3scale -o jsonpath='{.items[*].metadata.name}'); do
+  oc rollout restart deployment/"$deployment" -n redhat-rhoam-3scale
+done
 
 log "🎉 RHOAM RESTORE PROCESS COMPLETE! Please perform final verification checks."
