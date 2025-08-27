@@ -12,7 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"github.com/integr8ly/integreatly-operator/utils"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"

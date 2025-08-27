@@ -6,7 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/utils"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	corev1 "k8s.io/api/core/v1"
