@@ -370,7 +370,10 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 				},
 			}
 			_, err := controllerutil.CreateOrUpdate(ctx, serverClient, croStrategyConfig, func() error {
-				forceBucketDeletion := true
+				// by default, we do not clean up S3 bucket with S3 contents
+				forceBucketDeletion := false
+
+				// Initialize resourcesConfig map with default value of false
 				resourcesConfig := map[string]interface{}{
 					"blobstorage": croAWS.S3DeleteStrat{
 						ForceBucketDeletion: &forceBucketDeletion,
@@ -380,9 +383,14 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 				if resources.IsSkipFinalDBSnapshots(installation) {
 					r.log.Info("RHMI CR is annotated with skip_final_db_snapshots=true so CRO will skip creating Postgres/Redis snapshots")
 
+					forceBucketDeletion = true
 					skipFinalSnapshot := true
 					finalSnapshotIdentifier := ""
 
+					// Update blobstorage config with forceBucketDeletion = true
+					resourcesConfig["blobstorage"] = croAWS.S3DeleteStrat{
+						ForceBucketDeletion: &forceBucketDeletion,
+					}
 					resourcesConfig["postgres"] = rds.DeleteDBClusterInput{
 						SkipFinalSnapshot: &skipFinalSnapshot,
 					}
