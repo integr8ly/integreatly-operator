@@ -447,7 +447,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[1h:1m], 5 * 3600) <= 0 and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25)))", job))
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -467,7 +467,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertExp = intstr.FromString(
 		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[6h:1m], 4 * 24 * 3600) <= 0) and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))", job))
 
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresWillFill, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -541,7 +541,7 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 80")
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -596,7 +596,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -616,7 +616,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	//    * , 4 * 3600 - multiplying data points by 4 hours
 	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[1h:1m], 5 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
 
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -633,7 +633,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
 	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[6h:1m], 4 * 24 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
 
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -765,7 +765,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	}
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -791,7 +791,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_engine_cpu_utilization_average > %s", alertPercentage))
 
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
