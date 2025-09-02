@@ -16,7 +16,7 @@ spec:
             value: ""
         args:
         - "--secure-listen-address=0.0.0.0:8443"
-        - "--upstream=http://127.0.0.1:8080/"
+        - "--upstream=http://127.0.0.1:8383/"
         - "--logtostderr=true"
         - "--v=10"
         ports:
@@ -24,5 +24,5 @@ spec:
           name: https
       - name: rhmi-operator
         args:
-        - "--metrics-addr=127.0.0.1:8080"
+        - "--metrics-addr=127.0.0.1:8383"
         - "--enable-leader-election"

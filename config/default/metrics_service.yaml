@@ -10,8 +10,8 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 8080
+      port: 8383
       protocol: TCP
-      targetPort: 8080
+      targetPort: 8383
   selector:
     control-plane: controller-manager
