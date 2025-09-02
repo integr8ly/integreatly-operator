@@ -381,7 +381,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 				}
 
 				if resources.IsSkipFinalDBSnapshots(installation) {
-					r.log.Info("RHMI CR is annotated with skip_final_db_snapshots=true so CRO will skip creating Postgres/Redis snapshots")
+					r.log.Info("RHMI CR is annotated with skip_final_db_snapshots=true so CRO will skip creating final Postgres/Redis snapshots and will force delete the S3 bucket")
 
 					forceBucketDeletion = true
 					skipFinalSnapshot := true
