@@ -130,7 +130,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=integreatly.org,resources=*,verbs=*
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=package-operator.run,resources=clusterpackages, verbs=get;list
+// +kubebuilder:rbac:groups=package-operator.run,resources=clusterpackages, verbs=get;list;watch
 
 // We need to add leases permissions to establish the leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update;delete;watch
@@ -202,7 +202,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=list
 
 // Permission to get cluster infrastructure details for alerting
-// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions;infrastructures;oauths,verbs=get;list
+// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions;infrastructures;oauths,verbs=get;list;watch
 
 // Permission to remove crd for the marin3r operator upgrade from 0.5.1 to 0.7.0
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=delete;get;list
@@ -246,7 +246,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
 
-// +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list;delete
+// +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list;delete;watch
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 

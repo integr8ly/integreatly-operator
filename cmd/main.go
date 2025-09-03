@@ -52,6 +52,7 @@ import (
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	namespacecontroller "github.com/integr8ly/integreatly-operator/internal/controller/namespacelabel"
+	controllers "github.com/integr8ly/integreatly-operator/internal/controller/rhmi"
 	rhmicontroller "github.com/integr8ly/integreatly-operator/internal/controller/rhmi"
 	subscriptioncontroller "github.com/integr8ly/integreatly-operator/internal/controller/subscription"
 	tenantcontroller "github.com/integr8ly/integreatly-operator/internal/controller/tenant"
@@ -131,10 +132,15 @@ func main() {
 	// If sandbox then pass an empty Cache object
 	var managerCache = cache.Options{}
 	if watchNamespace != "" && !strings.Contains(watchNamespace, "sandbox") {
-		managerCache = cache.Options{
-			DefaultNamespaces: map[string]cache.Config{
-				watchNamespace: {},
-			},
+		// Get expected product namespaces based on RHOAM product definitions
+		productNamespaces, err := controllers.GetProductNamespaces(watchNamespace)
+		if err != nil {
+			setupLog.Error(err, "unable to determine product namespaces, falling back to cluster-wide cache")
+			// managerCache already defaults to cluster-wide (empty cache.Options{})
+		} else {
+			managerCache = cache.Options{
+				DefaultNamespaces: productNamespaces,
+			}
 		}
 	}
 
