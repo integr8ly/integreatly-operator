@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -73,7 +74,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}, sub)
 
 	if err != nil {
-		log.Errorf("getting subscription error", l.Fields{"subscription": t.SubscriptionName, "namespace": t.Namespace}, err)
+		log.Error("getting subscription error", l.Fields{"subscription": t.SubscriptionName, "namespace": t.Namespace}, err)
 	}
 
 	mutateSub := func() error {
@@ -123,7 +124,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		log.Error("error creating sub", err)
+		log.Error(fmt.Sprintf("Error creating sub: %v", err), nil, err)
 		return err
 	}
 
@@ -148,7 +149,7 @@ func (m *Manager) reconcileOperatorGroup(ctx context.Context, serverClient k8scl
 	})
 
 	if err != nil {
-		log.Error("error creating or updating operator group", err)
+		log.Error(fmt.Sprintf("Error creating or updating operator group: %v", err), nil, err)
 		return err
 	}
 
@@ -165,7 +166,7 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err != nil {
-		log.Errorf("Error getting subscription", l.Fields{"name": subName, "ns": ns}, err)
+		log.Error("Error getting subscription", l.Fields{"name": subName, "ns": ns}, err)
 		return nil, err
 	}
 	return sub, nil
@@ -180,7 +181,7 @@ func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k
 	}
 	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
 		err = k8serr.NewNotFound(operatorsv1alpha1.Resource("installplan"), "")
-		log.Error("Error getting install plan ref on subscription, %v", err)
+		log.Error(fmt.Sprintf("Error getting install plan ref on subscription, %v", err), nil, err)
 		return nil, sub, err
 	}
 

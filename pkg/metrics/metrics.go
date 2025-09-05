@@ -3,7 +3,9 @@ package metrics
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"strconv"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -13,7 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusConfig "github.com/prometheus/common/config"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 )
 
 // Custom metrics
@@ -331,10 +332,24 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	return status, nil
 }
 
+type inlineSecret struct {
+	text string
+}
+
+func (s *inlineSecret) Fetch(ctx context.Context) (string, error) {
+	return s.text, nil
+}
+func (s *inlineSecret) Description() string { return "inline" }
+func (s *inlineSecret) Immutable() bool     { return true }
+
 func GetApiClient(route string, token prometheusConfig.Secret) (prometheusv1.API, error) {
 	client, err := prometheusApi.NewClient(prometheusApi.Config{
-		Address:      route,
-		RoundTripper: prometheusConfig.NewAuthorizationCredentialsRoundTripper("Bearer", token, prometheusApi.DefaultRoundTripper),
+		Address: route,
+		RoundTripper: prometheusConfig.NewAuthorizationCredentialsRoundTripper(
+			"Authorization",
+			&inlineSecret{string(token)},
+			prometheusApi.DefaultRoundTripper,
+		),
 	})
 	if err != nil {
 		return nil, err

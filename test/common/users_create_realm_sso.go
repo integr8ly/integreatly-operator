@@ -10,7 +10,7 @@ import (
 
 	rand "github.com/3scale/3scale-operator/pkg/crypto/rand"
 	"github.com/chromedp/chromedp"
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	logger "github.com/sirupsen/logrus"
 )
 

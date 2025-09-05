@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	apiMachineryTypes "k8s.io/apimachinery/pkg/types"
