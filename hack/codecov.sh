@@ -19,7 +19,7 @@ COV_THREAD_COUNT=${COV_THREAD_COUNT:-4}
 
 echo Running tests:
 # tests with negated `unittests` build tag will not be run
-go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" -coverpkg=./apis/...,./controllers/...,./pkg/... ./apis/... ./controllers/... ./pkg/...
+go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" -coverpkg=./api/...,./internal/controller/...,./pkg/... ./api/... ./internal/controller/... ./pkg/...
 # Remove generated files from coverage profile
 grep -v "zz_generated" "${COVER_PROFILE}.tmp" > "${COVER_PROFILE}"
 rm -f "${COVER_PROFILE}.tmp"

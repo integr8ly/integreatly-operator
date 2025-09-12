@@ -8,7 +8,7 @@ import (
 	"context"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"

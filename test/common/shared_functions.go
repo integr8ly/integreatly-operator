@@ -27,7 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	routev1 "github.com/openshift/api/route/v1"
 	"golang.org/x/net/publicsuffix"
