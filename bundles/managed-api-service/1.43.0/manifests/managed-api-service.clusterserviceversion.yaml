@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.43.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.19"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -52,25 +52,25 @@ metadata:
     containerImages: |-
       {
         "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.12.2": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "3scale-rhel9-operator-509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:509478e63465e3e4097821af377fb8cdba21227f5d373480e4d639e611197544",
-          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:095920fea30c2628cb0bbe180d11a036b9417a74a9259c8cfed65f165b709076",
-          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:45c0b4fb3f0ad2c1d4a966d5e956bb016063eebe1518929ac6cb964e1bcac4fa",
-          "system": "registry.redhat.io/3scale-amp2/system-rhel8@sha256:b6260dfa41364e846688b631f71973d24a156caf2d8a684ec33abc40ae2bb152",
-          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:4530f39b04953517a8985844e15121d6704987f0ad895c8d3b38c4f9232a657e",
+          "3scale-operator.v0.12.4": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fbed59d9e635b942780140080386a75f7b7dc0af1919e0153966a77dc8667589",
+          "3scale-rhel9-operator-fbed59d9e635b942780140080386a75f7b7dc0af1919e0153966a77dc8667589-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fbed59d9e635b942780140080386a75f7b7dc0af1919e0153966a77dc8667589",
+          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fbed59d9e635b942780140080386a75f7b7dc0af1919e0153966a77dc8667589",
+          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:4dadfb1e033f7c84a246232ed3807c161803ff6855c526aad0e0154085352d22",
+          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:021ff671b0fb72eed635b05489ec86342fcb7ada3ba0353591fdb9328871d067",
+          "system": "registry.redhat.io/3scale-amp2/system-rhel8@sha256:ddcffa3d96553d960de1aff36f1637a5ee8383223884d672142419d20fba78ab",
+          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:4a191a053e74840ed1cfbe5a076f07e2c1ef803c89e0c954f4138c2f4a58c9da",
           "system_memcached": "registry.redhat.io/rhel9/memcached@sha256:8738110ef16c9e35deeb07c0577ffe09d6ef029761b504a8d20253fa715da394",
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa",
-          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:c8e61bfd49af995b372c76bac506823fc5a5f1f68165d13c08b842d636eebe5e"
+          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:d23d48b3b01a85ce1f5fc275afd4b5e8f79b406b51de0f6395928e8eabf4c8bf"
         },
         "cloud-resource-operator.v1.1.5": {
-          "cloud-resources.v1.1.5": "quay.io/integreatly/cloud-resource-operator:v1.1.5"
+          "cloud-resources.v1.1.6": "quay.io/integreatly/cloud-resource-operator:v1.1.6"
         },
         "marin3r.v0.13.3": {
-          "marin3r-operator.v0.13.3": "quay.io/integreatly/marin3r-operator:v0.13.3"
+          "marin3r.v0.13.3": "quay.io/integreatly/marin3r-operator:v0.13.3"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.11-opr-006": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
+          "rhsso-operator.7.6.11-opr-006": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d1f3225e0d465ccf7015cbdf5d61f16979e1b1bb3c10fa221a211ef1801dc03b",
           "sso7-rhel8-operator-369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da",
           "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d1f3225e0d465ccf7015cbdf5d61f16979e1b1bb3c10fa221a211ef1801dc03b",
           "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:7358787959af7e7e589edfc043a97d80ebab87536bde365d33be7a600071bf0e",
@@ -79,16 +79,16 @@ metadata:
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:63a42ced50b0caa94e5905c29df13d114fa7ef365e7a699eece43719c3e1ff96"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.7-5"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.9-6"
         },
         "limitador": {
-          "marin3r-limitador": "quay.io/kuadrant/limitador:v2.0.0"
+          "marin3r-limitador": "registry.redhat.io/rhcl-1/limitador-rhel9@sha256:98f85a05da53fbf7f20845d1969441620407cc13a185fd52714308679f116425"
         },
         "grafana": {
-          "grafana": "registry.redhat.io/rhel9/grafana:9.6-1747642001"
+          "grafana": "registry.redhat.io/rhel9/grafana:9.6-1755762368"
         },
         "grafana-ose-oauth-proxy": {
-          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.17.0-202504281009.p0.g07d03d7.assembly.stream.el9"
+          "grafana-ose-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.15.0-202508190116.p2.g241a88c.assembly.stream.el9"
         }
       }
     serviceAffecting: "true"
@@ -293,22 +293,23 @@ spec:
                 - apps
               resources:
                 - deployments
-                - replicasets
                 - statefulsets
+              verbs:
+                - create
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - replicasets
               verbs:
                 - create
                 - get
                 - patch
                 - update
-            - apiGroups:
-                - apps
-              resources:
-                - deployments
-                - statefulsets
-              verbs:
-                - get
-                - list
-                - watch
             - apiGroups:
                 - apps.3scale.net
               resources:
@@ -375,12 +376,6 @@ spec:
             - apiGroups:
                 - integreatly.org
               resources:
-                - '*'
-              verbs:
-                - '*'
-            - apiGroups:
-                - integreatly.org
-              resources:
                 - apimanagementtenant
               verbs:
                 - get
@@ -390,6 +385,7 @@ spec:
                 - integreatly.org
               resources:
                 - apimanagementtenant/status
+                - rhmis/status
               verbs:
                 - get
                 - patch
@@ -408,12 +404,11 @@ spec:
                 - watch
             - apiGroups:
                 - integreatly.org
+                - scheduling.k8s.io
               resources:
-                - rhmis/status
+                - '*'
               verbs:
-                - get
-                - patch
-                - update
+                - '*'
             - apiGroups:
                 - managed.openshift.io
               resources:
@@ -578,12 +573,6 @@ spec:
                 - get
                 - update
             - apiGroups:
-                - scheduling.k8s.io
-              resources:
-                - '*'
-              verbs:
-                - '*'
-            - apiGroups:
                 - template.openshift.io
               resources:
                 - templates
@@ -670,7 +659,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.43.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
@@ -734,17 +723,10 @@ spec:
                 - ""
               resources:
                 - configmaps
-              verbs:
-                - delete
-            - apiGroups:
-                - ""
-              resources:
-                - configmaps
-                - events
-                - pods
                 - secrets
               verbs:
                 - create
+                - delete
                 - get
                 - list
                 - patch
@@ -754,8 +736,6 @@ spec:
                 - ""
               resources:
                 - endpoints
-                - pods
-                - services
               verbs:
                 - get
                 - list
@@ -763,9 +743,15 @@ spec:
             - apiGroups:
                 - ""
               resources:
-                - secrets
+                - events
+                - pods
               verbs:
-                - delete
+                - create
+                - get
+                - list
+                - patch
+                - update
+                - watch
             - apiGroups:
                 - ""
               resources:
@@ -830,16 +816,6 @@ spec:
                 - operators.coreos.com
               resources:
                 - installplans
-              verbs:
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - operators.coreos.com
-              resources:
                 - subscriptions
                 - subscriptions/status
               verbs:
