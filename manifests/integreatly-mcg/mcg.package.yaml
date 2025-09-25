@@ -1,5 +1,0 @@
-channels:
-- currentCSV: mcg-operator.v4.12.3-rhodf
-  name: rhmi
-defaultChannel: rhmi
-packageName: rhmi-mcg
