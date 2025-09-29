@@ -67,12 +67,12 @@ func InferOperatorRunType(ctx context.Context, client k8sclient.Client, installa
 	return LocalRunType, nil
 }
 
-// Ideally this code will be temporary and CPaaS will add more deterministic name on the Subscription
-// At which point we can update 'runTypesBySubscription' above
-func GetRhoamCPaaSSubscription(ctx context.Context, client k8sclient.Client, ns string) (*operatorsv1alpha1.Subscription, error) {
-	logrus.Info("Looking for CPaaS generated rhoam operator subscription")
+// GetRhoamOperatorSubscription looks for the managed-api-service operator subscription
+// by checking for the standard OLM-generated label on subscriptions
+func GetRhoamOperatorSubscription(ctx context.Context, client k8sclient.Client, ns string) (*operatorsv1alpha1.Subscription, error) {
+	logrus.Info("Looking for managed-api-service operator subscription")
 
-	// Get all Subscriptions in the "redhat-rhoam-operator" ns and then check for a specific label
+	// Get all Subscriptions in the operator namespace and check for the OLM-generated label
 	subs := &operatorsv1alpha1.SubscriptionList{}
 	opts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ns),
@@ -85,16 +85,16 @@ func GetRhoamCPaaSSubscription(ctx context.Context, client k8sclient.Client, ns 
 		for _, sub := range subs.Items {
 			logrus.Infof("Found subscription %s", sub.Name)
 			labels := sub.GetLabels()
-			// Looking for specific label that should be on the CPaaS generated subscription
+			// Looking for the OLM-generated label that should be on the managed-api-service subscription
 			_, ok := labels["operators.coreos.com/managed-api-service.redhat-rhoam-operator"]
 			if ok {
-				logrus.Info("Found Rhoam operator subscription")
+				logrus.Info("Found managed-api-service operator subscription")
 				return &sub, nil
 			}
 		}
 	}
 
-	logrus.Info("Did not find rhoam operator subscription")
+	logrus.Info("Did not find managed-api-service operator subscription")
 	return nil, nil
 }
 
@@ -164,9 +164,9 @@ func GetSubscription(ctx context.Context, client k8sclient.Client, installation 
 		return subscription, nil
 	}
 
-	// If subscription is not found, it could be because the CPaaS CVP build has put a non deterministic name on it.
-	// This code may be temporary if CPaaS changes to deterministic Subscription names
-	subscription, err := GetRhoamCPaaSSubscription(ctx, client, installation.Namespace)
+	// If subscription is not found by known names, try to find it by OLM-generated label
+	// This handles cases where the subscription might have a non-deterministic name
+	subscription, err := GetRhoamOperatorSubscription(ctx, client, installation.Namespace)
 	if err != nil {
 		return nil, err
 	}
