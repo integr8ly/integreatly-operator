@@ -19,12 +19,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	pkgerr "github.com/pkg/errors"
@@ -118,54 +114,9 @@ func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	// Remove code below post 1.38.0 delivery to production
-	// Temporary code to update backend redis 100mln to specific value
-	installation := &integreatlyv1alpha1.RHMI{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhoam",
-			Namespace: "redhat-rhoam-operator",
-		},
-	}
-	err := r.Get(context.TODO(), k8sclient.ObjectKey{Name: installation.Name, Namespace: installation.Namespace}, installation)
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return ctrl.Result{}, err
-		}
-	}
-	// Only apply below logic for existing installations, we can't rely on toVersion not present due to possible race condition
-	// between sub and rhmi controller
-	if installation.Status.Version != "" {
-		// Only apply below logic for 100 mln quota installations
-		if installation.Status.Quota == "100 Million" {
-			// at this point, it's safe to assume the backend redis exists
-			backendRedis := &v1alpha1.Redis{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "threescale-backend-redis-rhoam",
-					Namespace: "redhat-rhoam-operator",
-				},
-			}
-
-			err = r.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: backendRedis.Name, Namespace: backendRedis.Namespace}, backendRedis)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-
-			// Only apply logic if backend redis node size is not cache.m5.xlarge
-			if backendRedis.Spec.Size != "cache.m5.xlarge" {
-				backendRedis.Spec.Size = "cache.m5.xlarge"
-
-				err = r.Client.Update(ctx, backendRedis)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
-			}
-		}
-	}
-	// Remove code above post 1.38.0 delivery to production
-
 	log.Infof("Reconciling subscription", l.Fields{"request": request, "opNS": r.operatorNamespace})
 	subscription := &operatorsv1alpha1.Subscription{}
-	err = r.Get(context.TODO(), request.NamespacedName, subscription)
+	err := r.Get(context.TODO(), request.NamespacedName, subscription)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request. Return and don't requeue
