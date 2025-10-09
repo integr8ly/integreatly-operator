@@ -130,7 +130,7 @@ func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 
 }
 func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
-	output, err := execToPod("curl -s localhost:9090/api/v1/alerts",
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
@@ -275,7 +275,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 }
 
 func getFiringOrPendingAlerts(t TestingTB, ctx *TestingContext) error {
-	output, err := execToPod("curl -s localhost:9090/api/v1/alerts",
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",

@@ -29,7 +29,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 	testUrl := "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/rhoam/alerts/AddonManagedApiServiceParameters.asciidoc"
 	validateGitlabToken(t, testUrl)
 
-	output, err := execToPod("curl -s localhost:9090/api/v1/rules",
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus", ctx)

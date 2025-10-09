@@ -43,7 +43,7 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 }
 
 func queryPrometheus(query string, podName string, ctx *TestingContext) ([]prometheusQueryResult, error) {
-	queryOutput, err := execToPod("curl -s localhost:9090/api/v1/query?query="+url.QueryEscape(query),
+	queryOutput, err := execToPod("wget -qO - localhost:9090/api/v1/query?query="+url.QueryEscape(query),
 		podName,
 		ObservabilityProductNamespace,
 		"prometheus", ctx)

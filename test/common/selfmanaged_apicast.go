@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	apicastOperatorVersion       = "0.12.3"
+	apicastOperatorVersion       = "0.12.5"
 	apicastOperatorChannel       = "threescale-2.15"
 	apicastImageStreamTag        = "3scale-amp2"
 	apicastNamespace             = "selfmanaged-apicast"
