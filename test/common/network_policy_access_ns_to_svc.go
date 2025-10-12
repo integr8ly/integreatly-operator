@@ -46,7 +46,8 @@ func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
+	// Use admin token but impersonate the dedicated admin (with groups) for requests
+	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL).WithImpersonation(dedicatedAdminUsername, []string{"system:authenticated", "dedicated-admins"})
 
 	// creating a project as dedicated-admin
 	_, err = createProject(ctx, openshiftClient)
