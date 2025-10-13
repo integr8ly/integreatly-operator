@@ -2,13 +2,14 @@ package obo
 
 import (
 	"fmt"
+	"strings"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strings"
 )
 
 func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI) resources.AlertReconciler {
@@ -189,7 +190,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='alertmanager-operated', namespace='%s'} < 1", namespace)),
+					Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='alertmanager-operated', namespace='%s'})", namespace)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
@@ -199,7 +200,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhoam-alertmanager', namespace='%s'} < 1", namespace)),
+					Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhoam-alertmanager', namespace='%s'})", namespace)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
@@ -209,7 +210,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='prometheus-operated', namespace='%s'} < 1", namespace)),
+					Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='prometheus-operated', namespace='%s'})", namespace)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
@@ -219,7 +220,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhoam-prometheus', namespace='%s'} < 1", namespace)),
+					Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhoam-prometheus', namespace='%s'})", namespace)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
@@ -229,7 +230,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='blackbox-exporter', namespace='%s'} < 1", namespace)),
+					Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='blackbox-exporter', namespace='%s'})", namespace)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},

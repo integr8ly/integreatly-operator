@@ -3,8 +3,9 @@ package cloudresources
 import (
 	"context"
 	"fmt"
-	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"strings"
+
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 
@@ -34,7 +35,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorMetricsServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{namespace='%s', endpoint='operator-metrics-service'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{namespace='%s', endpoint='operator-metrics-service'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					}, {
@@ -43,7 +44,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					}, {

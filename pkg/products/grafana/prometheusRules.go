@@ -3,6 +3,7 @@ package grafana
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
@@ -32,7 +33,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='grafana-service', namespace='%s'} < 1", namespace)),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='grafana-service', namespace='%s'})", namespace)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
