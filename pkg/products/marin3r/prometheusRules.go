@@ -15,6 +15,13 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 	alertNamePrefix := "marin3r-"
 	operatorAlertNamePrefix := "marin3r-operator-"
 
+	// Get 3scale namespace for marin3r-instance endpoint
+	threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+	threescaleNamespace := r.Config.GetNamespace()
+	if err == nil {
+		threescaleNamespace = threescaleConfig.GetNamespace()
+	}
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -29,9 +36,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 						Alert: "Marin3rDiscoveryServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
-							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
+							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", threescaleNamespace),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='marin3r-instance', namespace='%s'})", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='marin3r-instance', namespace='%s'})", threescaleNamespace)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
