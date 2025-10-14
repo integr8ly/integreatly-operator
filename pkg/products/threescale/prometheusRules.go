@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
-	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	"net/http"
 	"strings"
+
+	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -49,7 +50,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlRHOAMThreeScaleApicastProductionServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='apicast-production', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='apicast-production', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -59,7 +60,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlRHOAMThreeScaleApicastStagingServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='apicast-staging', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='apicast-staging', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -69,7 +70,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlRHOAMThreeScaleBackendListenerServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='backend-listener', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='backend-listener', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -79,7 +80,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-developer', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-developer', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -89,7 +90,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-master', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-master', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -99,7 +100,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-memcache', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-memcache', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -109,7 +110,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-provider', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-provider', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -119,7 +120,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-searchd', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-searchd', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -129,7 +130,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlRHOAMThreeScaleZyncServiceEndpointDown,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='zync', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='zync', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -139,7 +140,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlRHOAMThreeScaleZyncDatabaseServiceEndpointDown,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='zync-database', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='zync-database', namespace='%s'})", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -156,7 +157,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -166,7 +167,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='threescale-operator-controller-manager-metrics-service', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='threescale-operator-controller-manager-metrics-service', namespace='%s'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},

@@ -17,7 +17,7 @@ tests:
     # `a-bxc` becomes `a a-b a-(2*b) a-(3*b) … a-(c*b)`.
     input_series:
       # missing for 10m, present for 1m with value of `0`, missing for 10m, present for 85m with value of `0`.
-      - series: kube_endpoint_address_available
+      - series: kube_endpoint_address
         values: "stale _x10 0 stale _x10 0+0x84"
       # missing for 10m, present for 13m with value of `0`, missing for 10m, present for 73m with value of `0`.
       - series: kube_pod_container_status_ready
@@ -43,7 +43,7 @@ tests:
     # In this test suite we are checking whether metric/s are present or not and fire an alert based on that.
     # If one wants to simulate a metrics
     alert_rule_test:
-      # [-] kube_endpoint_address_available
+      # [-] kube_endpoint_address
       # [-] kube_pod_container_status_ready
       # [-] kube_pod_labels
       # [-] kube_pod_status_phase
@@ -60,7 +60,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -73,7 +73,7 @@ tests:
         alertname: CriticalMetricsMissing
         exp_alerts: [ ]
 
-      # [-] kube_endpoint_address_available
+      # [-] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -90,7 +90,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [-] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -107,7 +107,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [-] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -124,7 +124,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [-] kube_pod_status_phase
@@ -141,7 +141,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -158,7 +158,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -175,7 +175,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -192,7 +192,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
@@ -209,7 +209,7 @@ tests:
             exp_annotations:
               message: one or more critical metrics have been missing for 10+ minutes
 
-      # [+] kube_endpoint_address_available
+      # [+] kube_endpoint_address
       # [+] kube_pod_container_status_ready
       # [+] kube_pod_labels
       # [+] kube_pod_status_phase
