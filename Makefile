@@ -47,7 +47,7 @@ PROJECT_ROOT := $(shell git rev-parse --show-toplevel)
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.43.0
+RHOAM_TAG ?= 1.44.0
 
 export SKIP_FLAKES := true
 

@@ -12,7 +12,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.19"}]'
     support: RHOAM
-  name: managed-api-service.v1.43.0
+  name: managed-api-service.v1.44.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -118,5 +118,5 @@ spec:
     matchLabels:
       alm-owner-rhoam: rhoam-operator
       operated-by: rhoam-operator
-  version: 1.43.0
-  replaces: managed-api-service.v1.42.0
+  version: 1.44.0
+  replaces: managed-api-service.v1.43.0
