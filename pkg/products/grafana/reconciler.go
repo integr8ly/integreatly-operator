@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -151,7 +151,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	err = r.removeGrafanaOperatorAlerts(r.installation.Spec.NamespacePrefix, ctx, client)
 	if err != nil {
-		r.log.Error("Error removing obsolete Grafana Operator alerts: ", err)
+		r.log.Error("Error removing obsolete Grafana Operator alerts: ", nil, err)
 	}
 	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, productNamespace)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {

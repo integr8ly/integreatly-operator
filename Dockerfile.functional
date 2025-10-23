@@ -14,8 +14,8 @@ COPY test ./test
 RUN go mod download
 
 # Copy the go source
-COPY apis/ apis/
-COPY controllers/ controllers/
+COPY api/ api/
+COPY internal/controller/ internal/controller/
 COPY pkg ./pkg
 COPY manifests ./manifests
 COPY version ./version
@@ -29,9 +29,12 @@ COPY Makefile ./
 RUN make test/compile/functional
 
 FROM registry.access.redhat.com/ubi9/ubi:latest
-# Install chrome for tests
-COPY test-dependency/*.repo /etc/yum.repos.d/
-RUN dnf -y install google-chrome-stable && dnf clean all
+# Install chrome for tests - download RPM directly and install with --nodeps to skip missing dependencies
+RUN yum install -y wget \
+    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
+    && rpm -i --nodeps ./google-chrome-stable_current_*.rpm \
+    && rm -f google-chrome-stable_current_*.rpm \
+    && yum clean all
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 

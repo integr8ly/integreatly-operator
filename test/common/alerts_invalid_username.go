@@ -3,7 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"

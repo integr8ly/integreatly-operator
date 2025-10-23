@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -111,7 +111,7 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	}
 	crdExists, err := k8s.Exists(ctx, serverClient, keycloakCRD)
 	if err != nil {
-		r.Log.Error("Error checking Keycloak CRD existence: ", err)
+		r.Log.Error("Error checking Keycloak CRD existence: ", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if !crdExists {
@@ -191,7 +191,7 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		realm.SetFinalizers([]string{})
 		err = serverClient.Update(ctx, &realm)
 		if err != nil && !k8serr.IsNotFound(err) {
-			r.Log.Error("Error removing finalizer from Realm", err)
+			r.Log.Error("Error removing finalizer from Realm", nil, err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
@@ -242,7 +242,7 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	})
 
 	if err != nil {
-		r.Log.Error("Error creating keycloak edge route", err)
+		r.Log.Error("Error creating keycloak edge route", nil, err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating keycloak edge route: %w", err)
 	}
 	r.Log.Infof("Operation Result creating route", l.Fields{"service": keycloakRoute.Name, "result": or})
@@ -335,7 +335,7 @@ func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverCli
 
 	idp, err := authenticated.GetIdentityProvider(idpAlias, keycloakRealmName)
 	if err != nil {
-		r.Log.Error("Failed to get identity provider via keycloak api", err)
+		r.Log.Error("Failed to get identity provider via keycloak api", nil, err)
 		return fmt.Errorf("failed to get identity provider via keycloak api %w", err)
 	}
 
@@ -346,7 +346,7 @@ func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverCli
 	idp.Config["clientSecret"] = clientSecret
 	err = authenticated.UpdateIdentityProvider(idp, keycloakRealmName)
 	if err != nil {
-		r.Log.Error("Unable to update Identity Provider", err)
+		r.Log.Error("Unable to update Identity Provider", nil, err)
 		return fmt.Errorf("Unable to update Identity Provider %w", err)
 	}
 
@@ -364,13 +364,13 @@ func (r *Reconciler) getTenantClientSecret(ctx context.Context, serverClient k8s
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		r.Log.Errorf("Could not find secret", l.Fields{"secret": oauthClientSecrets.Name}, err)
+		r.Log.Error("Could not find secret", l.Fields{"secret": oauthClientSecrets.Name}, err)
 		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(tenant)]
 	if !ok {
-		r.Log.Errorf("Could not find tenant key in secret", l.Fields{"tenant": string(tenant), "secret": oauthClientSecrets.Name}, err)
+		r.Log.Error("Could not find tenant key in secret", l.Fields{"tenant": string(tenant), "secret": oauthClientSecrets.Name}, err)
 		return "", fmt.Errorf("Could not find %s key in %s Secret: %w", string(tenant), oauthClientSecrets.Name, err)
 	}
 	return string(clientSecretBytes), nil
@@ -385,13 +385,13 @@ func (r *Reconciler) getClientSecret(ctx context.Context, serverClient k8sclient
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		r.Log.Errorf("Could not find secret", l.Fields{"secret": oauthClientSecrets.Name}, err)
+		r.Log.Error("Could not find secret", l.Fields{"secret": oauthClientSecrets.Name}, err)
 		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(sso.GetProductName())]
 	if !ok {
-		r.Log.Errorf("Could not find product key in secret", l.Fields{"product": string(sso.GetProductName()), "secret": oauthClientSecrets.Name}, err)
+		r.Log.Error("Could not find product key in secret", l.Fields{"product": string(sso.GetProductName()), "secret": oauthClientSecrets.Name}, err)
 		return "", fmt.Errorf("Could not find %s key in %s Secret: %w", string(sso.GetProductName()), oauthClientSecrets.Name, err)
 	}
 	return string(clientSecretBytes), nil

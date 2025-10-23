@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 )
 
 // All tests are be linked[1] to the integreatly-test-cases[2] repo by using the same ID

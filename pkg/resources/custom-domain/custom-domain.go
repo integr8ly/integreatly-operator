@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	ingressController "github.com/openshift/api/operator/v1"
