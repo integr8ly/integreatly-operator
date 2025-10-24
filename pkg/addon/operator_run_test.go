@@ -99,7 +99,7 @@ func getSub(name string, labelName string, labelValue string) operatorsv1alpha1.
 	}
 }
 
-func TestCPaaSSubscription(t *testing.T) {
+func TestGetRhoamOperatorSubscription(t *testing.T) {
 	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestCPaaSSubscription(t *testing.T) {
 		Client        k8sclient.Client
 	}{
 		{
-			Name:          "test CPaaS subscription exists",
+			Name:          "test managed-api-service subscription exists",
 			ExpectedFound: true,
 			ExpectedError: false,
 			Client:        utils.NewTestClient(scheme, []runtime.Object{validSub}...),
@@ -158,7 +158,7 @@ func TestCPaaSSubscription(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 
-			sub, err := GetRhoamCPaaSSubscription(context.TODO(), scenario.Client, "redhat-rhoam-operator")
+			sub, err := GetRhoamOperatorSubscription(context.TODO(), scenario.Client, "redhat-rhoam-operator")
 			if err != nil && !scenario.ExpectedError {
 				t.Fatal("Got unexpected error", err)
 			}
@@ -507,7 +507,7 @@ func TestGetCatalogSource(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "rhoam cpaas subscription",
+			name: "managed-api-service subscription found by label",
 			args: args{
 				ctx: context.TODO(),
 				client: utils.NewTestClient(scheme, &operatorsv1alpha1.SubscriptionList{
