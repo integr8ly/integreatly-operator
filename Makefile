@@ -125,7 +125,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	go install github.com/matryer/moq@v0.5.3
+	go install github.com/matryer/moq@v0.34.0
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
