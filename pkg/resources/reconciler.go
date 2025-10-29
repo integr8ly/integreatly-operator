@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	projectv1 "github.com/openshift/api/project/v1"
 
@@ -181,14 +180,14 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 	// Replace finalizers with the new format finalizers
 	err := UpdateFinalizer(ctx, inst, client, productName, finalizer, log)
 	if err != nil {
-		log.Error(fmt.Sprintf("Error replacing finalizer %s in installation", finalizer), nil, err)
+		log.Error(fmt.Sprintf("Error replacing finalizer %s in installation", finalizer), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	// Add finalizer if not there
 	err = AddFinalizer(ctx, inst, client, finalizer, log)
 	if err != nil {
-		log.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), nil, err)
+		log.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 

@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/onsi/ginkgo/v2/internal/parallel_support"
 	"github.com/onsi/ginkgo/v2/reporters"
 	"github.com/onsi/ginkgo/v2/types"
+	"golang.org/x/net/context"
 )
 
 type Phase uint
@@ -20,7 +20,7 @@ const (
 	PhaseRun
 )
 
-const ProgressReporterDeadline = 5 * time.Second
+var PROGRESS_REPORTER_DEADLING = 5 * time.Second
 
 type Suite struct {
 	tree               *TreeNode
@@ -370,7 +370,7 @@ func (suite *Suite) generateProgressReport(fullReport bool) types.ProgressReport
 	suite.selectiveLock.Lock()
 	defer suite.selectiveLock.Unlock()
 
-	deadline, cancel := context.WithTimeout(context.Background(), ProgressReporterDeadline)
+	deadline, cancel := context.WithTimeout(context.Background(), PROGRESS_REPORTER_DEADLING)
 	defer cancel()
 	var additionalReports []string
 	if suite.currentSpecContext != nil {
@@ -489,13 +489,8 @@ func (suite *Suite) runSpecs(description string, suiteLabels Labels, suitePath s
 			newGroup(suite).run(specs.AtIndices(groupedSpecIndices[groupedSpecIdx]))
 		}
 
-		if suite.config.FailOnPending && specs.HasAnySpecsMarkedPending() {
+		if specs.HasAnySpecsMarkedPending() && suite.config.FailOnPending {
 			suite.report.SpecialSuiteFailureReasons = append(suite.report.SpecialSuiteFailureReasons, "Detected pending specs and --fail-on-pending is set")
-			suite.report.SuiteSucceeded = false
-		}
-
-		if suite.config.FailOnEmpty && specs.CountWithoutSkip() == 0 {
-			suite.report.SpecialSuiteFailureReasons = append(suite.report.SpecialSuiteFailureReasons, "Detected no specs ran and --fail-on-empty is set")
 			suite.report.SuiteSucceeded = false
 		}
 	}

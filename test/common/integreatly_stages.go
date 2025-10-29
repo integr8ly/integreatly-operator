@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

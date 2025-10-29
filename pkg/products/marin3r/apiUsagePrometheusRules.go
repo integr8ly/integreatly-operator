@@ -2,17 +2,16 @@ package marin3r
 
 import (
 	"fmt"
-	"math"
-	"regexp"
-	"strconv"
-	"strings"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"math"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -163,8 +162,8 @@ func (r *Reconciler) getRateLimitInSeconds(rateLimitUnit string, rateLimitReques
 	} else if rateLimitUnit == "day" {
 		return float64(rateLimitRequestsPerUnit) / (60 * 60 * 24), nil
 	} else {
-		err := fmt.Errorf("unexpected Rate Limit Unit %s, while creating 3scale api usage alerts", rateLimitUnit)
-		r.log.Error("", nil, err)
+		err := fmt.Errorf("unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit)
+		r.log.Error("", err)
 		return 0, err
 	}
 }

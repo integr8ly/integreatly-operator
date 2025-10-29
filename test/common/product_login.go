@@ -10,7 +10,7 @@ import (
 
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

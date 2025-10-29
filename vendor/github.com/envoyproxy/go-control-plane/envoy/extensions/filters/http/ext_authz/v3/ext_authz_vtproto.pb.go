@@ -8,7 +8,6 @@ package ext_authzv3
 
 import (
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
-	structpb "github.com/planetscale/vtprotobuf/types/known/structpb"
 	wrapperspb "github.com/planetscale/vtprotobuf/types/known/wrapperspb"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -50,90 +49,6 @@ func (m *ExtAuthz) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.EmitFilterStateStats {
-		i--
-		if m.EmitFilterStateStats {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xe8
-	}
-	if m.FilterMetadata != nil {
-		size, err := (*structpb.Struct)(m.FilterMetadata).MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xe2
-	}
-	if m.EnableDynamicMetadataIngestion != nil {
-		size, err := (*wrapperspb.BoolValue)(m.EnableDynamicMetadataIngestion).MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xda
-	}
-	if m.DecoderHeaderMutationRules != nil {
-		if vtmsg, ok := interface{}(m.DecoderHeaderMutationRules).(interface {
-			MarshalToSizedBufferVTStrict([]byte) (int, error)
-		}); ok {
-			size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		} else {
-			encoded, err := proto.Marshal(m.DecoderHeaderMutationRules)
-			if err != nil {
-				return 0, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xd2
-	}
-	if m.DisallowedHeaders != nil {
-		if vtmsg, ok := interface{}(m.DisallowedHeaders).(interface {
-			MarshalToSizedBufferVTStrict([]byte) (int, error)
-		}); ok {
-			size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		} else {
-			encoded, err := proto.Marshal(m.DisallowedHeaders)
-			if err != nil {
-				return 0, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xca
 	}
 	if m.ValidateMutations {
 		i--
@@ -1125,37 +1040,6 @@ func (m *ExtAuthz) SizeVT() (n int) {
 		n += 3
 	}
 	if m.ValidateMutations {
-		n += 3
-	}
-	if m.DisallowedHeaders != nil {
-		if size, ok := interface{}(m.DisallowedHeaders).(interface {
-			SizeVT() int
-		}); ok {
-			l = size.SizeVT()
-		} else {
-			l = proto.Size(m.DisallowedHeaders)
-		}
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.DecoderHeaderMutationRules != nil {
-		if size, ok := interface{}(m.DecoderHeaderMutationRules).(interface {
-			SizeVT() int
-		}); ok {
-			l = size.SizeVT()
-		} else {
-			l = proto.Size(m.DecoderHeaderMutationRules)
-		}
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.EnableDynamicMetadataIngestion != nil {
-		l = (*wrapperspb.BoolValue)(m.EnableDynamicMetadataIngestion).SizeVT()
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.FilterMetadata != nil {
-		l = (*structpb.Struct)(m.FilterMetadata).SizeVT()
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.EmitFilterStateStats {
 		n += 3
 	}
 	n += len(m.unknownFields)

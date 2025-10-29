@@ -50,56 +50,6 @@ func (m *LocalRateLimit) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) 
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if len(m.RateLimits) > 0 {
-		for iNdEx := len(m.RateLimits) - 1; iNdEx >= 0; iNdEx-- {
-			if vtmsg, ok := interface{}(m.RateLimits[iNdEx]).(interface {
-				MarshalToSizedBufferVTStrict([]byte) (int, error)
-			}); ok {
-				size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-			} else {
-				encoded, err := proto.Marshal(m.RateLimits[iNdEx])
-				if err != nil {
-					return 0, err
-				}
-				i -= len(encoded)
-				copy(dAtA[i:], encoded)
-				i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			}
-			i--
-			dAtA[i] = 0x1
-			i--
-			dAtA[i] = 0x8a
-		}
-	}
-	if m.LocalClusterRateLimit != nil {
-		if vtmsg, ok := interface{}(m.LocalClusterRateLimit).(interface {
-			MarshalToSizedBufferVTStrict([]byte) (int, error)
-		}); ok {
-			size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		} else {
-			encoded, err := proto.Marshal(m.LocalClusterRateLimit)
-			if err != nil {
-				return 0, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
 	if m.RateLimitedAsResourceExhausted {
 		i--
 		if m.RateLimitedAsResourceExhausted {
@@ -419,28 +369,6 @@ func (m *LocalRateLimit) SizeVT() (n int) {
 	}
 	if m.RateLimitedAsResourceExhausted {
 		n += 2
-	}
-	if m.LocalClusterRateLimit != nil {
-		if size, ok := interface{}(m.LocalClusterRateLimit).(interface {
-			SizeVT() int
-		}); ok {
-			l = size.SizeVT()
-		} else {
-			l = proto.Size(m.LocalClusterRateLimit)
-		}
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if len(m.RateLimits) > 0 {
-		for _, e := range m.RateLimits {
-			if size, ok := interface{}(e).(interface {
-				SizeVT() int
-			}); ok {
-				l = size.SizeVT()
-			} else {
-				l = proto.Size(e)
-			}
-			n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-		}
 	}
 	n += len(m.unknownFields)
 	return n

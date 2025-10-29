@@ -98,8 +98,6 @@ func (m *FilterConfig) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SaveUpstreamAddress
-
 	switch v := m.PortSpecifier.(type) {
 	case *FilterConfig_PortValue:
 		if v == nil {

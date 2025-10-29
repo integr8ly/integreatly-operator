@@ -201,8 +201,6 @@ func (m *HttpConnectionManager) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Http1SafeMaxConnectionDuration
-
 	if all {
 		switch v := interface{}(m.GetHttpProtocolOptions()).(type) {
 		case interface{ ValidateAll() error }:

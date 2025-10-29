@@ -22,8 +22,8 @@ import (
 	"time"
 
 	appsv1alpha1 "github.com/3scale/apicast-operator/apis/apps/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/internal/controller/subscription/rhmiConfigs"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
 	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -209,13 +209,13 @@ func createApicastNamespace(ctx context.Context, client k8sclient.Client) error 
 	log.Info("Creating namespace " + ns.Name)
 	err := client.Create(ctx, ns)
 	if err != nil {
-		log.Error("Error create namespace "+apicastNamespace, nil, err)
+		log.Error("Error create namespace "+apicastNamespace, err)
 		return err
 	}
 	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, false, func(ctx2 context.Context) (done bool, err error) {
 		err = client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 		if err != nil {
-			log.Error("Error get namespace "+ns.Name, nil, err)
+			log.Error("Error get namespace "+ns.Name, err)
 			return false, err
 		}
 		if ns.Status.Phase != corev1.NamespaceActive {
@@ -225,7 +225,7 @@ func createApicastNamespace(ctx context.Context, client k8sclient.Client) error 
 		return true, nil
 	})
 	if err != nil {
-		log.Error("Error set namespace "+ns.Name, nil, err)
+		log.Error("Error set namespace "+ns.Name, err)
 		return err
 	}
 	return nil
@@ -241,7 +241,7 @@ func getThreeScaleAdminToken(ctx context.Context, client k8sclient.Client) (stri
 	}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: threeScaleNamespace}, s)
 	if err != nil {
-		log.Error("Error get 3Scale admin token ", nil, err)
+		log.Error("Error get 3Scale admin token ", err)
 		return "", err
 	}
 	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
@@ -285,7 +285,7 @@ func createAdminPortalCredentialsSecret(ctx context.Context, client k8sclient.Cl
 	secret.Data["AdminPortalURL"] = []byte(adminPortalUrl)
 	err := client.Create(ctx, secret)
 	if err != nil {
-		log.Error("Error create adminportal-credentials Secret", nil, err)
+		log.Error("Error create adminportal-credentials Secret", err)
 		return err
 	}
 	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*1, true, func(ctx2 context.Context) (bool, error) {
@@ -320,7 +320,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 	}
 	err := client.Create(context.TODO(), og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		log.Error("Error create Operator Group in "+apicastNamespace+" namespace", nil, err)
+		log.Error("Error create Operator Group in "+apicastNamespace+" namespace", err)
 		return err
 	}
 	subscription := &operatorsv1alpha1.Subscription{
@@ -343,7 +343,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 	}
 	err = client.Create(context.TODO(), subscription)
 	if err != nil {
-		log.Error("Error create Operator Subscription in "+apicastNamespace+" namespace", nil, err)
+		log.Error("Error create Operator Subscription in "+apicastNamespace+" namespace", err)
 		return err
 	}
 	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, false, func(ctx context.Context) (done bool, err error) {
@@ -405,7 +405,7 @@ func createSelfManagedApicast(ctx context.Context, client k8sclient.Client) erro
 	}
 	err := client.Create(ctx, apicast)
 	if err != nil {
-		log.Error("Error create APIcast - example-apicast", nil, err)
+		log.Error("Error create APIcast - example-apicast", err)
 		return err
 	}
 	return nil
@@ -443,7 +443,7 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 	}
 	err := client.Create(ctx, route)
 	if err != nil {
-		log.Error("Error create Apicast Route", nil, err)
+		log.Error("Error create Apicast Route", err)
 		return "", err
 	}
 	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*3, true, func(ctx2 context.Context) (done bool, err error) {
@@ -465,17 +465,17 @@ func promoteSelfManagedAPIcast(threeScaleAdminPortal, token3scale string) (strin
 	log.Info("Promote selfmanaged APIcast")
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
 	if err != nil {
-		log.Error("Error get Service ID", nil, err)
+		log.Error("Error get Service ID", err)
 		return "", err
 	}
 	err = apiCastConfigPromote(threeScaleAdminPortal, token3scale, serviceId)
 	if err != nil {
-		log.Error("Error in 3scale api Proxy Config Promote : ", nil, err)
+		log.Error("Error in 3scale api Proxy Config Promote : ", err)
 		return "", err
 	}
 	userKey, err := getUserKey(threeScaleAdminPortal, token3scale, serviceId)
 	if err != nil {
-		log.Error("Error get user key: ", nil, err)
+		log.Error("Error get user key: ", err)
 		return "", err
 	}
 	return userKey, err
@@ -492,7 +492,7 @@ func validateDeploymentRequest(userKey, routeHost string) (int, error) {
 	}
 	resp, err := http.Get(httpRequest.String())
 	if err != nil {
-		log.Error("HTTP Get error", nil, err)
+		log.Error("HTTP Get error", err)
 		return 0, err
 	}
 	defer resp.Body.Close()
@@ -527,25 +527,25 @@ func apiCastConfigPromote(threeScaleAdminPortal, token3scale, serviceId string) 
 	// Switch to self_managed Apicast
 	err := serviceUpdate(threeScaleAdminPortalServiceUrl, token3scale)
 	if err != nil {
-		log.Error("Error in Service Update - switch to self-managed deployment", nil, err)
+		log.Error("Error in Service Update - switch to self-managed deployment", err)
 		return err
 	}
 	// Set Staging and Production Public Base URL
 	err = proxyUpdate(threeScaleAdminPortal, threeScaleAdminPortalServiceUrl, token3scale)
 	if err != nil {
-		log.Error("Error in Proxy Update - set public base URL for staging and production", nil, err)
+		log.Error("Error in Proxy Update - set public base URL for staging and production", err)
 		return err
 	}
 	// Promotes the APIcast configuration to the Staging Environment
 	err = proxyDeploy(threeScaleAdminPortalServiceUrl, token3scale)
 	if err != nil {
-		log.Error("Error in Proxy Deploy - promotes the APIcast configuration to the staging environment", nil, err)
+		log.Error("Error in Proxy Deploy - promotes the APIcast configuration to the staging environment", err)
 		return err
 	}
 	// Promotes a Proxy Config from Staging environment to Production environment.
 	err = proxyConfigPromote(threeScaleAdminPortalServiceUrl, token3scale)
 	if err != nil {
-		log.Error("Error in Proxy Config Promote - promotes the APIcast configuration to the production environment", nil, err)
+		log.Error("Error in Proxy Config Promote - promotes the APIcast configuration to the production environment", err)
 		return err
 	}
 	return nil
@@ -1010,7 +1010,7 @@ func importApicastImage(ctx context.Context, client k8sclient.Client) error {
 	}
 	err := client.Create(ctx, imagestream)
 	if err != nil {
-		log.Error("Error create imagestream "+apicastImageStreamTag, nil, err)
+		log.Error("Error create imagestream "+apicastImageStreamTag, err)
 		return err
 	}
 	return nil
@@ -1192,11 +1192,11 @@ func applicationCreate(token3scale, url, accountId, planId, name, description, s
 func deleteProduct(threeScaleAdminPortal, token3scale string) {
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
 	if err != nil {
-		log.Error("Failed to get service ID", nil, err)
+		log.Error("Failed to get service ID", err)
 	}
 	_, err = serviceDelete(token3scale, threeScaleAdminPortal, serviceId)
 	if err != nil {
-		log.Error("Failed to delete product:", nil, err)
+		log.Error("Failed to delete product:", err)
 	}
 }
 

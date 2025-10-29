@@ -46,12 +46,12 @@ func GetClusterVersionCR(ctx context.Context, serverClient k8sclient.Client) (*c
 func getCurrentVersion(versionHistory []configv1.UpdateHistory, log l.Logger) (float64, error) {
 
 	if len(versionHistory) < 1 {
-		log.Error("Error getting cluster version, no version history", nil, nil)
+		log.Error("Error getting cluster version, no version history", nil)
 		return 0, errors.New("Error getting cluster version, no version history")
 	}
 	s := strings.Split(versionHistory[0].Version, ".")
 	if len(s) < 2 {
-		log.Error("Error splitting cluster version history", l.Fields{"versionHistory": versionHistory[0].Version}, nil)
+		log.Errorf("Error splitting cluster version history", l.Fields{"versionHistory": versionHistory[0].Version}, nil)
 		return 0, errors.New("Error splitting cluster version history " + versionHistory[0].Version)
 	}
 	currentVersion := s[0] + "." + s[1]
@@ -59,7 +59,7 @@ func getCurrentVersion(versionHistory []configv1.UpdateHistory, log l.Logger) (f
 
 	version, err := strconv.ParseFloat(currentVersion, 64)
 	if err != nil {
-		log.Error("Error parsing cluster version", l.Fields{"currentVersion": currentVersion}, err)
+		log.Errorf("Error parsing cluster version", l.Fields{"currentVersion": currentVersion}, err)
 		return 0, errors.New("Error parsing cluster version " + currentVersion)
 	}
 

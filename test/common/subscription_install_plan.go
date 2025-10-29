@@ -3,7 +3,7 @@ package common
 import (
 	"context"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"

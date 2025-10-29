@@ -49,26 +49,6 @@ func (m *ProxyProtocolUpstreamTransport) MarshalToSizedBufferVTStrict(dAtA []byt
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.TlvAsPoolKey {
-		i--
-		if m.TlvAsPoolKey {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.AllowUnspecifiedAddress {
-		i--
-		if m.AllowUnspecifiedAddress {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
 	if m.TransportSocket != nil {
 		if vtmsg, ok := interface{}(m.TransportSocket).(interface {
 			MarshalToSizedBufferVTStrict([]byte) (int, error)
@@ -141,12 +121,6 @@ func (m *ProxyProtocolUpstreamTransport) SizeVT() (n int) {
 			l = proto.Size(m.TransportSocket)
 		}
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.AllowUnspecifiedAddress {
-		n += 2
-	}
-	if m.TlvAsPoolKey {
-		n += 2
 	}
 	n += len(m.unknownFields)
 	return n

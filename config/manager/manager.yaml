@@ -23,10 +23,7 @@ spec:
       - command:
         - rhmi-operator
         args:
-          - --enable-leader-election
-          - --health-probe-bind-address=:8081
-          - --metrics-bind-address=:8383
-          - --metrics-secure=false
+        - --enable-leader-election
         image: controller:latest
         name: rhmi-operator
         ports:

@@ -3,16 +3,15 @@ package sts
 import (
 	"context"
 	"fmt"
-	"os"
-	"regexp"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -34,7 +33,7 @@ const (
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
 	cloudCredential := &cloudcredentialv1.CloudCredential{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{Name: ClusterCloudCredentialName}, cloudCredential); err != nil {
-		log.Error("failed to get cloudCredential while checking if STS mode", nil, err)
+		log.Error("failed to get cloudCredential while checking if STS mode", err)
 		return false, err
 	}
 

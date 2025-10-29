@@ -25,26 +25,25 @@ const (
 
 // Generates ConfigMap equivalent from a manifest package
 func GenerateRegistryConfigMapFromManifest(manifestPackageName string) (map[string]string, error) {
-	logger := l.NewLogger()
 	manifestDir := fmt.Sprintf("%s/%s", GetManifestDirEnvVar(), manifestPackageName)
 
 	configMapData := make(map[string]string)
 
 	csvStringList, err := GetFilesFromManifestAsStringList(manifestDir, "^*.clusterserviceversion.yaml$", "")
 	if err != nil {
-		logger.Fatal("Error processing cluster service versions", l.Fields{"manifestPackageName": manifestPackageName}, err)
+		log.Fatalf("Error proccessing cluster service versions", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
 	packageStringList, err := GetFilesFromManifestAsStringList(manifestDir, "^*.package.yaml$", "")
 	if err != nil {
-		logger.Fatal("Error processing csv packages", l.Fields{"manifestPackageName": manifestPackageName}, err)
+		log.Fatalf("Error proccessing csv packages", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
 	crdStringList, err := GetCRDsFromManifestAsStringList(manifestDir, "^*.crd.yaml$", packageStringList, manifestPackageName)
 	if err != nil {
-		logger.Fatal("Error processing crds", l.Fields{"manifestPackageName": manifestPackageName}, err)
+		log.Fatalf("Error proccessing crds", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
@@ -56,12 +55,11 @@ func GenerateRegistryConfigMapFromManifest(manifestPackageName string) (map[stri
 }
 
 func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml string, manifestPackageName string) (string, error) {
-	logger := l.NewLogger()
 	var stringList strings.Builder
 	libRegEx, e := regexp.Compile(regex)
 	if packageYaml != "" {
 		if e != nil {
-			logger.Fatal("Error compiling regex for registry file:", nil, e)
+			log.Fatal("Error compiling regex for registry file:", e)
 		}
 
 		var folders []string
@@ -82,7 +80,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 		for i, r := range folders {
 			v, err := semver.NewVersion(r)
 			if err != nil {
-				logger.Error("Error parsing version:", nil, err)
+				log.Error("Error parsing version:", err)
 			}
 
 			vs[i] = v
@@ -92,7 +90,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 
 		err := ReverseSlice(vs)
 		if err != nil {
-			logger.Error("ReverseSlice error", nil, err)
+			log.Error("ReverseSlice erorr", err)
 		}
 
 		var currentVersion string
@@ -102,7 +100,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 			currentVersion, err = GetCurrentCSVFromManifest(packageYaml)
 		}
 		if err != nil {
-			logger.Fatal("Error getting current csv from manifest", nil, err)
+			log.Fatal("Error getting current csv from manifest", err)
 		}
 
 		// iterate through all folders
@@ -134,7 +132,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 								// if match isn't found, add file contents to stringlist
 								err = ProcessYamlFile(currentFolder+string(os.PathSeparator)+f.Name(), &stringList)
 								if err != nil {
-									logger.Error("contents not added to stringlist", nil, err)
+									log.Error("contents not added to stringlist", err)
 								}
 							}
 
@@ -210,11 +208,10 @@ func ReverseSlice(data interface{}) error {
 
 // Get manifest files from a directory recursively matching a regex and return as a yaml string list
 func GetFilesFromManifestAsStringList(dir string, regex string, packageYaml string) (string, error) {
-	logger := l.NewLogger()
 	var stringList strings.Builder
 	libRegEx, e := regexp.Compile(regex)
 	if e != nil {
-		logger.Fatal("Error compiling regex for registry file", nil, e)
+		log.Fatal("Error compiling regex for registry file", e)
 	}
 
 	e = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -304,12 +301,11 @@ func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
 
 // Get the manifest directory for when running locally vs when in container image
 func GetManifestDirEnvVar() string {
-	logger := l.NewLogger()
 	if envVar := os.Getenv(manifestEnvVarKey); envVar != "" {
-		logger.Infof("Using env var manifest dir", l.Fields{"envVar": envVar})
+		log.Infof("Using env var manifest dir", l.Fields{"envVar": envVar})
 		return envVar
 	}
 
-	logger.Info("Using default manifest package dir")
+	log.Info("Using default manifest package dir")
 	return defaultManifestDir
 }

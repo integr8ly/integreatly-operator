@@ -3,7 +3,6 @@ package marin3r
 import (
 	"context"
 	"fmt"
-
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -18,8 +17,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	marin3roperator "github.com/3scale-sre/marin3r/api/operator.marin3r/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -280,7 +279,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 					}
 				}
 			}
-			r.log.Error("failed to get Grafana console URL", nil, err)
+			r.log.Error("failed to get Grafana console URL", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 

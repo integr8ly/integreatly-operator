@@ -152,7 +152,6 @@ rules:
   - get
   - list
   - update
-  - watch
 - apiGroups:
   - apps.openshift.io
   resources:
@@ -177,7 +176,6 @@ rules:
   verbs:
   - get
   - list
-  - watch
 - apiGroups:
   - console.openshift.io
   resources:
@@ -373,7 +371,6 @@ rules:
   verbs:
   - get
   - list
-  - watch
 - apiGroups:
   - project.openshift.io
   resources:

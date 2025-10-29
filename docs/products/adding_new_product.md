@@ -8,7 +8,7 @@ is covered [here](../terminology.md).
 
 ### Areas of code-base to modify
 - Add manifests files for the new operator to `manifests/` directory.
-- The product variables to the `api/v1alpha1/rhmi_types.go` file.
+- The product variables to the `pkg/apis/integreatly/v1alpha1/rhmi_types.go` file.
 - Add product to applicable installation types.
 - A new reconciler for the product in the `pkg/products` directory.
 - Update reconciler factory.
@@ -35,7 +35,7 @@ watched by the operator like so:
 ``` 
 
 ### Define Product Variables 
-Every product has a series of variables defined in `api/v1alpha1/rhmi_types.go`, which are used through
+Every product has a series of variables defined in `pkg/apis/integreatly/v1alpha1/rhmi_types.go`, which are used through
 out the code-base, you will also need to define these for the new product.
 - ProductName this must be DNS-valid (i.e. all lower-case, and only alphanumeric and dashes)
 - ProductVersion
@@ -92,7 +92,7 @@ also be used for authentication by products.
 We base our authentication model on 2 groups of users:
 
 rhmi-developers: Every user on the cluster is added to the rhmi-developers group in the
-[user_controller](https://github.com/integr8ly/integreatly-operator/blob/master/internal/controller/user/user_controller.go). Which allows us to apply general cluster-wide permissions 
+[user_controller](https://github.com/integr8ly/integreatly-operator/blob/master/controllers/user/user_controller.go). Which allows us to apply general cluster-wide permissions 
 for all users to this group.
 
 dedicated-admins: This group is maintained by OSD, and is modified through the OSD web console, or via the OCM CLI tool.
@@ -126,7 +126,7 @@ This is the k8s client to the cluster, and is used for getting, creating, updati
 The return values from this method are `state` and `err`:
 ### State
 This is communicated back to the user via the status block of the RHMI CR, the potential values are defined 
-[here](https://github.com/integr8ly/integreatly-operator/blob/master/api/v1alpha1/rhmi_types.go) and this field is most commonly either in progress or complete. 
+[here](https://github.com/integr8ly/integreatly-operator/blob/master/apis/v1alpha1/rhmi_types.go) and this field is most commonly either in progress or complete. 
 It can go to `fail` if something has broken, but this will not prevent the installation_controller
 from calling the Reconcile function in the future, which may allow the reconciler to fix whatever issue had
 occurred (i.e. the service had not come up yet, so there were network errors accessing it's API).
@@ -194,7 +194,7 @@ needs to be updated to know how interact with the new products config object. To
 `ReadProduct` function updated with the new config, and also a new function named as: `Read<ProductName>`.
 
 ### Add Types to Scheme
-Open the [api/v1alpha1/addtoscheme_integreatly_v1alpha1.go](https://github.com/integr8ly/integreatly-operator/blob/master/api/v1alpha1/addtoscheme_integreatly_v1alpha1.go) file and add the product operator types to the Scheme so the components can map objects to GroupVersionKinds and back.
+Open the [pkg/apis/addtoscheme_integreatly_v1alpha1.go](https://github.com/integr8ly/integreatly-operator/blob/master/apis/v1alpha1/addtoscheme_integreatly_v1alpha1.go) file and add the product operator types to the Scheme so the components can map objects to GroupVersionKinds and back.
 
 ### Tests
 We include both unit tests and e2e tests in the integreatly-operator, the unit tests are run on every PR. The e2e tests

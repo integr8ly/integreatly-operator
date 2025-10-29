@@ -11,7 +11,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/internal/controller/subscription/rhmiConfigs"
+	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
 	"golang.org/x/term"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,7 +26,7 @@ import (
 
 	"encoding/json"
 	appsv1alpha1 "github.com/3scale/apicast-operator/apis/apps/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	testcommon "github.com/integr8ly/integreatly-operator/test/common"
 	routev1 "github.com/openshift/api/route/v1"

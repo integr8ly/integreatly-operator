@@ -154,30 +154,6 @@ func (m *CommandLineOptions) MarshalToSizedBufferVTStrict(dAtA []byte) (int, err
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.SkipDeprecatedLogs {
-		i--
-		if m.SkipDeprecatedLogs {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x2
-		i--
-		dAtA[i] = 0xc8
-	}
-	if m.SkipHotRestartParentStats {
-		i--
-		if m.SkipHotRestartParentStats {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x2
-		i--
-		dAtA[i] = 0xc0
-	}
 	if m.SkipHotRestartOnNoParent {
 		i--
 		if m.SkipHotRestartOnNoParent {
@@ -673,12 +649,6 @@ func (m *CommandLineOptions) SizeVT() (n int) {
 		}
 	}
 	if m.SkipHotRestartOnNoParent {
-		n += 3
-	}
-	if m.SkipHotRestartParentStats {
-		n += 3
-	}
-	if m.SkipDeprecatedLogs {
 		n += 3
 	}
 	n += len(m.unknownFields)

@@ -21,137 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-func (m *CookieConfig) MarshalVTStrict() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVTStrict(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CookieConfig) MarshalToVTStrict(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVTStrict(dAtA[:size])
-}
-
-func (m *CookieConfig) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i -= len(m.unknownFields)
-		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.SameSite != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SameSite))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CookieConfigs) MarshalVTStrict() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVTStrict(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CookieConfigs) MarshalToVTStrict(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVTStrict(dAtA[:size])
-}
-
-func (m *CookieConfigs) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i -= len(m.unknownFields)
-		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.OauthNonceCookieConfig != nil {
-		size, err := m.OauthNonceCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.RefreshTokenCookieConfig != nil {
-		size, err := m.RefreshTokenCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.IdTokenCookieConfig != nil {
-		size, err := m.IdTokenCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.OauthExpiresCookieConfig != nil {
-		size, err := m.OauthExpiresCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.OauthHmacCookieConfig != nil {
-		size, err := m.OauthHmacCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.BearerTokenCookieConfig != nil {
-		size, err := m.BearerTokenCookieConfig.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *OAuth2Credentials_CookieNames) MarshalVTStrict() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -181,13 +50,6 @@ func (m *OAuth2Credentials_CookieNames) MarshalToSizedBufferVTStrict(dAtA []byte
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if len(m.OauthNonce) > 0 {
-		i -= len(m.OauthNonce)
-		copy(dAtA[i:], m.OauthNonce)
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(len(m.OauthNonce)))
-		i--
-		dAtA[i] = 0x32
 	}
 	if len(m.RefreshToken) > 0 {
 		i -= len(m.RefreshToken)
@@ -256,13 +118,6 @@ func (m *OAuth2Credentials) MarshalToSizedBufferVTStrict(dAtA []byte) (int, erro
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if len(m.CookieDomain) > 0 {
-		i -= len(m.CookieDomain)
-		copy(dAtA[i:], m.CookieDomain)
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(len(m.CookieDomain)))
-		i--
-		dAtA[i] = 0x2a
 	}
 	if m.CookieNames != nil {
 		size, err := m.CookieNames.MarshalToSizedBufferVTStrict(dAtA[:i])
@@ -377,90 +232,6 @@ func (m *OAuth2Config) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.CookieConfigs != nil {
-		size, err := m.CookieConfigs.MarshalToSizedBufferVTStrict(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xaa
-	}
-	if m.DisableRefreshTokenSetCookie {
-		i--
-		if m.DisableRefreshTokenSetCookie {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa0
-	}
-	if m.DisableAccessTokenSetCookie {
-		i--
-		if m.DisableAccessTokenSetCookie {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x98
-	}
-	if m.RetryPolicy != nil {
-		if vtmsg, ok := interface{}(m.RetryPolicy).(interface {
-			MarshalToSizedBufferVTStrict([]byte) (int, error)
-		}); ok {
-			size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		} else {
-			encoded, err := proto.Marshal(m.RetryPolicy)
-			if err != nil {
-				return 0, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
-	}
-	if m.DisableIdTokenSetCookie {
-		i--
-		if m.DisableIdTokenSetCookie {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x88
-	}
-	if m.PreserveAuthorizationHeader {
-		i--
-		if m.PreserveAuthorizationHeader {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
 	}
 	if m.DefaultRefreshTokenExpiresIn != nil {
 		size, err := (*durationpb.Duration)(m.DefaultRefreshTokenExpiresIn).MarshalToSizedBufferVTStrict(dAtA[:i])
@@ -709,53 +480,6 @@ func (m *OAuth2) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *CookieConfig) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.SameSite != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.SameSite))
-	}
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *CookieConfigs) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.BearerTokenCookieConfig != nil {
-		l = m.BearerTokenCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.OauthHmacCookieConfig != nil {
-		l = m.OauthHmacCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.OauthExpiresCookieConfig != nil {
-		l = m.OauthExpiresCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.IdTokenCookieConfig != nil {
-		l = m.IdTokenCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.RefreshTokenCookieConfig != nil {
-		l = m.RefreshTokenCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.OauthNonceCookieConfig != nil {
-		l = m.OauthNonceCookieConfig.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	n += len(m.unknownFields)
-	return n
-}
-
 func (m *OAuth2Credentials_CookieNames) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -779,10 +503,6 @@ func (m *OAuth2Credentials_CookieNames) SizeVT() (n int) {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	l = len(m.RefreshToken)
-	if l > 0 {
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	l = len(m.OauthNonce)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
@@ -815,10 +535,6 @@ func (m *OAuth2Credentials) SizeVT() (n int) {
 	}
 	if m.CookieNames != nil {
 		l = m.CookieNames.SizeVT()
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	l = len(m.CookieDomain)
-	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
@@ -946,32 +662,6 @@ func (m *OAuth2Config) SizeVT() (n int) {
 	if m.DefaultRefreshTokenExpiresIn != nil {
 		l = (*durationpb.Duration)(m.DefaultRefreshTokenExpiresIn).SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.PreserveAuthorizationHeader {
-		n += 3
-	}
-	if m.DisableIdTokenSetCookie {
-		n += 3
-	}
-	if m.RetryPolicy != nil {
-		if size, ok := interface{}(m.RetryPolicy).(interface {
-			SizeVT() int
-		}); ok {
-			l = size.SizeVT()
-		} else {
-			l = proto.Size(m.RetryPolicy)
-		}
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.DisableAccessTokenSetCookie {
-		n += 3
-	}
-	if m.DisableRefreshTokenSetCookie {
-		n += 3
-	}
-	if m.CookieConfigs != nil {
-		l = m.CookieConfigs.SizeVT()
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
 	return n

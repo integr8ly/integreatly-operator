@@ -51,26 +51,6 @@ func (m *UpstreamTlsContext) MarshalToSizedBufferVTStrict(dAtA []byte) (int, err
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.AutoSniSanValidation {
-		i--
-		if m.AutoSniSanValidation {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x38
-	}
-	if m.AutoHostSni {
-		i--
-		if m.AutoHostSni {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
 	if m.EnforceRsaKeyUsage != nil {
 		size, err := (*wrapperspb.BoolValue)(m.EnforceRsaKeyUsage).MarshalToSizedBufferVTStrict(dAtA[:i])
 		if err != nil {
@@ -150,16 +130,6 @@ func (m *DownstreamTlsContext) MarshalToSizedBufferVTStrict(dAtA []byte) (int, e
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.PreferClientCiphers {
-		i--
-		if m.PreferClientCiphers {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x58
 	}
 	if m.DisableStatefulSessionResumption {
 		i--
@@ -633,30 +603,6 @@ func (m *CommonTlsContext) MarshalToSizedBufferVTStrict(dAtA []byte) (int, error
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.CustomTlsCertificateSelector != nil {
-		if vtmsg, ok := interface{}(m.CustomTlsCertificateSelector).(interface {
-			MarshalToSizedBufferVTStrict([]byte) (int, error)
-		}); ok {
-			size, err := vtmsg.MarshalToSizedBufferVTStrict(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		} else {
-			encoded, err := proto.Marshal(m.CustomTlsCertificateSelector)
-			if err != nil {
-				return 0, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
-		}
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x82
-	}
 	if m.KeyLog != nil {
 		size, err := m.KeyLog.MarshalToSizedBufferVTStrict(dAtA[:i])
 		if err != nil {
@@ -940,12 +886,6 @@ func (m *UpstreamTlsContext) SizeVT() (n int) {
 		l = (*wrapperspb.BoolValue)(m.EnforceRsaKeyUsage).SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
-	if m.AutoHostSni {
-		n += 2
-	}
-	if m.AutoSniSanValidation {
-		n += 2
-	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -983,9 +923,6 @@ func (m *DownstreamTlsContext) SizeVT() (n int) {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	if m.DisableStatefulSessionResumption {
-		n += 2
-	}
-	if m.PreferClientCiphers {
 		n += 2
 	}
 	n += len(m.unknownFields)
@@ -1204,16 +1141,6 @@ func (m *CommonTlsContext) SizeVT() (n int) {
 	if m.KeyLog != nil {
 		l = m.KeyLog.SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.CustomTlsCertificateSelector != nil {
-		if size, ok := interface{}(m.CustomTlsCertificateSelector).(interface {
-			SizeVT() int
-		}); ok {
-			l = size.SizeVT()
-		} else {
-			l = proto.Size(m.CustomTlsCertificateSelector)
-		}
-		n += 2 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
 	return n

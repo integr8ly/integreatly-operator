@@ -737,47 +737,6 @@ func (m *UdpProxyConfig_SessionFilter) validate(all bool) error {
 			}
 		}
 
-	case *UdpProxyConfig_SessionFilter_ConfigDiscovery:
-		if v == nil {
-			err := UdpProxyConfig_SessionFilterValidationError{
-				field:  "ConfigType",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetConfigDiscovery()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, UdpProxyConfig_SessionFilterValidationError{
-						field:  "ConfigDiscovery",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, UdpProxyConfig_SessionFilterValidationError{
-						field:  "ConfigDiscovery",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetConfigDiscovery()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return UdpProxyConfig_SessionFilterValidationError{
-					field:  "ConfigDiscovery",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
 	default:
 		_ = v // ensures v is used
 	}
@@ -1494,35 +1453,6 @@ func (m *UdpProxyConfig_UdpTunnelingConfig_RetryOptions) validate(all bool) erro
 		if err := v.Validate(); err != nil {
 			return UdpProxyConfig_UdpTunnelingConfig_RetryOptionsValidationError{
 				field:  "MaxConnectAttempts",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetBackoffOptions()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, UdpProxyConfig_UdpTunnelingConfig_RetryOptionsValidationError{
-					field:  "BackoffOptions",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, UdpProxyConfig_UdpTunnelingConfig_RetryOptionsValidationError{
-					field:  "BackoffOptions",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetBackoffOptions()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return UdpProxyConfig_UdpTunnelingConfig_RetryOptionsValidationError{
-				field:  "BackoffOptions",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

@@ -49,14 +49,18 @@ func (l Logger) Debug(message string) {
 	l.Logger.Debug(message)
 }
 
-func (l Logger) Error(message string, fields map[string]interface{}, err error) {
+func (l Logger) Errorf(message string, fields map[string]interface{}, err error) {
 	fields = addError(fields, err)
-	l.Logger.WithFields(fields).Error(message)
+	l.Logger.WithFields(fields).Error("Error: " + message)
 }
 
-func (l Logger) Fatal(message string, fields map[string]interface{}, err error) {
+func (l Logger) Error(message string, err error) {
+	l.Errorf(message, nil, err)
+}
+
+func (l Logger) Fatalf(message string, fields map[string]interface{}, err error) {
 	fields = addError(fields, err)
-	l.Logger.WithFields(fields).Fatal(message)
+	l.Logger.WithFields(fields).Fatal("Fatal: " + message)
 }
 
 func addError(fields map[string]interface{}, err error) map[string]interface{} {
@@ -67,6 +71,10 @@ func addError(fields map[string]interface{}, err error) map[string]interface{} {
 		fields["error"] = err.Error()
 	}
 	return fields
+}
+
+func (l Logger) Fatal(message string, err error) {
+	l.Fatalf(message, nil, err)
 }
 
 func (l Logger) Warningf(message string, fields map[string]interface{}) {

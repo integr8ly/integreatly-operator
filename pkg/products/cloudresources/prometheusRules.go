@@ -96,7 +96,7 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 
 	names, err := getRedisCRsNames(ctx, client, ns)
 	if err != nil {
-		logger.Error("Error getting redis names", nil, err)
+		logger.Error("Error getting redis names", err)
 		return &alertsReconciler, err
 	}
 	if len(names) == 0 {

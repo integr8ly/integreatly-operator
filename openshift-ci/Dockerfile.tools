@@ -1,10 +1,11 @@
 FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.20
 
-ENV OPERATOR_SDK_VERSION=v1.39.0 \
+# OPERATOR_SDK should match the version of operator-sdk version in go.mod
+ENV OPERATOR_SDK_VERSION=v1.21.0 \
     DELOREAN_VERSION=master \
     GOFLAGS="" \
     PROMETHEUS_VERSION=2.37.0 \
-    KUSTOMIZE_VERSION=v5.4.3
+    KUSTOMIZE_VERSION=v4.5.2
 
 RUN set -o pipefail && \
     INSTALL_PKGS="skopeo rsync" && \
@@ -28,7 +29,7 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && make install
 
 # install kustomize
-RUN go install sigs.k8s.io/kustomize/kustomize/v5@$KUSTOMIZE_VERSION
+RUN go install sigs.k8s.io/kustomize/kustomize/v4@$KUSTOMIZE_VERSION
 
 # Allow the GOPATH directory to be accessible to all users
 # Any go install should be before this

@@ -2,9 +2,6 @@
 set -e
 set -o pipefail
 
-# Tool versions
-readonly OPERATOR_SDK_VERSION="v1.39.0"
-
 if [[ -z "$OLM_TYPE" ]]; then
   OLM_TYPE="managed-api-service"
 fi
@@ -34,33 +31,14 @@ else
 fi
 
 # Optional environment variable to set a different Kustomize path. If this
-# variable is not set, it will use the one from the $PATH or try default locations
-if [[ -n $KUSTOMIZE_PATH ]]; then
-  KUSTOMIZE=$KUSTOMIZE_PATH
-elif [[ -f "/go/bin/kustomize" ]]; then
-  # Use CI-installed kustomize from Dockerfile.tools
-  KUSTOMIZE="/go/bin/kustomize"
-elif [[ -f "/usr/local/bin/kustomize" ]]; then
+# variable is not set, it will use the one from the $PATH or try a default Kustomize path
+if [[ -z $KUSTOMIZE_PATH ]]; then
   KUSTOMIZE="/usr/local/bin/kustomize"
 else
   KUSTOMIZE=$(which kustomize)
 fi
 
 echo "Using kustomize path: $KUSTOMIZE"
-
-# Optional environment variable to set a different operator-sdk path. If this
-# variable is not set, it will use the one from the $PATH or try default locations
-if [[ -n $OPERATOR_SDK_PATH ]]; then
-  OPERATOR_SDK=$OPERATOR_SDK_PATH
-elif [[ -f "/usr/local/bin/operator-sdk" ]]; then
-  OPERATOR_SDK="/usr/local/bin/operator-sdk"
-elif [[ -f "/go/bin/operator-sdk" ]]; then
-  OPERATOR_SDK="/go/bin/operator-sdk"
-else
-  OPERATOR_SDK=$(which operator-sdk)
-fi
-
-echo "Using operator-sdk path: $OPERATOR_SDK"
 
 # Path to gofmt
 if [[ -z $GOROOT ]]; then
@@ -88,17 +66,7 @@ update_base_csv() {
 }
 
 create_or_update_csv() {
-  # Use operator-sdk for go.kubebuilder.io/v4 support
-  local operator_sdk_bin="/go/src/github.com/integr8ly/integreatly-operator/bin/operator-sdk"
-  if [[ ! -x "$operator_sdk_bin" ]]; then
-    echo "Installing operator-sdk ${OPERATOR_SDK_VERSION}..."
-    curl -LO "https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64"
-    chmod +x operator-sdk_linux_amd64
-    mv operator-sdk_linux_amd64 "$operator_sdk_bin"
-    echo "operator-sdk ${OPERATOR_SDK_VERSION} installed"
-  fi
-  
-  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | "$operator_sdk_bin" generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel stable --package ${PACKAGE_NAME} --channels stable
+  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel stable --package ${PACKAGE_NAME} --channels stable
 }
 
 set_version() {

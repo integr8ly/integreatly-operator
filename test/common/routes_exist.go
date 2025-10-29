@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )

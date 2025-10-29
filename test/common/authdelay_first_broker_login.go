@@ -5,7 +5,7 @@ import (
 	goctx "context"
 	"crypto/rand"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"math/big"

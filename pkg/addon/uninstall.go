@@ -6,7 +6,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +54,7 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 }
 
 type deleteRHMIHandler struct {
-	decoder    admission.Decoder
+	decoder    *admission.Decoder
 	restConfig *rest.Config
 	scheme     *runtime.Scheme
 	client     k8sclient.Client
@@ -64,7 +64,7 @@ var _ admission.Handler = &deleteRHMIHandler{}
 
 //var _ admission.DecoderInjector = &deleteRHMIHandler{}
 
-func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder admission.Decoder) admission.Handler {
+func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder *admission.Decoder) admission.Handler {
 	return &deleteRHMIHandler{
 		restConfig: config,
 		scheme:     scheme,
@@ -72,14 +72,14 @@ func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme, decoder a
 	}
 }
 
-func (h *deleteRHMIHandler) InjectDecoder(d admission.Decoder) error {
+func (h *deleteRHMIHandler) InjectDecoder(d *admission.Decoder) error {
 	h.decoder = d
 	return nil
 }
 
 func (h *deleteRHMIHandler) Handle(ctx context.Context, request admission.Request) admission.Response {
 	rhmi := &integreatlyv1alpha1.RHMI{}
-	if err := h.decoder.Decode(request, rhmi); err != nil {
+	if err := h.decoder.DecodeRaw(request.OldObject, rhmi); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 

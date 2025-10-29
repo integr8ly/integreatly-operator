@@ -18,7 +18,7 @@ import (
 	portaclient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/headzoo/surf"
 	brow "github.com/headzoo/surf/browser"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"

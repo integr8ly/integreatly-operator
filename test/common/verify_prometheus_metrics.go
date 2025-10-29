@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"regexp"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 

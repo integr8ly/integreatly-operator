@@ -7,7 +7,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"

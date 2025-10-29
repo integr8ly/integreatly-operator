@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/internal/controller/status"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/controllers/status"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	projectv1 "github.com/openshift/api/project/v1"
 	"k8s.io/apimachinery/pkg/api/meta"

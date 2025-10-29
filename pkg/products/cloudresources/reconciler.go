@@ -36,7 +36,7 @@ import (
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -206,7 +206,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	// Check if STS Cluster, get STS role ARN addon parameter and pass ARN to Secret in CRO namespace
 	isSTS, err := sts.IsClusterSTS(ctx, client, r.log)
 	if err != nil {
-		r.log.Error("Error checking STS mode", nil, err)
+		r.log.Error("Error checking STS mode", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if isSTS {
@@ -276,7 +276,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to get new alerts reconciler", err)
-		r.log.Error("Error getting cloud resources alerts reconciler", nil, err)
+		r.log.Error("Error getting cloud resources alerts reconciler", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -310,7 +310,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 	crdExists, err := k8s.Exists(ctx, client, postgresSnapshotCRD)
 	if err != nil {
-		r.log.Error("Error checking Postgres Snapshot CRD existence: ", nil, err)
+		r.log.Error("Error checking Postgres Snapshot CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	} else if !crdExists {
 		return integreatlyv1alpha1.PhaseCompleted, nil
@@ -322,7 +322,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 	err = client.List(ctx, pgSnaps, listOpts...)
 	if err != nil {
-		r.log.Error("Failed to list postgres snapshots", nil, err)
+		r.log.Error("Failed to list postgres snapshots", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres snapshots: %w", err)
 	}
 
@@ -341,7 +341,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 	err = client.List(ctx, redisSnaps, listOpts...)
 	if err != nil {
-		r.log.Error("Failed to list redis snapshots", nil, err)
+		r.log.Error("Failed to list redis snapshots", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list redis snapshots: %w", err)
 	}
 
@@ -427,7 +427,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 	crdExists, err := k8s.Exists(ctx, client, postgresInstancesCRD)
 	if err != nil {
-		r.log.Error("Error checking Postgres CRD existence: ", nil, err)
+		r.log.Error("Error checking Postgres CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	} else if !crdExists {
 		return integreatlyv1alpha1.PhaseCompleted, nil
