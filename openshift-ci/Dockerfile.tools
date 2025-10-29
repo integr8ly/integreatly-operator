@@ -19,16 +19,13 @@ RUN mkdir -p $GOPATH/src/github.com/delorean \
     && make build/cli \
     && cp delorean /usr/local/bin
 
-# install operator-sdk (from git with no history and only the tag)
-RUN mkdir -p $GOPATH/src/github.com/operator-framework \
-    && cd $GOPATH/src/github.com/operator-framework \
-    && git clone --depth 1 -b $OPERATOR_SDK_VERSION https://github.com/operator-framework/operator-sdk \
-    && cd operator-sdk \
-    && go mod vendor \
-    && make install
+# install operator-sdk (download pre-built binary instead of building from source)
+RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64 \
+    && chmod +x operator-sdk_linux_amd64 \
+    && mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
 
 # install kustomize
-RUN go install sigs.k8s.io/kustomize/kustomize/v5@$KUSTOMIZE_VERSION
+RUN GOBIN=/usr/local/bin go install sigs.k8s.io/kustomize/kustomize/v5@$KUSTOMIZE_VERSION
 
 # Allow the GOPATH directory to be accessible to all users
 # Any go install should be before this
