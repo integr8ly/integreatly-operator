@@ -25,7 +25,7 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && git clone --depth 1 -b $OPERATOR_SDK_VERSION https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
     && go mod vendor \
-    && env GOBIN=$GOPATH/bin && make install
+    && make install
 
 # install kustomize
 RUN go install sigs.k8s.io/kustomize/kustomize/v5@$KUSTOMIZE_VERSION
