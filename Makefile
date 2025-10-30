@@ -123,9 +123,11 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-.PHONY: setup/moq
-setup/moq:
-	go install github.com/matryer/moq@v0.5.3
+.PHONY: moq
+moq: $(MOQ) ## Download moq locally if necessary.
+$(MOQ): $(LOCALBIN)
+	$(call go-install-tool,$(MOQ),github.com/matryer/moq,$(MOQ_VERSION))
+	@[ -f "$(MOQ)" ] || ln -sf $(MOQ)-$(MOQ_VERSION) $(MOQ)
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
@@ -184,9 +186,17 @@ api/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen api/v1alpha1/r
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: code/gen
-code/gen: setup/moq api/integreatly/v1alpha1/zz_generated.deepcopy.go
+code/gen: $(MOQ) api/integreatly/v1alpha1/zz_generated.deepcopy.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	@go generate ./...
+	@echo "Ensuring moq is available at $(MOQ)"
+	@if [ ! -f "$(MOQ)" ]; then \
+		echo "moq not found, installing directly..." ; \
+		mkdir -p $(LOCALBIN) ; \
+		GOBIN=$(LOCALBIN) go install github.com/matryer/moq@$(MOQ_VERSION) ; \
+	fi
+	@chmod +x $(MOQ)
+	@mkdir -p /tmp/bin && ln -sf $(MOQ) /tmp/bin/moq
+	@PATH="/tmp/bin:$(LOCALBIN):$$PATH" go generate ./...
 	mv ./config/crd/bases/integreatly.org_apimanagementtenants.yaml ./config/crd-sandbox/bases
 
 .PHONY: code/check
@@ -617,11 +627,13 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+MOQ ?= $(LOCALBIN)/moq
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.4.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.1
 ENVTEST_VERSION ?= release-0.19
+MOQ_VERSION ?= v0.5.3
 GOLANGCI_LINT_VERSION ?= v1.64.2
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
