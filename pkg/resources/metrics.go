@@ -503,7 +503,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// build and reconcile postgres low freeable memory alert
 	alertName := "PostgresFreeableMemoryLow"
 	ruleName := "postgres-freeable-memory-low"
-	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 20 percent of its capacity"
+	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 5 percent of its capacity"
 	labels := map[string]string{
 		"severity": "critical",
 		"product":  installationName,
