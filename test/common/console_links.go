@@ -83,7 +83,6 @@ func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedC
 	actions = append(actions, chromeDPLoginIDPActions(userName)...)
 	// Actions after logging in for user
 	actions = append(actions, []chromedp.Action{
-		// 1. TOUR SKIP LOGIC (MUST RUN FIRST to ensure Application Launcher is not obscured)
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var html string
 			// This OuterHTML action implicitly waits for the page to load the HTML
@@ -104,33 +103,26 @@ func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedC
 			return nil
 		}),
 
-		// 2. WAIT AND CLICK APPLICATION LAUNCHER (Now that the tour is handled)
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			//t.Logf(">> Waiting for Application Launcher to be READY...")
 			if err := chromedp.WaitReady(applicationLauncherSelector).Do(ctx); err != nil {
 				t.Logf("!! FAILED waiting for launcher to be ready: %v", err)
 				return err
 			}
 
-			// STABILITY FIX: Add a brief pause to allow any PatternFly v6 animations to complete
 			if err := chromedp.Sleep(500 * time.Millisecond).Do(ctx); err != nil {
 				return err
 			}
 
-			//t.Logf(">> Application Launcher is ready. Attempting aggressive JS click...")
-
-			// AGGRESSIVE CLICK FIX: Use Evaluate to execute a direct JavaScript click() call
+			// Use Evaluate to execute a direct JavaScript click() call
 			clickScript := fmt.Sprintf(`document.querySelector('%s').click()`, applicationLauncherSelector)
 			if err := chromedp.Evaluate(clickScript, nil).Do(ctx); err != nil {
 				t.Logf("!! FAILED forcing JS click on launcher: %v", err)
 				return err
 			}
 
-			//t.Logf(">> Application Launcher clicked (JS). Starting assertions.")
 			return nil
 		}),
 
-		// 3. ASSERT CONSOLE LINKS
 		assertConsoleLinksAction(t, expectedConsoleLinks, clusterVersion),
 	}...)
 
