@@ -140,13 +140,13 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Check if the clusterVersion matches 4.18 or 4.19
-		match1, err := regexp.MatchString("4\\.1[89]\\.", clusterVersion)
+		// Check if the clusterVersion matches 4.18
+		match1, err := regexp.MatchString("4\\.18\\.", clusterVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Check if the clusterVersion matches 4.20
-		match2, err := regexp.MatchString("4\\.20\\.", clusterVersion)
+		// Check if the clusterVersion matches 4.19 or 4.20
+		match2, err := regexp.MatchString("4\\.19\\.|4\\.20\\.", clusterVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,14 +154,13 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		if match {
 			sectionSelector = `section[class="pf-v5-c-app-launcher__group"]`
 		} else if match1 {
-			// For versions 4.18 or 4.19:
+			// For versions 4.18:
 			sectionSelector = `section[class="pf-v5-c-menu__group"]`
 		} else if match2 {
-			// For versions 4.20:
+			// For versions 4.19 or 4.20:
 			sectionSelector = `section[class="pf-v6-c-menu__group"]`
 		}
 
-		// FIX: Use .Do(ctx) instead of nested chromedp.Run(ctx, ...)
 		if err := chromedp.Nodes(sectionSelector, &sections, chromedp.ByQueryAll).Do(ctx); err != nil {
 			return err
 		}
@@ -177,7 +176,6 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		// Get all the links from this section
 		var links []*cdp.Node
 
-		// FIX: Use .Do(ctx) instead of nested chromedp.Run(ctx, ...)
 		err = chromedp.Nodes(`a`, &links, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
 
 		if err != nil {
@@ -211,7 +209,6 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 
 		// get all the icons
 		var icons []*cdp.Node
-		// FIX: Use .Do(ctx) instead of nested chromedp.Run(ctx, ...)
 		err = chromedp.Nodes(`img`, &icons, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
 
 		// Assert number of icons is as expected, can be more if other add-ons are installed
