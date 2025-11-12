@@ -85,9 +85,14 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 
 	// Delete the product
 	By("Delete the product")
-	err = tsClient.DeleteProduct(productId)
-	if err != nil {
-		t.Log("Error during deleting the product")
+	if err := wait.PollUntilContextTimeout(goctx.TODO(), 5*time.Second, 2*time.Minute, true, func(ctx2 goctx.Context) (done bool, err error) {
+		if err := tsClient.DeleteProduct(productId); err != nil {
+			t.Logf("DeleteProduct retry due to error: %v", err)
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		t.Log("Error during deleting the product (after retries)")
 		t.Fatal(err)
 	}
 }

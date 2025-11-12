@@ -4,7 +4,9 @@ import (
 	goctx "context"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
+	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
@@ -152,19 +154,33 @@ func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resourc
 			t.Errorf("error occurred while executing oc get request: %v", err)
 			continue
 		}
+		// close immediately to avoid leaking connections
+		_ = resp.Body.Close()
 		if resp.StatusCode != 403 {
 			t.Errorf("test-failed - status code found : %d expected status code : 403 RHMI dedicated admin should be forbidden from %s secrets", resp.StatusCode, namespace)
 		}
 	}
 
 	// check dedicated admin can get github oauth secret
-	resp, err := openshiftClient.GetRequest(fmt.Sprintf(resources.OpenshiftPathGetSecret, RHOAMOperatorNamespace) + "/github-oauth-secret")
+	secretPath := fmt.Sprintf(resources.OpenshiftPathGetSecret, RHOAMOperatorNamespace) + "/github-oauth-secret"
+	const interval = 5 * time.Second
+	const timeout = 2 * time.Minute
+	err := wait.PollUntilContextTimeout(goctx.TODO(), interval, timeout, true,
+		func(_ goctx.Context) (bool, error) {
+			resp, err := openshiftClient.GetRequest(secretPath)
+			if err != nil {
+				t.Logf("transient error getting github oauth secret: %v", err)
+				return false, nil
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == 200 {
+				return true, nil
+			}
+			t.Logf("waiting for dedicated-admin access to github oauth secret, status=%d", resp.StatusCode)
+			return false, nil
+		})
 	if err != nil {
-		t.Errorf("error occurred while executing oc get request: %v", err)
-	}
-
-	if resp.StatusCode != 200 {
-		t.Errorf("test-failed - status code found : %d expected status code : 200 - RHMI dedicated admin should have access to github oauth secret in %s", resp.StatusCode, RHOAMOperatorNamespace)
+		t.Errorf("test-failed - dedicated admin could not access github oauth secret in %s within timeout: %v", RHOAMOperatorNamespace, err)
 	}
 }
 
