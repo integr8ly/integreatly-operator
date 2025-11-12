@@ -71,20 +71,21 @@ func TestConsoleLinks(t TestingTB, ctx *TestingContext) {
 }
 
 func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedConsoleLinks []ConsoleLinkAssertion, clusterVersion string) {
-	const applicationLauncherSelector = `button[aria-label="Application launcher"]`
+	var applicationLauncherSelector = `button[data-test-id="application-launcher"]`
 
 	// Navigate to OSD landing page
 	actions := []chromedp.Action{
-		chromedp.Navigate(consoleUrl),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			return chromedp.Navigate(consoleUrl).Do(ctx)
+		}),
 	}
 	// Login via IDP
 	actions = append(actions, chromeDPLoginIDPActions(userName)...)
 	// Actions after logging in for user
 	actions = append(actions, []chromedp.Action{
-		// Wait until app launcher is visible
-		chromedp.WaitVisible(applicationLauncherSelector),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var html string
+			// This OuterHTML action implicitly waits for the page to load the HTML
 			if err := chromedp.OuterHTML(`html`, &html).Do(ctx); err != nil {
 				return err
 			}
@@ -95,11 +96,33 @@ func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedC
 			}
 
 			// Skip the tour
-			return chromedp.Click(`button[id="tour-step-footer-secondary"]`).Do(ctx)
+			if err := chromedp.Click(`button[id="tour-step-footer-secondary"]`).Do(ctx); err != nil {
+				t.Logf("!! FAILED to click skip tour button: %v", err)
+				return err
+			}
+			return nil
 		}),
-		// Click the application launcher button
-		chromedp.Click(applicationLauncherSelector),
-		// Assert console links
+
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			if err := chromedp.WaitReady(applicationLauncherSelector).Do(ctx); err != nil {
+				t.Logf("!! FAILED waiting for launcher to be ready: %v", err)
+				return err
+			}
+
+			if err := chromedp.Sleep(500 * time.Millisecond).Do(ctx); err != nil {
+				return err
+			}
+
+			// Use Evaluate to execute a direct JavaScript click() call
+			clickScript := fmt.Sprintf(`document.querySelector('%s').click()`, applicationLauncherSelector)
+			if err := chromedp.Evaluate(clickScript, nil).Do(ctx); err != nil {
+				t.Logf("!! FAILED forcing JS click on launcher: %v", err)
+				return err
+			}
+
+			return nil
+		}),
+
 		assertConsoleLinksAction(t, expectedConsoleLinks, clusterVersion),
 	}...)
 
@@ -117,8 +140,13 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Check if the clusterVersion matches 4.18 or 4.19
-		match1, err := regexp.MatchString("4\\.1[89]\\.", clusterVersion)
+		// Check if the clusterVersion matches 4.18
+		match1, err := regexp.MatchString("4\\.18\\.", clusterVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Check if the clusterVersion matches 4.19 or 4.20
+		match2, err := regexp.MatchString("4\\.19\\.|4\\.20\\.", clusterVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -126,11 +154,14 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		if match {
 			sectionSelector = `section[class="pf-v5-c-app-launcher__group"]`
 		} else if match1 {
-			// For versions 4.18 or 4.19:
+			// For versions 4.18:
 			sectionSelector = `section[class="pf-v5-c-menu__group"]`
+		} else if match2 {
+			// For versions 4.19 or 4.20:
+			sectionSelector = `section[class="pf-v6-c-menu__group"]`
 		}
 
-		if err := chromedp.Run(ctx, chromedp.Nodes(sectionSelector, &sections, chromedp.ByQueryAll)); err != nil {
+		if err := chromedp.Nodes(sectionSelector, &sections, chromedp.ByQueryAll).Do(ctx); err != nil {
 			return err
 		}
 
@@ -144,9 +175,8 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 
 		// Get all the links from this section
 		var links []*cdp.Node
-		err = chromedp.Run(ctx,
-			chromedp.Nodes(`a`, &links, chromedp.FromNode(lastElement), chromedp.ByQueryAll),
-		)
+
+		err = chromedp.Nodes(`a`, &links, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
 
 		if err != nil {
 			t.Fatal(err)
@@ -179,9 +209,7 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 
 		// get all the icons
 		var icons []*cdp.Node
-		err = chromedp.Run(ctx,
-			chromedp.Nodes(`img`, &icons, chromedp.FromNode(lastElement), chromedp.ByQueryAll),
-		)
+		err = chromedp.Nodes(`img`, &icons, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
 
 		// Assert number of icons is as expected, can be more if other add-ons are installed
 		if len(icons) < len(expectedConsoleLinks) {
