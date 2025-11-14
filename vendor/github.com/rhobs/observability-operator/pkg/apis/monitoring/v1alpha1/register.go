@@ -15,13 +15,19 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the rhobs v1alpha1 API group
+//
+// The observability-operator API module uses semantic versioning for version tags,
+// but does not guarantee backward compatibility, even for versions v1.0.0 and above.
+// Breaking changes may occur without major version bumps.
+//
 // +kubebuilder:object:generate=true
 // +groupName=monitoring.rhobs
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 var (
@@ -29,12 +35,14 @@ var (
 	GroupVersion = schema.GroupVersion{Group: "monitoring.rhobs", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+	SchemeBuilder = runtime.NewSchemeBuilder(addTypes)
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
-func init() {
-	SchemeBuilder.Register(&MonitoringStack{}, &MonitoringStackList{}, &ThanosQuerier{}, &ThanosQuerierList{})
+func addTypes(s *runtime.Scheme) error {
+	s.AddKnownTypes(GroupVersion, &MonitoringStack{}, &MonitoringStackList{}, &ThanosQuerier{}, &ThanosQuerierList{})
+	metav1.AddToGroupVersion(s, GroupVersion)
+	return nil
 }
