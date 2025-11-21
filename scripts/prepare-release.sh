@@ -89,7 +89,8 @@ update_base_csv() {
 
 create_or_update_csv() {
   # Use operator-sdk for go.kubebuilder.io/v4 support
-  local operator_sdk_bin="/go/src/github.com/integr8ly/integreatly-operator/bin/operator-sdk"
+  #local operator_sdk_bin="/go/src/github.com/integr8ly/integreatly-operator/bin/operator-sdk"
+  local operator_sdk_bin="./bin/operator-sdk"
   if [[ ! -x "$operator_sdk_bin" ]]; then
     echo "Installing operator-sdk ${OPERATOR_SDK_VERSION}..."
     curl -LO "https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64"
