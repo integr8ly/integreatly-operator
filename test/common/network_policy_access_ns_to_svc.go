@@ -26,6 +26,7 @@ var (
 	podEndpoitResponse  = "success"
 )
 
+// TEST e2e
 func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 	dedicatedAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 
