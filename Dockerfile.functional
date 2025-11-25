@@ -36,6 +36,9 @@ RUN yum install -y wget \
     && rm -f google-chrome-stable_current_*.rpm \
     && yum clean all
 
+RUN bash -c 'curl -s -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz \
+    | tar -zxv -C /usr/local/bin oc && chmod +x /usr/local/bin/oc'
+
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
 ENTRYPOINT [ "/integreatly-operator-test-harness.test", "-test.v", "-ginkgo.v", "-ginkgo.progress", "-ginkgo.no-color" ]
