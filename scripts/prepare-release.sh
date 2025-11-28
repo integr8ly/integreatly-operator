@@ -2,6 +2,11 @@
 set -e
 set -o pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root (parent of scripts directory)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Tool versions
 readonly OPERATOR_SDK_VERSION="v1.39.0"
 
@@ -89,16 +94,19 @@ update_base_csv() {
 
 create_or_update_csv() {
   # Use operator-sdk for go.kubebuilder.io/v4 support
-  #local operator_sdk_bin="/go/src/github.com/integr8ly/integreatly-operator/bin/operator-sdk"
-  local operator_sdk_bin="./bin/operator-sdk"
+  # Use project root relative path to ensure it works regardless of current working directory
+  local operator_sdk_bin="$PROJECT_ROOT/bin/operator-sdk"
   if [[ ! -x "$operator_sdk_bin" ]]; then
     echo "Installing operator-sdk ${OPERATOR_SDK_VERSION}..."
+    mkdir -p "$PROJECT_ROOT/bin"
+    cd "$PROJECT_ROOT"
     curl -LO "https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64"
     chmod +x operator-sdk_linux_amd64
     mv operator-sdk_linux_amd64 "$operator_sdk_bin"
     echo "operator-sdk ${OPERATOR_SDK_VERSION} installed"
   fi
   
+  cd "$PROJECT_ROOT"
   "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | "$operator_sdk_bin" generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel stable --package ${PACKAGE_NAME} --channels stable
 }
 
