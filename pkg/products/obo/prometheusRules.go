@@ -297,19 +297,75 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 			},
 		},
 		{
-			AlertName: fmt.Sprintf("%s-rhmi-controller-alerts", installationName),
+			AlertName: fmt.Sprintf("%s-component-reconciling-errors", installationName),
 			Namespace: namespace,
-			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
+			GroupName: fmt.Sprintf("%s-component-installation.rules", installationName),
 			Rules: []monv1.Rule{
+				// RHSSO Component Alert
 				{
-					Alert: fmt.Sprintf("%sIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Alert: fmt.Sprintf("%sRHSSOIsInReconcilingErrorState", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
-						"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for last 1 hour", strings.ToUpper(installationName)),
+						"message": fmt.Sprintf("%s RHSSO component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="rhsso"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
 					For:    resources.DurationPtr("90m"),
-					Labels: map[string]string{"severity": "critical", "product": installationName},
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "rhsso"},
+				},
+				// 3Scale Component Alert
+				{
+					Alert: fmt.Sprintf("%s3ScaleIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
+						"message": fmt.Sprintf("%s 3Scale component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="3scale"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					For:    resources.DurationPtr("90m"),
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "3scale"},
+				},
+				// Cloud Resources Component Alert
+				{
+					Alert: fmt.Sprintf("%sCloudResourcesIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
+						"message": fmt.Sprintf("%s Cloud Resources component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="cloud-resources"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					For:    resources.DurationPtr("90m"),
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "cloud-resources"},
+				},
+				// Marin3r Component Alert
+				{
+					Alert: fmt.Sprintf("%sMarin3rIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
+						"message": fmt.Sprintf("%s Marin3r component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="marin3r"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					For:    resources.DurationPtr("90m"),
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "marin3r"},
+				},
+				// Grafana Component Alert
+				{
+					Alert: fmt.Sprintf("%sGrafanaIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
+						"message": fmt.Sprintf("%s Grafana component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="grafana"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					For:    resources.DurationPtr("90m"),
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "grafana"},
+				},
+				// RHSSO User Component Alert
+				{
+					Alert: fmt.Sprintf("%sRHSSOUserIsInReconcilingErrorState", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
+						"message": fmt.Sprintf("%s RHSSO User component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete",product="rhssouser"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
+					For:    resources.DurationPtr("90m"),
+					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "rhssouser"},
 				},
 			},
 		},
