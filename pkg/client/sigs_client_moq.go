@@ -23,6 +23,9 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //
 //		// make and configure a mocked SigsClientInterface
 //		mockedSigsClientInterface := &SigsClientInterfaceMock{
+//			ApplyFunc: func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...k8sclient.ApplyOption) error {
+//				panic("mock out the Apply method")
+//			},
 //			CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 //				panic("mock out the Create method")
 //			},
@@ -75,6 +78,9 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //
 //	}
 type SigsClientInterfaceMock struct {
+	// ApplyFunc mocks the Apply method.
+	ApplyFunc func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...k8sclient.ApplyOption) error
+
 	// CreateFunc mocks the Create method.
 	CreateFunc func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error
 
@@ -122,6 +128,15 @@ type SigsClientInterfaceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Apply holds details about calls to the Apply method.
+		Apply []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Obj is the obj argument value.
+			Obj runtime.ApplyConfiguration
+			// Opts is the opts argument value.
+			Opts []k8sclient.ApplyOption
+		}
 		// Create holds details about calls to the Create method.
 		Create []struct {
 			// Ctx is the ctx argument value.
@@ -226,6 +241,7 @@ type SigsClientInterfaceMock struct {
 			Opts []k8sclient.ListOption
 		}
 	}
+	lockApply               sync.RWMutex
 	lockCreate              sync.RWMutex
 	lockDelete              sync.RWMutex
 	lockDeleteAllOf         sync.RWMutex
@@ -241,6 +257,46 @@ type SigsClientInterfaceMock struct {
 	lockSubResource         sync.RWMutex
 	lockUpdate              sync.RWMutex
 	lockWatch               sync.RWMutex
+}
+
+// Apply calls ApplyFunc.
+func (mock *SigsClientInterfaceMock) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...k8sclient.ApplyOption) error {
+	if mock.ApplyFunc == nil {
+		panic("SigsClientInterfaceMock.ApplyFunc: method is nil but SigsClientInterface.Apply was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Obj  runtime.ApplyConfiguration
+		Opts []k8sclient.ApplyOption
+	}{
+		Ctx:  ctx,
+		Obj:  obj,
+		Opts: opts,
+	}
+	mock.lockApply.Lock()
+	mock.calls.Apply = append(mock.calls.Apply, callInfo)
+	mock.lockApply.Unlock()
+	return mock.ApplyFunc(ctx, obj, opts...)
+}
+
+// ApplyCalls gets all the calls that were made to Apply.
+// Check the length with:
+//
+//	len(mockedSigsClientInterface.ApplyCalls())
+func (mock *SigsClientInterfaceMock) ApplyCalls() []struct {
+	Ctx  context.Context
+	Obj  runtime.ApplyConfiguration
+	Opts []k8sclient.ApplyOption
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Obj  runtime.ApplyConfiguration
+		Opts []k8sclient.ApplyOption
+	}
+	mock.lockApply.RLock()
+	calls = mock.calls.Apply
+	mock.lockApply.RUnlock()
+	return calls
 }
 
 // Create calls CreateFunc.
