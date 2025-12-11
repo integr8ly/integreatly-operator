@@ -125,6 +125,10 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *TenantReconciler) getAPIManagementTenant(crName string, crNamespace string) (*v1alpha1.APIManagementTenant, error) {
 	tenant := &v1alpha1.APIManagementTenant{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "APIManagementTenant",
+			APIVersion: "integreatly.org/v1alpha1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crName,
 			Namespace: crNamespace,
@@ -134,6 +138,11 @@ func (r *TenantReconciler) getAPIManagementTenant(crName string, crNamespace str
 	err := r.Get(context.TODO(), key, tenant)
 	if err != nil {
 		return nil, fmt.Errorf("error getting tenant %s: %v", crName, err)
+	}
+	// Ensure TypeMeta is set for callers/tests that assert it
+	tenant.TypeMeta = metav1.TypeMeta{
+		Kind:       "APIManagementTenant",
+		APIVersion: "integreatly.org/v1alpha1",
 	}
 	return tenant, nil
 }
@@ -338,6 +347,12 @@ func (r *TenantReconciler) getUserByTenantNamespace(ns string) (*usersv1.User, e
 	err := r.Client.Get(context.TODO(), key, user)
 	if err != nil {
 		return nil, err
+	}
+
+	// Ensure TypeMeta is set for callers/tests that assert it
+	user.TypeMeta = metav1.TypeMeta{
+		Kind:       "User",
+		APIVersion: fmt.Sprintf("%s/%s", usersv1.GroupName, usersv1.GroupVersion.Version),
 	}
 
 	return user, nil
