@@ -85,6 +85,18 @@ var (
 		},
 	)
 
+	// RHOAMProductStatus tracks individual product reconciliation status
+	RHOAMProductStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_product_status",
+			Help: "RHOAM individual product reconciliation status",
+		},
+		[]string{
+			"product",
+			"stage",
+		},
+	)
+
 	RHOAMCluster = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_cluster",
@@ -212,6 +224,30 @@ func SetStatus(installation *integreatlyv1alpha1.RHMI) {
 	RHOAMStatus.Reset()
 	if string(installation.Status.Stage) != "" {
 		RHOAMStatus.With(prometheus.Labels{"stage": string(installation.Status.Stage)}).Set(float64(1))
+	}
+}
+
+// SetProductStatus exposes RHOAM product-specific status metrics
+func SetProductStatus(installation *integreatlyv1alpha1.RHMI) {
+	RHOAMProductStatus.Reset()
+
+	// Iterate through all stages and products
+	for _, stage := range installation.Status.Stages {
+		for productName, product := range stage.Products {
+			// Set metric value based on product phase
+			// 0 = completed, 1 = in progress/error
+			var value float64
+			if product.Phase == integreatlyv1alpha1.PhaseCompleted {
+				value = 0
+			} else {
+				value = 1
+			}
+
+			RHOAMProductStatus.With(prometheus.Labels{
+				"product": string(productName),
+				"stage":   string(product.Phase),
+			}).Set(value)
+		}
 	}
 }
 
