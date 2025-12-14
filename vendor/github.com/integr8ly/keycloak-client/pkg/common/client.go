@@ -1121,7 +1121,7 @@ func (c *Client) login(user, pass string) error {
 	}
 
 	if tokenRes.Error != "" {
-		logrus.Errorf("error with request: " + tokenRes.ErrorDescription)
+		logrus.Errorf("error with request: %s", tokenRes.ErrorDescription)
 		return errors.New(tokenRes.ErrorDescription)
 	}
 
@@ -1226,7 +1226,7 @@ type KeycloakInterface interface {
 
 //go:generate moq -out keycloakClientFactory_moq.go . KeycloakClientFactory
 
-//KeycloakClientFactory interface
+// KeycloakClientFactory interface
 type KeycloakClientFactory interface {
 	AuthenticatedClient(kc v1alpha1.Keycloak) (KeycloakInterface, error)
 }

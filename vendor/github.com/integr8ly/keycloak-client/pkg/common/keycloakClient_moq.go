@@ -14,217 +14,217 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 
 // KeycloakInterfaceMock is a mock implementation of KeycloakInterface.
 //
-// 	func TestSomethingThatUsesKeycloakInterface(t *testing.T) {
+//	func TestSomethingThatUsesKeycloakInterface(t *testing.T) {
 //
-// 		// make and configure a mocked KeycloakInterface
-// 		mockedKeycloakInterface := &KeycloakInterfaceMock{
-// 			AddExecutionToAuthenticatonFlowFunc: func(flowAlias string, realmName string, providerID string, requirement Requirement) error {
-// 				panic("mock out the AddExecutionToAuthenticatonFlow method")
-// 			},
-// 			AddUserToGroupFunc: func(realmName string, userID string, groupID string) error {
-// 				panic("mock out the AddUserToGroup method")
-// 			},
-// 			CreateAuthenticationFlowFunc: func(authFlow AuthenticationFlow, realmName string) (string, error) {
-// 				panic("mock out the CreateAuthenticationFlow method")
-// 			},
-// 			CreateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error) {
-// 				panic("mock out the CreateAuthenticatorConfig method")
-// 			},
-// 			CreateClientFunc: func(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
-// 				panic("mock out the CreateClient method")
-// 			},
-// 			CreateFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error) {
-// 				panic("mock out the CreateFederatedIdentity method")
-// 			},
-// 			CreateGroupFunc: func(group string, realmName string) (string, error) {
-// 				panic("mock out the CreateGroup method")
-// 			},
-// 			CreateGroupClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) (string, error) {
-// 				panic("mock out the CreateGroupClientRole method")
-// 			},
-// 			CreateGroupRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) (string, error) {
-// 				panic("mock out the CreateGroupRealmRole method")
-// 			},
-// 			CreateIdentityProviderFunc: func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error) {
-// 				panic("mock out the CreateIdentityProvider method")
-// 			},
-// 			CreateRealmFunc: func(realm *v1alpha1.KeycloakRealm) (string, error) {
-// 				panic("mock out the CreateRealm method")
-// 			},
-// 			CreateUserFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
-// 				panic("mock out the CreateUser method")
-// 			},
-// 			CreateUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) (string, error) {
-// 				panic("mock out the CreateUserClientRole method")
-// 			},
-// 			CreateUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) (string, error) {
-// 				panic("mock out the CreateUserRealmRole method")
-// 			},
-// 			DeleteAuthenticatorConfigFunc: func(configID string, realmName string) error {
-// 				panic("mock out the DeleteAuthenticatorConfig method")
-// 			},
-// 			DeleteClientFunc: func(clientID string, realmName string) error {
-// 				panic("mock out the DeleteClient method")
-// 			},
-// 			DeleteIdentityProviderFunc: func(alias string, realmName string) error {
-// 				panic("mock out the DeleteIdentityProvider method")
-// 			},
-// 			DeleteRealmFunc: func(realmName string) error {
-// 				panic("mock out the DeleteRealm method")
-// 			},
-// 			DeleteUserFunc: func(userID string, realmName string) error {
-// 				panic("mock out the DeleteUser method")
-// 			},
-// 			DeleteUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) error {
-// 				panic("mock out the DeleteUserClientRole method")
-// 			},
-// 			DeleteUserFromGroupFunc: func(realmName string, userID string, groupID string) error {
-// 				panic("mock out the DeleteUserFromGroup method")
-// 			},
-// 			DeleteUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) error {
-// 				panic("mock out the DeleteUserRealmRole method")
-// 			},
-// 			FindAuthenticationExecutionForFlowFunc: func(flowAlias string, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error) {
-// 				panic("mock out the FindAuthenticationExecutionForFlow method")
-// 			},
-// 			FindAuthenticationFlowByAliasFunc: func(flowAlias string, realmName string) (*AuthenticationFlow, error) {
-// 				panic("mock out the FindAuthenticationFlowByAlias method")
-// 			},
-// 			FindAvailableGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the FindAvailableGroupClientRole method")
-// 			},
-// 			FindGroupByNameFunc: func(groupName string, realmName string) (*Group, error) {
-// 				panic("mock out the FindGroupByName method")
-// 			},
-// 			FindGroupByPathFunc: func(groupPath string, realmName string) (*Group, error) {
-// 				panic("mock out the FindGroupByPath method")
-// 			},
-// 			FindGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the FindGroupClientRole method")
-// 			},
-// 			FindUserByEmailFunc: func(email string, realm string) (*v1alpha1.KeycloakAPIUser, error) {
-// 				panic("mock out the FindUserByEmail method")
-// 			},
-// 			FindUserByUsernameFunc: func(name string, realm string) (*v1alpha1.KeycloakAPIUser, error) {
-// 				panic("mock out the FindUserByUsername method")
-// 			},
-// 			GetAuthenticatorConfigFunc: func(configID string, realmName string) (*v1alpha1.AuthenticatorConfig, error) {
-// 				panic("mock out the GetAuthenticatorConfig method")
-// 			},
-// 			GetClientFunc: func(clientID string, realmName string) (*v1alpha1.KeycloakAPIClient, error) {
-// 				panic("mock out the GetClient method")
-// 			},
-// 			GetClientInstallFunc: func(clientID string, realmName string) ([]byte, error) {
-// 				panic("mock out the GetClientInstall method")
-// 			},
-// 			GetClientSecretFunc: func(clientID string, realmName string) (string, error) {
-// 				panic("mock out the GetClientSecret method")
-// 			},
-// 			GetIdentityProviderFunc: func(alias string, realmName string) (*v1alpha1.KeycloakIdentityProvider, error) {
-// 				panic("mock out the GetIdentityProvider method")
-// 			},
-// 			GetRealmFunc: func(realmName string) (*v1alpha1.KeycloakRealm, error) {
-// 				panic("mock out the GetRealm method")
-// 			},
-// 			GetUserFunc: func(userID string, realmName string) (*v1alpha1.KeycloakAPIUser, error) {
-// 				panic("mock out the GetUser method")
-// 			},
-// 			GetUserFederatedIdentitiesFunc: func(userName string, realmName string) ([]v1alpha1.FederatedIdentity, error) {
-// 				panic("mock out the GetUserFederatedIdentities method")
-// 			},
-// 			ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error) {
-// 				panic("mock out the ListAuthenticationExecutionsForFlow method")
-// 			},
-// 			ListAuthenticationFlowsFunc: func(realmName string) ([]*AuthenticationFlow, error) {
-// 				panic("mock out the ListAuthenticationFlows method")
-// 			},
-// 			ListAvailableGroupClientRolesFunc: func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListAvailableGroupClientRoles method")
-// 			},
-// 			ListAvailableGroupRealmRolesFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListAvailableGroupRealmRoles method")
-// 			},
-// 			ListAvailableUserClientRolesFunc: func(realmName string, clientID string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListAvailableUserClientRoles method")
-// 			},
-// 			ListAvailableUserRealmRolesFunc: func(realmName string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListAvailableUserRealmRoles method")
-// 			},
-// 			ListClientsFunc: func(realmName string) ([]*v1alpha1.KeycloakAPIClient, error) {
-// 				panic("mock out the ListClients method")
-// 			},
-// 			ListDefaultGroupsFunc: func(realmName string) ([]*Group, error) {
-// 				panic("mock out the ListDefaultGroups method")
-// 			},
-// 			ListGroupClientRolesFunc: func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListGroupClientRoles method")
-// 			},
-// 			ListGroupRealmRolesFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListGroupRealmRoles method")
-// 			},
-// 			ListIdentityProvidersFunc: func(realmName string) ([]*v1alpha1.KeycloakIdentityProvider, error) {
-// 				panic("mock out the ListIdentityProviders method")
-// 			},
-// 			ListOfActivesUsersPerRealmFunc: func(realmName string, dateFrom string, max int) ([]Users, error) {
-// 				panic("mock out the ListOfActivesUsersPerRealm method")
-// 			},
-// 			ListRealmsFunc: func() ([]*v1alpha1.KeycloakAPIRealm, error) {
-// 				panic("mock out the ListRealms method")
-// 			},
-// 			ListUserClientRolesFunc: func(realmName string, clientID string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListUserClientRoles method")
-// 			},
-// 			ListUserRealmRolesFunc: func(realmName string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
-// 				panic("mock out the ListUserRealmRoles method")
-// 			},
-// 			ListUsersFunc: func(realmName string) ([]*v1alpha1.KeycloakAPIUser, error) {
-// 				panic("mock out the ListUsers method")
-// 			},
-// 			ListUsersInGroupFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakAPIUser, error) {
-// 				panic("mock out the ListUsersInGroup method")
-// 			},
-// 			MakeGroupDefaultFunc: func(groupID string, realmName string) error {
-// 				panic("mock out the MakeGroupDefault method")
-// 			},
-// 			PingFunc: func() error {
-// 				panic("mock out the Ping method")
-// 			},
-// 			RemoveFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) error {
-// 				panic("mock out the RemoveFederatedIdentity method")
-// 			},
-// 			SetGroupChildFunc: func(groupID string, realmName string, childGroup *Group) error {
-// 				panic("mock out the SetGroupChild method")
-// 			},
-// 			UpdateAuthenticationExecutionForFlowFunc: func(flowAlias string, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error {
-// 				panic("mock out the UpdateAuthenticationExecutionForFlow method")
-// 			},
-// 			UpdateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error {
-// 				panic("mock out the UpdateAuthenticatorConfig method")
-// 			},
-// 			UpdateClientFunc: func(specClient *v1alpha1.KeycloakAPIClient, realmName string) error {
-// 				panic("mock out the UpdateClient method")
-// 			},
-// 			UpdateEventsConfigFunc: func(realmName string, enabledEventTypes []string, eventsListeners []string) error {
-// 				panic("mock out the UpdateEventsConfig method")
-// 			},
-// 			UpdateIdentityProviderFunc: func(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
-// 				panic("mock out the UpdateIdentityProvider method")
-// 			},
-// 			UpdatePasswordFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string, newPass string) error {
-// 				panic("mock out the UpdatePassword method")
-// 			},
-// 			UpdateRealmFunc: func(specRealm *v1alpha1.KeycloakRealm) error {
-// 				panic("mock out the UpdateRealm method")
-// 			},
-// 			UpdateUserFunc: func(specUser *v1alpha1.KeycloakAPIUser, realmName string) error {
-// 				panic("mock out the UpdateUser method")
-// 			},
-// 		}
+//		// make and configure a mocked KeycloakInterface
+//		mockedKeycloakInterface := &KeycloakInterfaceMock{
+//			AddExecutionToAuthenticatonFlowFunc: func(flowAlias string, realmName string, providerID string, requirement Requirement) error {
+//				panic("mock out the AddExecutionToAuthenticatonFlow method")
+//			},
+//			AddUserToGroupFunc: func(realmName string, userID string, groupID string) error {
+//				panic("mock out the AddUserToGroup method")
+//			},
+//			CreateAuthenticationFlowFunc: func(authFlow AuthenticationFlow, realmName string) (string, error) {
+//				panic("mock out the CreateAuthenticationFlow method")
+//			},
+//			CreateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error) {
+//				panic("mock out the CreateAuthenticatorConfig method")
+//			},
+//			CreateClientFunc: func(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
+//				panic("mock out the CreateClient method")
+//			},
+//			CreateFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error) {
+//				panic("mock out the CreateFederatedIdentity method")
+//			},
+//			CreateGroupFunc: func(group string, realmName string) (string, error) {
+//				panic("mock out the CreateGroup method")
+//			},
+//			CreateGroupClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) (string, error) {
+//				panic("mock out the CreateGroupClientRole method")
+//			},
+//			CreateGroupRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) (string, error) {
+//				panic("mock out the CreateGroupRealmRole method")
+//			},
+//			CreateIdentityProviderFunc: func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error) {
+//				panic("mock out the CreateIdentityProvider method")
+//			},
+//			CreateRealmFunc: func(realm *v1alpha1.KeycloakRealm) (string, error) {
+//				panic("mock out the CreateRealm method")
+//			},
+//			CreateUserFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
+//				panic("mock out the CreateUser method")
+//			},
+//			CreateUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) (string, error) {
+//				panic("mock out the CreateUserClientRole method")
+//			},
+//			CreateUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) (string, error) {
+//				panic("mock out the CreateUserRealmRole method")
+//			},
+//			DeleteAuthenticatorConfigFunc: func(configID string, realmName string) error {
+//				panic("mock out the DeleteAuthenticatorConfig method")
+//			},
+//			DeleteClientFunc: func(clientID string, realmName string) error {
+//				panic("mock out the DeleteClient method")
+//			},
+//			DeleteIdentityProviderFunc: func(alias string, realmName string) error {
+//				panic("mock out the DeleteIdentityProvider method")
+//			},
+//			DeleteRealmFunc: func(realmName string) error {
+//				panic("mock out the DeleteRealm method")
+//			},
+//			DeleteUserFunc: func(userID string, realmName string) error {
+//				panic("mock out the DeleteUser method")
+//			},
+//			DeleteUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) error {
+//				panic("mock out the DeleteUserClientRole method")
+//			},
+//			DeleteUserFromGroupFunc: func(realmName string, userID string, groupID string) error {
+//				panic("mock out the DeleteUserFromGroup method")
+//			},
+//			DeleteUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) error {
+//				panic("mock out the DeleteUserRealmRole method")
+//			},
+//			FindAuthenticationExecutionForFlowFunc: func(flowAlias string, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error) {
+//				panic("mock out the FindAuthenticationExecutionForFlow method")
+//			},
+//			FindAuthenticationFlowByAliasFunc: func(flowAlias string, realmName string) (*AuthenticationFlow, error) {
+//				panic("mock out the FindAuthenticationFlowByAlias method")
+//			},
+//			FindAvailableGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the FindAvailableGroupClientRole method")
+//			},
+//			FindGroupByNameFunc: func(groupName string, realmName string) (*Group, error) {
+//				panic("mock out the FindGroupByName method")
+//			},
+//			FindGroupByPathFunc: func(groupPath string, realmName string) (*Group, error) {
+//				panic("mock out the FindGroupByPath method")
+//			},
+//			FindGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the FindGroupClientRole method")
+//			},
+//			FindUserByEmailFunc: func(email string, realm string) (*v1alpha1.KeycloakAPIUser, error) {
+//				panic("mock out the FindUserByEmail method")
+//			},
+//			FindUserByUsernameFunc: func(name string, realm string) (*v1alpha1.KeycloakAPIUser, error) {
+//				panic("mock out the FindUserByUsername method")
+//			},
+//			GetAuthenticatorConfigFunc: func(configID string, realmName string) (*v1alpha1.AuthenticatorConfig, error) {
+//				panic("mock out the GetAuthenticatorConfig method")
+//			},
+//			GetClientFunc: func(clientID string, realmName string) (*v1alpha1.KeycloakAPIClient, error) {
+//				panic("mock out the GetClient method")
+//			},
+//			GetClientInstallFunc: func(clientID string, realmName string) ([]byte, error) {
+//				panic("mock out the GetClientInstall method")
+//			},
+//			GetClientSecretFunc: func(clientID string, realmName string) (string, error) {
+//				panic("mock out the GetClientSecret method")
+//			},
+//			GetIdentityProviderFunc: func(alias string, realmName string) (*v1alpha1.KeycloakIdentityProvider, error) {
+//				panic("mock out the GetIdentityProvider method")
+//			},
+//			GetRealmFunc: func(realmName string) (*v1alpha1.KeycloakRealm, error) {
+//				panic("mock out the GetRealm method")
+//			},
+//			GetUserFunc: func(userID string, realmName string) (*v1alpha1.KeycloakAPIUser, error) {
+//				panic("mock out the GetUser method")
+//			},
+//			GetUserFederatedIdentitiesFunc: func(userName string, realmName string) ([]v1alpha1.FederatedIdentity, error) {
+//				panic("mock out the GetUserFederatedIdentities method")
+//			},
+//			ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error) {
+//				panic("mock out the ListAuthenticationExecutionsForFlow method")
+//			},
+//			ListAuthenticationFlowsFunc: func(realmName string) ([]*AuthenticationFlow, error) {
+//				panic("mock out the ListAuthenticationFlows method")
+//			},
+//			ListAvailableGroupClientRolesFunc: func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListAvailableGroupClientRoles method")
+//			},
+//			ListAvailableGroupRealmRolesFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListAvailableGroupRealmRoles method")
+//			},
+//			ListAvailableUserClientRolesFunc: func(realmName string, clientID string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListAvailableUserClientRoles method")
+//			},
+//			ListAvailableUserRealmRolesFunc: func(realmName string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListAvailableUserRealmRoles method")
+//			},
+//			ListClientsFunc: func(realmName string) ([]*v1alpha1.KeycloakAPIClient, error) {
+//				panic("mock out the ListClients method")
+//			},
+//			ListDefaultGroupsFunc: func(realmName string) ([]*Group, error) {
+//				panic("mock out the ListDefaultGroups method")
+//			},
+//			ListGroupClientRolesFunc: func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListGroupClientRoles method")
+//			},
+//			ListGroupRealmRolesFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListGroupRealmRoles method")
+//			},
+//			ListIdentityProvidersFunc: func(realmName string) ([]*v1alpha1.KeycloakIdentityProvider, error) {
+//				panic("mock out the ListIdentityProviders method")
+//			},
+//			ListOfActivesUsersPerRealmFunc: func(realmName string, dateFrom string, max int) ([]Users, error) {
+//				panic("mock out the ListOfActivesUsersPerRealm method")
+//			},
+//			ListRealmsFunc: func() ([]*v1alpha1.KeycloakAPIRealm, error) {
+//				panic("mock out the ListRealms method")
+//			},
+//			ListUserClientRolesFunc: func(realmName string, clientID string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListUserClientRoles method")
+//			},
+//			ListUserRealmRolesFunc: func(realmName string, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+//				panic("mock out the ListUserRealmRoles method")
+//			},
+//			ListUsersFunc: func(realmName string) ([]*v1alpha1.KeycloakAPIUser, error) {
+//				panic("mock out the ListUsers method")
+//			},
+//			ListUsersInGroupFunc: func(realmName string, groupID string) ([]*v1alpha1.KeycloakAPIUser, error) {
+//				panic("mock out the ListUsersInGroup method")
+//			},
+//			MakeGroupDefaultFunc: func(groupID string, realmName string) error {
+//				panic("mock out the MakeGroupDefault method")
+//			},
+//			PingFunc: func() error {
+//				panic("mock out the Ping method")
+//			},
+//			RemoveFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) error {
+//				panic("mock out the RemoveFederatedIdentity method")
+//			},
+//			SetGroupChildFunc: func(groupID string, realmName string, childGroup *Group) error {
+//				panic("mock out the SetGroupChild method")
+//			},
+//			UpdateAuthenticationExecutionForFlowFunc: func(flowAlias string, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error {
+//				panic("mock out the UpdateAuthenticationExecutionForFlow method")
+//			},
+//			UpdateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error {
+//				panic("mock out the UpdateAuthenticatorConfig method")
+//			},
+//			UpdateClientFunc: func(specClient *v1alpha1.KeycloakAPIClient, realmName string) error {
+//				panic("mock out the UpdateClient method")
+//			},
+//			UpdateEventsConfigFunc: func(realmName string, enabledEventTypes []string, eventsListeners []string) error {
+//				panic("mock out the UpdateEventsConfig method")
+//			},
+//			UpdateIdentityProviderFunc: func(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+//				panic("mock out the UpdateIdentityProvider method")
+//			},
+//			UpdatePasswordFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string, newPass string) error {
+//				panic("mock out the UpdatePassword method")
+//			},
+//			UpdateRealmFunc: func(specRealm *v1alpha1.KeycloakRealm) error {
+//				panic("mock out the UpdateRealm method")
+//			},
+//			UpdateUserFunc: func(specUser *v1alpha1.KeycloakAPIUser, realmName string) error {
+//				panic("mock out the UpdateUser method")
+//			},
+//		}
 //
-// 		// use mockedKeycloakInterface in code that requires KeycloakInterface
-// 		// and then make assertions.
+//		// use mockedKeycloakInterface in code that requires KeycloakInterface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type KeycloakInterfaceMock struct {
 	// AddExecutionToAuthenticatonFlowFunc mocks the AddExecutionToAuthenticatonFlow method.
 	AddExecutionToAuthenticatonFlowFunc func(flowAlias string, realmName string, providerID string, requirement Requirement) error
@@ -1026,7 +1026,8 @@ func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlow(flowAlias str
 
 // AddExecutionToAuthenticatonFlowCalls gets all the calls that were made to AddExecutionToAuthenticatonFlow.
 // Check the length with:
-//     len(mockedKeycloakInterface.AddExecutionToAuthenticatonFlowCalls())
+//
+//	len(mockedKeycloakInterface.AddExecutionToAuthenticatonFlowCalls())
 func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlowCalls() []struct {
 	FlowAlias   string
 	RealmName   string
@@ -1067,7 +1068,8 @@ func (mock *KeycloakInterfaceMock) AddUserToGroup(realmName string, userID strin
 
 // AddUserToGroupCalls gets all the calls that were made to AddUserToGroup.
 // Check the length with:
-//     len(mockedKeycloakInterface.AddUserToGroupCalls())
+//
+//	len(mockedKeycloakInterface.AddUserToGroupCalls())
 func (mock *KeycloakInterfaceMock) AddUserToGroupCalls() []struct {
 	RealmName string
 	UserID    string
@@ -1104,7 +1106,8 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticationFlow(authFlow Authenticat
 
 // CreateAuthenticationFlowCalls gets all the calls that were made to CreateAuthenticationFlow.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateAuthenticationFlowCalls())
+//
+//	len(mockedKeycloakInterface.CreateAuthenticationFlowCalls())
 func (mock *KeycloakInterfaceMock) CreateAuthenticationFlowCalls() []struct {
 	AuthFlow  AuthenticationFlow
 	RealmName string
@@ -1141,7 +1144,8 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfig(authenticatorConfig
 
 // CreateAuthenticatorConfigCalls gets all the calls that were made to CreateAuthenticatorConfig.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateAuthenticatorConfigCalls())
+//
+//	len(mockedKeycloakInterface.CreateAuthenticatorConfigCalls())
 func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfigCalls() []struct {
 	AuthenticatorConfig *v1alpha1.AuthenticatorConfig
 	RealmName           string
@@ -1178,7 +1182,8 @@ func (mock *KeycloakInterfaceMock) CreateClient(client *v1alpha1.KeycloakAPIClie
 
 // CreateClientCalls gets all the calls that were made to CreateClient.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateClientCalls())
+//
+//	len(mockedKeycloakInterface.CreateClientCalls())
 func (mock *KeycloakInterfaceMock) CreateClientCalls() []struct {
 	Client    *v1alpha1.KeycloakAPIClient
 	RealmName string
@@ -1215,7 +1220,8 @@ func (mock *KeycloakInterfaceMock) CreateFederatedIdentity(fid v1alpha1.Federate
 
 // CreateFederatedIdentityCalls gets all the calls that were made to CreateFederatedIdentity.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateFederatedIdentityCalls())
+//
+//	len(mockedKeycloakInterface.CreateFederatedIdentityCalls())
 func (mock *KeycloakInterfaceMock) CreateFederatedIdentityCalls() []struct {
 	Fid       v1alpha1.FederatedIdentity
 	UserID    string
@@ -1252,7 +1258,8 @@ func (mock *KeycloakInterfaceMock) CreateGroup(group string, realmName string) (
 
 // CreateGroupCalls gets all the calls that were made to CreateGroup.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateGroupCalls())
+//
+//	len(mockedKeycloakInterface.CreateGroupCalls())
 func (mock *KeycloakInterfaceMock) CreateGroupCalls() []struct {
 	Group     string
 	RealmName string
@@ -1291,7 +1298,8 @@ func (mock *KeycloakInterfaceMock) CreateGroupClientRole(role *v1alpha1.Keycloak
 
 // CreateGroupClientRoleCalls gets all the calls that were made to CreateGroupClientRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateGroupClientRoleCalls())
+//
+//	len(mockedKeycloakInterface.CreateGroupClientRoleCalls())
 func (mock *KeycloakInterfaceMock) CreateGroupClientRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1332,7 +1340,8 @@ func (mock *KeycloakInterfaceMock) CreateGroupRealmRole(role *v1alpha1.KeycloakU
 
 // CreateGroupRealmRoleCalls gets all the calls that were made to CreateGroupRealmRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateGroupRealmRoleCalls())
+//
+//	len(mockedKeycloakInterface.CreateGroupRealmRoleCalls())
 func (mock *KeycloakInterfaceMock) CreateGroupRealmRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1369,7 +1378,8 @@ func (mock *KeycloakInterfaceMock) CreateIdentityProvider(identityProvider *v1al
 
 // CreateIdentityProviderCalls gets all the calls that were made to CreateIdentityProvider.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateIdentityProviderCalls())
+//
+//	len(mockedKeycloakInterface.CreateIdentityProviderCalls())
 func (mock *KeycloakInterfaceMock) CreateIdentityProviderCalls() []struct {
 	IdentityProvider *v1alpha1.KeycloakIdentityProvider
 	RealmName        string
@@ -1402,7 +1412,8 @@ func (mock *KeycloakInterfaceMock) CreateRealm(realm *v1alpha1.KeycloakRealm) (s
 
 // CreateRealmCalls gets all the calls that were made to CreateRealm.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateRealmCalls())
+//
+//	len(mockedKeycloakInterface.CreateRealmCalls())
 func (mock *KeycloakInterfaceMock) CreateRealmCalls() []struct {
 	Realm *v1alpha1.KeycloakRealm
 } {
@@ -1435,7 +1446,8 @@ func (mock *KeycloakInterfaceMock) CreateUser(user *v1alpha1.KeycloakAPIUser, re
 
 // CreateUserCalls gets all the calls that were made to CreateUser.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateUserCalls())
+//
+//	len(mockedKeycloakInterface.CreateUserCalls())
 func (mock *KeycloakInterfaceMock) CreateUserCalls() []struct {
 	User      *v1alpha1.KeycloakAPIUser
 	RealmName string
@@ -1474,7 +1486,8 @@ func (mock *KeycloakInterfaceMock) CreateUserClientRole(role *v1alpha1.KeycloakU
 
 // CreateUserClientRoleCalls gets all the calls that were made to CreateUserClientRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateUserClientRoleCalls())
+//
+//	len(mockedKeycloakInterface.CreateUserClientRoleCalls())
 func (mock *KeycloakInterfaceMock) CreateUserClientRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1515,7 +1528,8 @@ func (mock *KeycloakInterfaceMock) CreateUserRealmRole(role *v1alpha1.KeycloakUs
 
 // CreateUserRealmRoleCalls gets all the calls that were made to CreateUserRealmRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.CreateUserRealmRoleCalls())
+//
+//	len(mockedKeycloakInterface.CreateUserRealmRoleCalls())
 func (mock *KeycloakInterfaceMock) CreateUserRealmRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1552,7 +1566,8 @@ func (mock *KeycloakInterfaceMock) DeleteAuthenticatorConfig(configID string, re
 
 // DeleteAuthenticatorConfigCalls gets all the calls that were made to DeleteAuthenticatorConfig.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteAuthenticatorConfigCalls())
+//
+//	len(mockedKeycloakInterface.DeleteAuthenticatorConfigCalls())
 func (mock *KeycloakInterfaceMock) DeleteAuthenticatorConfigCalls() []struct {
 	ConfigID  string
 	RealmName string
@@ -1587,7 +1602,8 @@ func (mock *KeycloakInterfaceMock) DeleteClient(clientID string, realmName strin
 
 // DeleteClientCalls gets all the calls that were made to DeleteClient.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteClientCalls())
+//
+//	len(mockedKeycloakInterface.DeleteClientCalls())
 func (mock *KeycloakInterfaceMock) DeleteClientCalls() []struct {
 	ClientID  string
 	RealmName string
@@ -1622,7 +1638,8 @@ func (mock *KeycloakInterfaceMock) DeleteIdentityProvider(alias string, realmNam
 
 // DeleteIdentityProviderCalls gets all the calls that were made to DeleteIdentityProvider.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteIdentityProviderCalls())
+//
+//	len(mockedKeycloakInterface.DeleteIdentityProviderCalls())
 func (mock *KeycloakInterfaceMock) DeleteIdentityProviderCalls() []struct {
 	Alias     string
 	RealmName string
@@ -1655,7 +1672,8 @@ func (mock *KeycloakInterfaceMock) DeleteRealm(realmName string) error {
 
 // DeleteRealmCalls gets all the calls that were made to DeleteRealm.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteRealmCalls())
+//
+//	len(mockedKeycloakInterface.DeleteRealmCalls())
 func (mock *KeycloakInterfaceMock) DeleteRealmCalls() []struct {
 	RealmName string
 } {
@@ -1688,7 +1706,8 @@ func (mock *KeycloakInterfaceMock) DeleteUser(userID string, realmName string) e
 
 // DeleteUserCalls gets all the calls that were made to DeleteUser.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteUserCalls())
+//
+//	len(mockedKeycloakInterface.DeleteUserCalls())
 func (mock *KeycloakInterfaceMock) DeleteUserCalls() []struct {
 	UserID    string
 	RealmName string
@@ -1727,7 +1746,8 @@ func (mock *KeycloakInterfaceMock) DeleteUserClientRole(role *v1alpha1.KeycloakU
 
 // DeleteUserClientRoleCalls gets all the calls that were made to DeleteUserClientRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteUserClientRoleCalls())
+//
+//	len(mockedKeycloakInterface.DeleteUserClientRoleCalls())
 func (mock *KeycloakInterfaceMock) DeleteUserClientRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1768,7 +1788,8 @@ func (mock *KeycloakInterfaceMock) DeleteUserFromGroup(realmName string, userID 
 
 // DeleteUserFromGroupCalls gets all the calls that were made to DeleteUserFromGroup.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteUserFromGroupCalls())
+//
+//	len(mockedKeycloakInterface.DeleteUserFromGroupCalls())
 func (mock *KeycloakInterfaceMock) DeleteUserFromGroupCalls() []struct {
 	RealmName string
 	UserID    string
@@ -1807,7 +1828,8 @@ func (mock *KeycloakInterfaceMock) DeleteUserRealmRole(role *v1alpha1.KeycloakUs
 
 // DeleteUserRealmRoleCalls gets all the calls that were made to DeleteUserRealmRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.DeleteUserRealmRoleCalls())
+//
+//	len(mockedKeycloakInterface.DeleteUserRealmRoleCalls())
 func (mock *KeycloakInterfaceMock) DeleteUserRealmRoleCalls() []struct {
 	Role      *v1alpha1.KeycloakUserRole
 	RealmName string
@@ -1846,7 +1868,8 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationExecutionForFlow(flowAlias 
 
 // FindAuthenticationExecutionForFlowCalls gets all the calls that were made to FindAuthenticationExecutionForFlow.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindAuthenticationExecutionForFlowCalls())
+//
+//	len(mockedKeycloakInterface.FindAuthenticationExecutionForFlowCalls())
 func (mock *KeycloakInterfaceMock) FindAuthenticationExecutionForFlowCalls() []struct {
 	FlowAlias string
 	RealmName string
@@ -1883,7 +1906,8 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAlias(flowAlias strin
 
 // FindAuthenticationFlowByAliasCalls gets all the calls that were made to FindAuthenticationFlowByAlias.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindAuthenticationFlowByAliasCalls())
+//
+//	len(mockedKeycloakInterface.FindAuthenticationFlowByAliasCalls())
 func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAliasCalls() []struct {
 	FlowAlias string
 	RealmName string
@@ -1922,7 +1946,8 @@ func (mock *KeycloakInterfaceMock) FindAvailableGroupClientRole(realmName string
 
 // FindAvailableGroupClientRoleCalls gets all the calls that were made to FindAvailableGroupClientRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindAvailableGroupClientRoleCalls())
+//
+//	len(mockedKeycloakInterface.FindAvailableGroupClientRoleCalls())
 func (mock *KeycloakInterfaceMock) FindAvailableGroupClientRoleCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -1961,7 +1986,8 @@ func (mock *KeycloakInterfaceMock) FindGroupByName(groupName string, realmName s
 
 // FindGroupByNameCalls gets all the calls that were made to FindGroupByName.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindGroupByNameCalls())
+//
+//	len(mockedKeycloakInterface.FindGroupByNameCalls())
 func (mock *KeycloakInterfaceMock) FindGroupByNameCalls() []struct {
 	GroupName string
 	RealmName string
@@ -1996,7 +2022,8 @@ func (mock *KeycloakInterfaceMock) FindGroupByPath(groupPath string, realmName s
 
 // FindGroupByPathCalls gets all the calls that were made to FindGroupByPath.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindGroupByPathCalls())
+//
+//	len(mockedKeycloakInterface.FindGroupByPathCalls())
 func (mock *KeycloakInterfaceMock) FindGroupByPathCalls() []struct {
 	GroupPath string
 	RealmName string
@@ -2035,7 +2062,8 @@ func (mock *KeycloakInterfaceMock) FindGroupClientRole(realmName string, clientI
 
 // FindGroupClientRoleCalls gets all the calls that were made to FindGroupClientRole.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindGroupClientRoleCalls())
+//
+//	len(mockedKeycloakInterface.FindGroupClientRoleCalls())
 func (mock *KeycloakInterfaceMock) FindGroupClientRoleCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -2074,7 +2102,8 @@ func (mock *KeycloakInterfaceMock) FindUserByEmail(email string, realm string) (
 
 // FindUserByEmailCalls gets all the calls that were made to FindUserByEmail.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindUserByEmailCalls())
+//
+//	len(mockedKeycloakInterface.FindUserByEmailCalls())
 func (mock *KeycloakInterfaceMock) FindUserByEmailCalls() []struct {
 	Email string
 	Realm string
@@ -2109,7 +2138,8 @@ func (mock *KeycloakInterfaceMock) FindUserByUsername(name string, realm string)
 
 // FindUserByUsernameCalls gets all the calls that were made to FindUserByUsername.
 // Check the length with:
-//     len(mockedKeycloakInterface.FindUserByUsernameCalls())
+//
+//	len(mockedKeycloakInterface.FindUserByUsernameCalls())
 func (mock *KeycloakInterfaceMock) FindUserByUsernameCalls() []struct {
 	Name  string
 	Realm string
@@ -2144,7 +2174,8 @@ func (mock *KeycloakInterfaceMock) GetAuthenticatorConfig(configID string, realm
 
 // GetAuthenticatorConfigCalls gets all the calls that were made to GetAuthenticatorConfig.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetAuthenticatorConfigCalls())
+//
+//	len(mockedKeycloakInterface.GetAuthenticatorConfigCalls())
 func (mock *KeycloakInterfaceMock) GetAuthenticatorConfigCalls() []struct {
 	ConfigID  string
 	RealmName string
@@ -2179,7 +2210,8 @@ func (mock *KeycloakInterfaceMock) GetClient(clientID string, realmName string) 
 
 // GetClientCalls gets all the calls that were made to GetClient.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetClientCalls())
+//
+//	len(mockedKeycloakInterface.GetClientCalls())
 func (mock *KeycloakInterfaceMock) GetClientCalls() []struct {
 	ClientID  string
 	RealmName string
@@ -2214,7 +2246,8 @@ func (mock *KeycloakInterfaceMock) GetClientInstall(clientID string, realmName s
 
 // GetClientInstallCalls gets all the calls that were made to GetClientInstall.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetClientInstallCalls())
+//
+//	len(mockedKeycloakInterface.GetClientInstallCalls())
 func (mock *KeycloakInterfaceMock) GetClientInstallCalls() []struct {
 	ClientID  string
 	RealmName string
@@ -2249,7 +2282,8 @@ func (mock *KeycloakInterfaceMock) GetClientSecret(clientID string, realmName st
 
 // GetClientSecretCalls gets all the calls that were made to GetClientSecret.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetClientSecretCalls())
+//
+//	len(mockedKeycloakInterface.GetClientSecretCalls())
 func (mock *KeycloakInterfaceMock) GetClientSecretCalls() []struct {
 	ClientID  string
 	RealmName string
@@ -2284,7 +2318,8 @@ func (mock *KeycloakInterfaceMock) GetIdentityProvider(alias string, realmName s
 
 // GetIdentityProviderCalls gets all the calls that were made to GetIdentityProvider.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetIdentityProviderCalls())
+//
+//	len(mockedKeycloakInterface.GetIdentityProviderCalls())
 func (mock *KeycloakInterfaceMock) GetIdentityProviderCalls() []struct {
 	Alias     string
 	RealmName string
@@ -2317,7 +2352,8 @@ func (mock *KeycloakInterfaceMock) GetRealm(realmName string) (*v1alpha1.Keycloa
 
 // GetRealmCalls gets all the calls that were made to GetRealm.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetRealmCalls())
+//
+//	len(mockedKeycloakInterface.GetRealmCalls())
 func (mock *KeycloakInterfaceMock) GetRealmCalls() []struct {
 	RealmName string
 } {
@@ -2350,7 +2386,8 @@ func (mock *KeycloakInterfaceMock) GetUser(userID string, realmName string) (*v1
 
 // GetUserCalls gets all the calls that were made to GetUser.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetUserCalls())
+//
+//	len(mockedKeycloakInterface.GetUserCalls())
 func (mock *KeycloakInterfaceMock) GetUserCalls() []struct {
 	UserID    string
 	RealmName string
@@ -2385,7 +2422,8 @@ func (mock *KeycloakInterfaceMock) GetUserFederatedIdentities(userName string, r
 
 // GetUserFederatedIdentitiesCalls gets all the calls that were made to GetUserFederatedIdentities.
 // Check the length with:
-//     len(mockedKeycloakInterface.GetUserFederatedIdentitiesCalls())
+//
+//	len(mockedKeycloakInterface.GetUserFederatedIdentitiesCalls())
 func (mock *KeycloakInterfaceMock) GetUserFederatedIdentitiesCalls() []struct {
 	UserName  string
 	RealmName string
@@ -2420,7 +2458,8 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationExecutionsForFlow(flowAlias
 
 // ListAuthenticationExecutionsForFlowCalls gets all the calls that were made to ListAuthenticationExecutionsForFlow.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAuthenticationExecutionsForFlowCalls())
+//
+//	len(mockedKeycloakInterface.ListAuthenticationExecutionsForFlowCalls())
 func (mock *KeycloakInterfaceMock) ListAuthenticationExecutionsForFlowCalls() []struct {
 	FlowAlias string
 	RealmName string
@@ -2453,7 +2492,8 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationFlows(realmName string) ([]
 
 // ListAuthenticationFlowsCalls gets all the calls that were made to ListAuthenticationFlows.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAuthenticationFlowsCalls())
+//
+//	len(mockedKeycloakInterface.ListAuthenticationFlowsCalls())
 func (mock *KeycloakInterfaceMock) ListAuthenticationFlowsCalls() []struct {
 	RealmName string
 } {
@@ -2488,7 +2528,8 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupClientRoles(realmName strin
 
 // ListAvailableGroupClientRolesCalls gets all the calls that were made to ListAvailableGroupClientRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAvailableGroupClientRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListAvailableGroupClientRolesCalls())
 func (mock *KeycloakInterfaceMock) ListAvailableGroupClientRolesCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -2525,7 +2566,8 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupRealmRoles(realmName string
 
 // ListAvailableGroupRealmRolesCalls gets all the calls that were made to ListAvailableGroupRealmRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAvailableGroupRealmRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListAvailableGroupRealmRolesCalls())
 func (mock *KeycloakInterfaceMock) ListAvailableGroupRealmRolesCalls() []struct {
 	RealmName string
 	GroupID   string
@@ -2562,7 +2604,8 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserClientRoles(realmName string
 
 // ListAvailableUserClientRolesCalls gets all the calls that were made to ListAvailableUserClientRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAvailableUserClientRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListAvailableUserClientRolesCalls())
 func (mock *KeycloakInterfaceMock) ListAvailableUserClientRolesCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -2599,7 +2642,8 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserRealmRoles(realmName string,
 
 // ListAvailableUserRealmRolesCalls gets all the calls that were made to ListAvailableUserRealmRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListAvailableUserRealmRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListAvailableUserRealmRolesCalls())
 func (mock *KeycloakInterfaceMock) ListAvailableUserRealmRolesCalls() []struct {
 	RealmName string
 	UserID    string
@@ -2632,7 +2676,8 @@ func (mock *KeycloakInterfaceMock) ListClients(realmName string) ([]*v1alpha1.Ke
 
 // ListClientsCalls gets all the calls that were made to ListClients.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListClientsCalls())
+//
+//	len(mockedKeycloakInterface.ListClientsCalls())
 func (mock *KeycloakInterfaceMock) ListClientsCalls() []struct {
 	RealmName string
 } {
@@ -2663,7 +2708,8 @@ func (mock *KeycloakInterfaceMock) ListDefaultGroups(realmName string) ([]*Group
 
 // ListDefaultGroupsCalls gets all the calls that were made to ListDefaultGroups.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListDefaultGroupsCalls())
+//
+//	len(mockedKeycloakInterface.ListDefaultGroupsCalls())
 func (mock *KeycloakInterfaceMock) ListDefaultGroupsCalls() []struct {
 	RealmName string
 } {
@@ -2698,7 +2744,8 @@ func (mock *KeycloakInterfaceMock) ListGroupClientRoles(realmName string, client
 
 // ListGroupClientRolesCalls gets all the calls that were made to ListGroupClientRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListGroupClientRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListGroupClientRolesCalls())
 func (mock *KeycloakInterfaceMock) ListGroupClientRolesCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -2735,7 +2782,8 @@ func (mock *KeycloakInterfaceMock) ListGroupRealmRoles(realmName string, groupID
 
 // ListGroupRealmRolesCalls gets all the calls that were made to ListGroupRealmRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListGroupRealmRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListGroupRealmRolesCalls())
 func (mock *KeycloakInterfaceMock) ListGroupRealmRolesCalls() []struct {
 	RealmName string
 	GroupID   string
@@ -2768,7 +2816,8 @@ func (mock *KeycloakInterfaceMock) ListIdentityProviders(realmName string) ([]*v
 
 // ListIdentityProvidersCalls gets all the calls that were made to ListIdentityProviders.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListIdentityProvidersCalls())
+//
+//	len(mockedKeycloakInterface.ListIdentityProvidersCalls())
 func (mock *KeycloakInterfaceMock) ListIdentityProvidersCalls() []struct {
 	RealmName string
 } {
@@ -2803,7 +2852,8 @@ func (mock *KeycloakInterfaceMock) ListOfActivesUsersPerRealm(realmName string, 
 
 // ListOfActivesUsersPerRealmCalls gets all the calls that were made to ListOfActivesUsersPerRealm.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListOfActivesUsersPerRealmCalls())
+//
+//	len(mockedKeycloakInterface.ListOfActivesUsersPerRealmCalls())
 func (mock *KeycloakInterfaceMock) ListOfActivesUsersPerRealmCalls() []struct {
 	RealmName string
 	DateFrom  string
@@ -2835,7 +2885,8 @@ func (mock *KeycloakInterfaceMock) ListRealms() ([]*v1alpha1.KeycloakAPIRealm, e
 
 // ListRealmsCalls gets all the calls that were made to ListRealms.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListRealmsCalls())
+//
+//	len(mockedKeycloakInterface.ListRealmsCalls())
 func (mock *KeycloakInterfaceMock) ListRealmsCalls() []struct {
 } {
 	var calls []struct {
@@ -2868,7 +2919,8 @@ func (mock *KeycloakInterfaceMock) ListUserClientRoles(realmName string, clientI
 
 // ListUserClientRolesCalls gets all the calls that were made to ListUserClientRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListUserClientRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListUserClientRolesCalls())
 func (mock *KeycloakInterfaceMock) ListUserClientRolesCalls() []struct {
 	RealmName string
 	ClientID  string
@@ -2905,7 +2957,8 @@ func (mock *KeycloakInterfaceMock) ListUserRealmRoles(realmName string, userID s
 
 // ListUserRealmRolesCalls gets all the calls that were made to ListUserRealmRoles.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListUserRealmRolesCalls())
+//
+//	len(mockedKeycloakInterface.ListUserRealmRolesCalls())
 func (mock *KeycloakInterfaceMock) ListUserRealmRolesCalls() []struct {
 	RealmName string
 	UserID    string
@@ -2938,7 +2991,8 @@ func (mock *KeycloakInterfaceMock) ListUsers(realmName string) ([]*v1alpha1.Keyc
 
 // ListUsersCalls gets all the calls that were made to ListUsers.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListUsersCalls())
+//
+//	len(mockedKeycloakInterface.ListUsersCalls())
 func (mock *KeycloakInterfaceMock) ListUsersCalls() []struct {
 	RealmName string
 } {
@@ -2971,7 +3025,8 @@ func (mock *KeycloakInterfaceMock) ListUsersInGroup(realmName string, groupID st
 
 // ListUsersInGroupCalls gets all the calls that were made to ListUsersInGroup.
 // Check the length with:
-//     len(mockedKeycloakInterface.ListUsersInGroupCalls())
+//
+//	len(mockedKeycloakInterface.ListUsersInGroupCalls())
 func (mock *KeycloakInterfaceMock) ListUsersInGroupCalls() []struct {
 	RealmName string
 	GroupID   string
@@ -3006,7 +3061,8 @@ func (mock *KeycloakInterfaceMock) MakeGroupDefault(groupID string, realmName st
 
 // MakeGroupDefaultCalls gets all the calls that were made to MakeGroupDefault.
 // Check the length with:
-//     len(mockedKeycloakInterface.MakeGroupDefaultCalls())
+//
+//	len(mockedKeycloakInterface.MakeGroupDefaultCalls())
 func (mock *KeycloakInterfaceMock) MakeGroupDefaultCalls() []struct {
 	GroupID   string
 	RealmName string
@@ -3036,7 +3092,8 @@ func (mock *KeycloakInterfaceMock) Ping() error {
 
 // PingCalls gets all the calls that were made to Ping.
 // Check the length with:
-//     len(mockedKeycloakInterface.PingCalls())
+//
+//	len(mockedKeycloakInterface.PingCalls())
 func (mock *KeycloakInterfaceMock) PingCalls() []struct {
 } {
 	var calls []struct {
@@ -3069,7 +3126,8 @@ func (mock *KeycloakInterfaceMock) RemoveFederatedIdentity(fid v1alpha1.Federate
 
 // RemoveFederatedIdentityCalls gets all the calls that were made to RemoveFederatedIdentity.
 // Check the length with:
-//     len(mockedKeycloakInterface.RemoveFederatedIdentityCalls())
+//
+//	len(mockedKeycloakInterface.RemoveFederatedIdentityCalls())
 func (mock *KeycloakInterfaceMock) RemoveFederatedIdentityCalls() []struct {
 	Fid       v1alpha1.FederatedIdentity
 	UserID    string
@@ -3108,7 +3166,8 @@ func (mock *KeycloakInterfaceMock) SetGroupChild(groupID string, realmName strin
 
 // SetGroupChildCalls gets all the calls that were made to SetGroupChild.
 // Check the length with:
-//     len(mockedKeycloakInterface.SetGroupChildCalls())
+//
+//	len(mockedKeycloakInterface.SetGroupChildCalls())
 func (mock *KeycloakInterfaceMock) SetGroupChildCalls() []struct {
 	GroupID    string
 	RealmName  string
@@ -3147,7 +3206,8 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticationExecutionForFlow(flowAlia
 
 // UpdateAuthenticationExecutionForFlowCalls gets all the calls that were made to UpdateAuthenticationExecutionForFlow.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateAuthenticationExecutionForFlowCalls())
+//
+//	len(mockedKeycloakInterface.UpdateAuthenticationExecutionForFlowCalls())
 func (mock *KeycloakInterfaceMock) UpdateAuthenticationExecutionForFlowCalls() []struct {
 	FlowAlias string
 	RealmName string
@@ -3184,7 +3244,8 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticatorConfig(authenticatorConfig
 
 // UpdateAuthenticatorConfigCalls gets all the calls that were made to UpdateAuthenticatorConfig.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateAuthenticatorConfigCalls())
+//
+//	len(mockedKeycloakInterface.UpdateAuthenticatorConfigCalls())
 func (mock *KeycloakInterfaceMock) UpdateAuthenticatorConfigCalls() []struct {
 	AuthenticatorConfig *v1alpha1.AuthenticatorConfig
 	RealmName           string
@@ -3219,7 +3280,8 @@ func (mock *KeycloakInterfaceMock) UpdateClient(specClient *v1alpha1.KeycloakAPI
 
 // UpdateClientCalls gets all the calls that were made to UpdateClient.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateClientCalls())
+//
+//	len(mockedKeycloakInterface.UpdateClientCalls())
 func (mock *KeycloakInterfaceMock) UpdateClientCalls() []struct {
 	SpecClient *v1alpha1.KeycloakAPIClient
 	RealmName  string
@@ -3256,7 +3318,8 @@ func (mock *KeycloakInterfaceMock) UpdateEventsConfig(realmName string, enabledE
 
 // UpdateEventsConfigCalls gets all the calls that were made to UpdateEventsConfig.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateEventsConfigCalls())
+//
+//	len(mockedKeycloakInterface.UpdateEventsConfigCalls())
 func (mock *KeycloakInterfaceMock) UpdateEventsConfigCalls() []struct {
 	RealmName         string
 	EnabledEventTypes []string
@@ -3293,7 +3356,8 @@ func (mock *KeycloakInterfaceMock) UpdateIdentityProvider(specIdentityProvider *
 
 // UpdateIdentityProviderCalls gets all the calls that were made to UpdateIdentityProvider.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateIdentityProviderCalls())
+//
+//	len(mockedKeycloakInterface.UpdateIdentityProviderCalls())
 func (mock *KeycloakInterfaceMock) UpdateIdentityProviderCalls() []struct {
 	SpecIdentityProvider *v1alpha1.KeycloakIdentityProvider
 	RealmName            string
@@ -3330,7 +3394,8 @@ func (mock *KeycloakInterfaceMock) UpdatePassword(user *v1alpha1.KeycloakAPIUser
 
 // UpdatePasswordCalls gets all the calls that were made to UpdatePassword.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdatePasswordCalls())
+//
+//	len(mockedKeycloakInterface.UpdatePasswordCalls())
 func (mock *KeycloakInterfaceMock) UpdatePasswordCalls() []struct {
 	User      *v1alpha1.KeycloakAPIUser
 	RealmName string
@@ -3365,7 +3430,8 @@ func (mock *KeycloakInterfaceMock) UpdateRealm(specRealm *v1alpha1.KeycloakRealm
 
 // UpdateRealmCalls gets all the calls that were made to UpdateRealm.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateRealmCalls())
+//
+//	len(mockedKeycloakInterface.UpdateRealmCalls())
 func (mock *KeycloakInterfaceMock) UpdateRealmCalls() []struct {
 	SpecRealm *v1alpha1.KeycloakRealm
 } {
@@ -3398,7 +3464,8 @@ func (mock *KeycloakInterfaceMock) UpdateUser(specUser *v1alpha1.KeycloakAPIUser
 
 // UpdateUserCalls gets all the calls that were made to UpdateUser.
 // Check the length with:
-//     len(mockedKeycloakInterface.UpdateUserCalls())
+//
+//	len(mockedKeycloakInterface.UpdateUserCalls())
 func (mock *KeycloakInterfaceMock) UpdateUserCalls() []struct {
 	SpecUser  *v1alpha1.KeycloakAPIUser
 	RealmName string

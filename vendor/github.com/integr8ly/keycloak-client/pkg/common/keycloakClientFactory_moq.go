@@ -14,19 +14,19 @@ var _ KeycloakClientFactory = &KeycloakClientFactoryMock{}
 
 // KeycloakClientFactoryMock is a mock implementation of KeycloakClientFactory.
 //
-// 	func TestSomethingThatUsesKeycloakClientFactory(t *testing.T) {
+//	func TestSomethingThatUsesKeycloakClientFactory(t *testing.T) {
 //
-// 		// make and configure a mocked KeycloakClientFactory
-// 		mockedKeycloakClientFactory := &KeycloakClientFactoryMock{
-// 			AuthenticatedClientFunc: func(kc v1alpha1.Keycloak) (KeycloakInterface, error) {
-// 				panic("mock out the AuthenticatedClient method")
-// 			},
-// 		}
+//		// make and configure a mocked KeycloakClientFactory
+//		mockedKeycloakClientFactory := &KeycloakClientFactoryMock{
+//			AuthenticatedClientFunc: func(kc v1alpha1.Keycloak) (KeycloakInterface, error) {
+//				panic("mock out the AuthenticatedClient method")
+//			},
+//		}
 //
-// 		// use mockedKeycloakClientFactory in code that requires KeycloakClientFactory
-// 		// and then make assertions.
+//		// use mockedKeycloakClientFactory in code that requires KeycloakClientFactory
+//		// and then make assertions.
 //
-// 	}
+//	}
 type KeycloakClientFactoryMock struct {
 	// AuthenticatedClientFunc mocks the AuthenticatedClient method.
 	AuthenticatedClientFunc func(kc v1alpha1.Keycloak) (KeycloakInterface, error)
@@ -60,7 +60,8 @@ func (mock *KeycloakClientFactoryMock) AuthenticatedClient(kc v1alpha1.Keycloak)
 
 // AuthenticatedClientCalls gets all the calls that were made to AuthenticatedClient.
 // Check the length with:
-//     len(mockedKeycloakClientFactory.AuthenticatedClientCalls())
+//
+//	len(mockedKeycloakClientFactory.AuthenticatedClientCalls())
 func (mock *KeycloakClientFactoryMock) AuthenticatedClientCalls() []struct {
 	Kc v1alpha1.Keycloak
 } {

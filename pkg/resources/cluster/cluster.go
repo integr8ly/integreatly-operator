@@ -9,6 +9,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +40,11 @@ func GetClusterVersionCR(ctx context.Context, serverClient k8sclient.Client) (*c
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterVersionName}, clusterVersionCR)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch version: %w", err)
+	}
+	// Ensure TypeMeta is set for callers/tests that assert it
+	clusterVersionCR.TypeMeta = metav1.TypeMeta{
+		Kind:       "ClusterVersion",
+		APIVersion: "config.openshift.io/v1",
 	}
 	return clusterVersionCR, nil
 }
