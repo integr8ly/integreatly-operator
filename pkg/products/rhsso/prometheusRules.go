@@ -34,7 +34,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='keycloak', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -44,7 +44,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='keycloak-discovery', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
@@ -61,7 +61,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							"message": fmt.Sprintf(`Keycloak instance in namespace %s has not been available for the last 5 minutes.`, r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(`sum(kube_pod_status_ready{condition="true",namespace="%[1]s",pod=~"keycloak.*"} * on(pod, namespace) group_left() kube_pod_status_phase{phase="Running",namespace="%[1]s"}) < 1 OR absent(kube_pod_status_ready{condition="true",namespace="%[1]s",pod=~"keycloak.*"})`, r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 				},
@@ -78,7 +78,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -88,7 +88,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhsso-operator-metrics', namespace='%s'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
@@ -114,7 +114,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							and
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s', code="5xx"}[1h]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s'}[1h]))) > (14.40 * (1-0.99000))`, r.Config.GetNamespace())),
-						For:    "2m",
+						For:    resources.DurationPtr("2m"),
 						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
@@ -129,7 +129,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							and 
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s', code="5xx"}[6h]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s'}[6h]))) > (6.00 * (1-0.99000))`, r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
@@ -144,7 +144,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							and
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s', code="5xx"}[1d]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s'}[1d]))) > (3.00 * (1-0.99000))`, r.Config.GetNamespace())),
-						For:    "1h",
+						For:    resources.DurationPtr("1h"),
 						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
@@ -159,7 +159,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, na
 							and 
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s', code="5xx"}[3d]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace='%[1]s'}[3d]))) > (6.00 * (1-0.99000))`, r.Config.GetNamespace())),
-						For:    "3h",
+						For:    resources.DurationPtr("3h"),
 						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 				},

@@ -16,6 +16,7 @@ import (
 // +k8s:openapi-gen=true
 // +kubebuilder:resource
 // +kubebuilder:subresource:status
+// +kubebuilder:metadata:annotations="observability.openshift.io/api-support=TechPreview"
 type MonitoringStack struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -58,14 +59,15 @@ type MonitoringStackSpec struct {
 	LogLevel LogLevel `json:"logLevel,omitempty"`
 
 	// Label selector for Monitoring Stack Resources.
-	// Set to the empty LabelSelector ({}) to monitoring everything.
-	// Set to null to disable service discovery.
+	// To monitor everything, set to empty map selector. E.g. resourceSelector: {}.
+	// To disable service discovery, set to null. E.g. resourceSelector:.
 	// +optional
 	// +nullable
 	ResourceSelector *metav1.LabelSelector `json:"resourceSelector"`
 
 	// Namespace selector for Monitoring Stack Resources.
-	// If left empty the Monitoring Stack will only match resources in the namespace it was created in.
+	// To monitor everything, set to empty map selector. E.g. namespaceSelector: {}.
+	// To monitor resources in the namespace where Monitoring Stack was created in, set to null. E.g. namespaceSelector:.
 	// +optional
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 
@@ -78,6 +80,14 @@ type MonitoringStackSpec struct {
 	// +optional
 	// +kubebuilder:default={requests:{cpu: "100m", memory: "256Mi"}, limits:{memory: "512Mi", cpu: "500m"}}
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Define tolerations for Monitoring Stack Pods.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Define node selector for Monitoring Stack Pods.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Define prometheus config
 	// +optional
@@ -183,6 +193,17 @@ type PrometheusConfig struct {
 	// Enable Prometheus to be used as a receiver for the Prometheus remote write protocol. Defaults to the value of `false`.
 	// +optional
 	EnableRemoteWriteReceiver bool `json:"enableRemoteWriteReceiver,omitempty"`
+	// Enable Prometheus to accept OpenTelemetry Metrics via the otlp/http protocol.
+	// Defaults to the value of `false`.
+	// The resulting endpoint is /api/v1/otlp/v1/metrics.
+	// +optional
+	EnableOtlpHttpReceiver *bool `json:"enableOtlpHttpReceiver,omitempty"`
+	// Default interval between scrapes.
+	// +optional
+	ScrapeInterval *monv1.Duration `json:"scrapeInterval,omitempty"`
+	// Configure TLS options for the Prometheus web server.
+	// +optional
+	WebTLSConfig *WebTLSConfig `json:"webTLSConfig,omitempty"`
 }
 
 type AlertmanagerConfig struct {
@@ -190,6 +211,9 @@ type AlertmanagerConfig struct {
 	// +optional
 	// +kubebuilder:default=false
 	Disabled bool `json:"disabled,omitempty"`
+	// Configure TLS options for the Alertmanager web server.
+	// +optional
+	WebTLSConfig *WebTLSConfig `json:"webTLSConfig,omitempty"`
 }
 
 // NamespaceSelector is a selector for selecting either all namespaces or a
@@ -205,9 +229,10 @@ type NamespaceSelector struct {
 
 // ThanosQuerier outlines the Thanos querier components, managed by this stack
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource
 // +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:metadata:annotations="observability.openshift.io/api-support=TechPreview"
 type ThanosQuerier struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -254,9 +279,36 @@ type ThanosQuerierSpec struct {
 	// Selector to select which namespaces the Monitoring Stack objects are discovered from.
 	NamespaceSelector NamespaceSelector `json:"namespaceSelector,omitempty"`
 	ReplicaLabels     []string          `json:"replicaLabels,omitempty"`
+	// Configure TLS options for the Thanos web server.
+	// +optional
+	WebTLSConfig *WebTLSConfig `json:"webTLSConfig,omitempty"`
 }
 
 // ThanosQuerierStatus defines the observed state of ThanosQuerier.
 // It should always be reconstructable from the state of the cluster and/or outside world.
-type ThanosQuerierStatus struct {
+type ThanosQuerierStatus struct{}
+
+// SecretKeySelector selects a key of a secret.
+type SecretKeySelector struct {
+	// The name of the secret in the object's namespace to select from.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// The key of the secret to select from.  Must be a valid secret key.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Required
+	Key string `json:"key"`
+}
+
+// WebTLSConfig contains configuration to enable TLS on web endpoints.
+type WebTLSConfig struct {
+	// Reference to the TLS private key for the web server.
+	// +kubebuilder:validation:Required
+	PrivateKey SecretKeySelector `json:"privateKey"`
+	// Reference to the TLS public certificate for the web server.
+	// +kubebuilder:validation:Required
+	Certificate SecretKeySelector `json:"certificate"`
+	// Reference to the root Certificate Authority used to verify the web server's certificate.
+	// +kubebuilder:validation:Required
+	CertificateAuthority SecretKeySelector `json:"certificateAuthority"`
 }

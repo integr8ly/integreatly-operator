@@ -51,7 +51,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='apicast-production', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -61,7 +61,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='apicast-staging', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -71,7 +71,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='backend-listener', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -81,7 +81,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-developer', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -91,7 +91,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-master', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -101,7 +101,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-memcache', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -111,7 +111,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-provider', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -121,7 +121,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='system-searchd', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -131,7 +131,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='zync', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -141,7 +141,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='zync-database', namespace='%s'})", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
@@ -158,7 +158,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -168,7 +168,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='threescale-operator-controller-manager-metrics-service', namespace='%s'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
@@ -208,7 +208,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale apicast-staging has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'apicast-staging.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -218,7 +218,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale apicast-production has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'apicast-production.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -228,7 +228,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale backend-worker has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'backend-worker.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -238,7 +238,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale backend-listener has no pods in a ready state",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true',namespace='%[1]v', pod=~'backend-listener.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -248,7 +248,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale system-app has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'system-app.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -258,7 +258,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Admin UI Blackbox Target: If this console is unavailable, the client is unable to configure or administer their API setup.",
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-admin-ui'} != 1"),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -268,7 +268,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Developer UI Blackbox Target: If this console is unavailable, the clients developers are unable signup or perform API management.",
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox',service='3scale-developer-console-ui'} != 1"),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -278,7 +278,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale System Admin UI Blackbox Target: If this console is unavailable, the client is unable to perform Account Management,Analytics or Billing.",
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-system-admin-ui'} == 0 and up{job='blackbox', service='3scale-system-admin-ui'} ==1"),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -288,7 +288,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": fmt.Sprintf("3Scale Zync has no pods in a ready state. Expected number of pods for zync: %d, and for zync-que: %d.", r.Config.GetReplicasConfig(r.installation)["zyncApp"], r.Config.GetReplicasConfig(r.installation)["zyncQue"]),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync.*', pod!~'zync-database-.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -298,7 +298,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Zync-database has no pods in a ready state. Expected a minimum of 1 pod.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync-database.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					alertThreeScaleContainerHighMemory(installationName, r.Config.GetNamespace()),
@@ -309,7 +309,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "The {{  $labels.container  }} Container in the {{  $labels.pod }} Pod has been using {{  $value  }}% of available CPU for longer than 15 minutes.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum("+containerCpuMetric+"{namespace='%[1]v'}) by (container, pod) / sum(kube_pod_container_resource_requests{namespace='%[1]v', resource='cpu'}) by (container, pod) * 100 > 90", r.Config.GetNamespace())),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -320,7 +320,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url":     "https://github.com/3scale/3scale-Operations/blob/master/sops/alerts/apicast_worker_restart.adoc",
 						},
 						Expr: intstr.FromString(fmt.Sprintf(`changes(worker_process{kubernetes_namespace='%s', kubernetes_pod_name=~'apicast-production.*'}[5m]) > 0`, r.Config.GetNamespace())),
-						For:  "5m",
+						For:  resources.DurationPtr("5m"),
 						Labels: map[string]string{
 							"severity": "critical", "product": installationName,
 						},
@@ -339,7 +339,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "one or more critical metrics have been missing for 10+ minutes",
 						},
 						Expr:   missingMetricsExpr,
-						For:    "30m",
+						For:    resources.DurationPtr("30m"),
 						Labels: map[string]string{"severity": "critical"},
 					},
 				},
@@ -356,7 +356,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "Error configuring custom domain, please refer to the documentation to resolve the error.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='true'} > 0", installationName)),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
@@ -366,7 +366,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Admin UI, bypassing DNS: If this console is unavailable, the client is unable to configure or administer their API setup.",
 						},
 						Expr:   intstr.FromString("threescale_portals{system_master='false'} > 0"),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -376,7 +376,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale Developer UI, bypassing DNS: If this console is unavailable, the client developers are unable signup or perform API management.",
 						},
 						Expr:   intstr.FromString("threescale_portals{system_developer='false'} > 0"),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -386,7 +386,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "3Scale System Admin UI, bypassing DNS: If this console is unavailable, the client is unable to perform Account Management, Analytics or Billing.",
 						},
 						Expr:   intstr.FromString("threescale_portals{system_provider='false'} > 0"),
-						For:    "15m",
+						For:    resources.DurationPtr("15m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
@@ -403,7 +403,7 @@ func alertThreeScaleContainerHighMemory(installationName string, namespace strin
 			"message": "The {{  $labels.container  }} Container in the {{  $labels.pod  }} Pod has been using {{  $value  }}% of available memory for longer than 15 minutes.",
 		},
 		Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='', container!='system-provider', namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits{namespace='%[1]v',resource='memory'}) * 100 > 90", namespace)),
-		For:    "15m",
+		For:    resources.DurationPtr("15m"),
 		Labels: map[string]string{"severity": "info", "product": installationName},
 	}
 }
