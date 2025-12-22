@@ -467,7 +467,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 		serviceMonitor.Spec = prometheus.ServiceMonitorSpec{
 			Endpoints: []prometheus.Endpoint{
 				{
-					BearerTokenSecret: corev1.SecretKeySelector{
+					BearerTokenSecret: &corev1.SecretKeySelector{
 						Key: "",
 					},
 					Port: "http",

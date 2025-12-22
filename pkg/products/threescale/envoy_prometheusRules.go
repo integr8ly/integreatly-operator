@@ -29,7 +29,7 @@ func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string
 							"message": "3Scale apicast-staging pods have no ratelimiting sidecar container attached.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(sum(kube_pod_container_status_ready{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deployment='apicast-staging',namespace='%v'})) < 1", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
@@ -39,7 +39,7 @@ func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string
 							"message": "3Scale apicast-production pods have no ratelimiting sidecar container attached.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(sum(kube_pod_container_status_ready{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deployment='apicast-production',namespace='%v'})) < 1", r.Config.GetNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},

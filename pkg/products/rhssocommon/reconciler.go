@@ -667,7 +667,10 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 				destinationRule.Alert = rule.Alert
 				destinationRule.Annotations = rule.Annotations
 				destinationRule.Expr = rule.Expr
-				destinationRule.For = monv1.Duration(rule.For)
+				if rule.For != nil {
+					d := monv1.Duration(*rule.For)
+					destinationRule.For = &d
+				}
 				destinationRule.Record = rule.Record
 				destinationRule.Labels = rule.Labels
 				destinationRules = append(destinationRules, destinationRule)
@@ -676,7 +679,10 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 			destinationRouleGroup.Name = ruleGroup.Name
 			destinationRouleGroup.PartialResponseStrategy = ruleGroup.PartialResponseStrategy
 			destinationRouleGroup.Rules = destinationRules
-			destinationRouleGroup.Interval = monv1.Duration(ruleGroup.Interval)
+			if ruleGroup.Interval != nil {
+				d := monv1.Duration(*ruleGroup.Interval)
+				destinationRouleGroup.Interval = &d
+			}
 			destinationRouleGroupArray = append(destinationRouleGroupArray, destinationRouleGroup)
 		}
 

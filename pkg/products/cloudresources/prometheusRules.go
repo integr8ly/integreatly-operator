@@ -36,7 +36,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{namespace='%s', endpoint='operator-metrics-service'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					}, {
 						Alert: "RHOAMCloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
@@ -45,7 +45,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					}, {
 						Alert: "RHOAMCloudResourceOperatorVPCActionFailed",
@@ -54,7 +54,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"message": "CRO failed to perform an action on a VPC.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("cro_vpc_action{namespace='%s', status='failed', error!=''} > 0", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
@@ -77,7 +77,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 								croResources.PostgresAllocatedStorageMetricName,
 							),
 						),
-						For:    "5m",
+						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical"},
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorMetricsMissing,

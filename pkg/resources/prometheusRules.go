@@ -90,12 +90,16 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 				"integreatly":                   "yes",
 				config.GetOboLabelSelectorKey(): config.GetOboLabelSelector(),
 			}
+			var intervalPtr *monv1.Duration
+			if alert.Interval != "" {
+				intervalPtr = DurationPtr(alert.Interval)
+			}
 			rule.Spec = monv1.PrometheusRuleSpec{
 				Groups: []monv1.RuleGroup{
 					{
 						Name:     alert.GroupName,
 						Rules:    alertRules,
-						Interval: monv1.Duration(alert.Interval),
+						Interval: intervalPtr,
 					},
 				},
 			}
@@ -115,12 +119,16 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 				"integreatly":                   "yes",
 				config.GetOboLabelSelectorKey(): config.GetOboLabelSelector(),
 			}
+			var upIntervalPtr *monitoringv1.Duration
+			if alert.Interval != "" {
+				upIntervalPtr = UpDurationPtr(alert.Interval)
+			}
 			rule.Spec = monitoringv1.PrometheusRuleSpec{
 				Groups: []monitoringv1.RuleGroup{
 					{
 						Name:     alert.GroupName,
 						Rules:    alertRules,
-						Interval: monitoringv1.Duration(alert.Interval),
+						Interval: upIntervalPtr,
 					},
 				},
 			}

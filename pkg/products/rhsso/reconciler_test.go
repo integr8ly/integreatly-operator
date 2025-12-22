@@ -723,7 +723,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Groups: []monitoringv1.RuleGroup{
 				{
 					Name:     "general.rules",
-					Interval: "",
+					Interval: nil,
 					Rules: []monitoringv1.Rule{
 						{Alert: "Some Rule"},
 					},
