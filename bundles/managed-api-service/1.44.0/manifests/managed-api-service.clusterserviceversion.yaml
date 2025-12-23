@@ -66,8 +66,8 @@ metadata:
         "cloud-resource-operator.v1.1.5": {
           "cloud-resources.v1.1.6": "quay.io/integreatly/cloud-resource-operator:v1.1.6"
         },
-        "marin3r.v0.13.3": {
-          "marin3r.v0.13.3": "quay.io/integreatly/marin3r-operator:v0.13.3"
+        "marin3r.v0.13.4": {
+          "marin3r.v0.13.4": "quay.io/integreatly/marin3r-operator:v0.13.4"
         },
         "rhsso-operator.18.0.x": {
           "rhsso-operator.7.6.11-opr-006": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d1f3225e0d465ccf7015cbdf5d61f16979e1b1bb3c10fa221a211ef1801dc03b",
