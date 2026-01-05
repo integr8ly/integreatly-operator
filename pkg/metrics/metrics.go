@@ -231,9 +231,9 @@ func SetStatus(installation *integreatlyv1alpha1.RHMI) {
 func SetProductStatus(installation *integreatlyv1alpha1.RHMI) {
 	RHOAMProductStatus.Reset()
 
-	// Iterate through all stages and products
-	for _, stage := range installation.Status.Stages {
-		for productName, product := range stage.Products {
+	// Check if installation stage exists and has products
+	if installationStage, exists := installation.Status.Stages["installation"]; exists {
+		for productName, product := range installationStage.Products {
 			// Set metric value based on product phase
 			// 0 = completed, 1 = in progress/error
 			var value float64
