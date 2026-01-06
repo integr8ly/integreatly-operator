@@ -300,7 +300,7 @@ var (
 				"test": "true",
 			},
 			Expr:   intstr.FromString("test expr"),
-			For:    "5m",
+			For:    DurationPtr("5m"),
 			Labels: map[string]string{"severity": "test"},
 		},
 	}

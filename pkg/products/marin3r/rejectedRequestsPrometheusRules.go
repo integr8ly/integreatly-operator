@@ -42,7 +42,7 @@ func (r *Reconciler) newRejectedRequestsAlertsReconciler(logger l.Logger, instal
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(rejectedRequestsAlertExpr, limitPerMinute)),
 						Labels: map[string]string{"severity": "info", "product": installationName},
-						For:    "30s",
+						For:    resources.DurationPtr("30s"),
 					},
 				},
 			},
