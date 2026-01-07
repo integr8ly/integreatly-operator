@@ -309,7 +309,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s RHSSO component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="rhsso",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "rhsso"},
 				},
 				// 3Scale Component Alert
@@ -320,7 +320,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s 3Scale component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="3scale",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "3scale"},
 				},
 				// Cloud Resources Component Alert
@@ -331,7 +331,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s Cloud Resources component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="cloud-resources",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "cloud-resources"},
 				},
 				// Marin3r Component Alert
@@ -342,7 +342,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s Marin3r component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="marin3r",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "marin3r"},
 				},
 				// Grafana Component Alert
@@ -353,7 +353,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s Grafana component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="grafana",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "grafana"},
 				},
 				// RHSSO User Component Alert
@@ -364,7 +364,7 @@ func OboAlertsReconciler(logger l.Logger, installation *integreatlyv1alpha1.RHMI
 						"message": fmt.Sprintf("%s RHSSO User component has been in an error state while reconciling for the last 90 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_product_status{product="rhssouser",stage!="completed"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
-					For:    "1m",
+					For:    resources.DurationPtr("90m"),
 					Labels: map[string]string{"severity": "critical", "product": installationName, "component": "rhssouser"},
 				},
 			},
