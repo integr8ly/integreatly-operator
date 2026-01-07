@@ -46,8 +46,8 @@ metadata:
     containerImage: quay.io/integreatly/managed-api-service:master
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.19"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
-    operators.operatorframework.io/builder: operator-sdk-v1.21.0
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    operators.operatorframework.io/builder: operator-sdk-v1.39.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     support: RHOAM
     containerImages: |-
       {
@@ -320,6 +320,7 @@ spec:
                 - get
                 - list
                 - update
+                - watch
             - apiGroups:
                 - apps.openshift.io
               resources:
@@ -344,6 +345,7 @@ spec:
               verbs:
                 - get
                 - list
+                - watch
             - apiGroups:
                 - console.openshift.io
               resources:
@@ -539,6 +541,7 @@ spec:
               verbs:
                 - get
                 - list
+                - watch
             - apiGroups:
                 - project.openshift.io
               resources:
@@ -634,6 +637,9 @@ spec:
                 containers:
                   - args:
                       - --enable-leader-election
+                      - --health-probe-bind-address=:8081
+                      - --metrics-bind-address=:8383
+                      - --metrics-secure=false
                     command:
                       - rhmi-operator
                     env:

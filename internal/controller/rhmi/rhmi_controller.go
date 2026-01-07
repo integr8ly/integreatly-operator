@@ -481,6 +481,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		}
 	}
 	metrics.SetStatus(installation)
+	metrics.SetProductStatus(installation)
 
 	err = r.updateStatusAndObject(originalInstallation, installation)
 	return retryRequeue, err

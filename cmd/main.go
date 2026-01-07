@@ -74,6 +74,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMInfo)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMProductStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMCluster)
 	customMetrics.Registry.MustRegister(integreatlymetrics.ThreeScaleUserAction)
 	customMetrics.Registry.MustRegister(integreatlymetrics.Quota)
