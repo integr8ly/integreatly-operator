@@ -347,7 +347,7 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 		// Container #1
 		grafanaDeployment.Spec.Template.Spec.Containers[0].TerminationMessagePath = "/dev/termination-log"
 		grafanaDeployment.Spec.Template.Spec.Containers[0].Name = "grafana"
-		grafanaDeployment.Spec.Template.Spec.Containers[0].Image = "registry.redhat.io/rhel9/grafana:9.6-1755762368"
+		grafanaDeployment.Spec.Template.Spec.Containers[0].Image = "registry.redhat.io/rhel9/grafana:9.7-1767725073"
 		grafanaDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/etc/grafana/",
@@ -473,7 +473,7 @@ func (r *Reconciler) ReconcileGrafanaDeployment(ctx context.Context, client k8sc
 		// container #2
 		grafanaDeployment.Spec.Template.Spec.Containers[1].TerminationMessagePath = "/dev/termination-log"
 		grafanaDeployment.Spec.Template.Spec.Containers[1].Name = "grafana-proxy"
-		grafanaDeployment.Spec.Template.Spec.Containers[1].Image = "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.15.0-202508190116.p2.g241a88c.assembly.stream.el9"
+		grafanaDeployment.Spec.Template.Spec.Containers[1].Image = "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.16.0-202512111314.p2.g565f7ed.assembly.stream.el9"
 		grafanaDeployment.Spec.Template.Spec.Containers[1].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/etc/tls/private",
