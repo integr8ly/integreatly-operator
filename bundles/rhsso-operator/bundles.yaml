@@ -81,3 +81,13 @@ bundles:
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.11-6
     - name: rhsso-operator.v7.6.11-7
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.11-7
+    - name: rhsso-operator.v7.6.12-3
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.12-3
+    - name: rhsso-operator.v7.6.12-4
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.12-4
+    - name: rhsso-operator.v7.6.12-6
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.12-6
+    - name: rhsso-operator.v7.6.12-8
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.12-8
+    - name: rhsso-operator.v7.6.12-9
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.12-9
