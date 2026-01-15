@@ -5,7 +5,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: Security
     certified: 'False'
-    containerImage: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da
+    containerImage: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b
     createdAt: 2021-08-09 00:00:00
     description: 'An Operator for installing and managing Red Hat Single Sign-On'
     repository: 'https://github.com/keycloak/keycloak-operator'
@@ -121,7 +121,7 @@ metadata:
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/tls-profiles: "false"
-  name: rhsso-operator.7.6.11-opr-006
+  name: rhsso-operator.7.6.12-opr-005
   namespace: placeholder
   labels:
     operatorframework.io/arch.amd64: supported
@@ -204,18 +204,18 @@ spec:
                 - name: OPERATOR_NAME
                   value: rhsso-operator
                 - name: SSO_QUARTER
-                  value: 2024_Q3
+                  value: 2025_Q3
                 - name: SSO_VER
-                  value: 7.6.11
+                  value: 7.6.12
                 - name: RELATED_IMAGE_RHSSO_OPENJDK
-                  value: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:7358787959af7e7e589edfc043a97d80ebab87536bde365d33be7a600071bf0e
+                  value: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e
                 - name: RELATED_IMAGE_RHSSO_OPENJ9
-                  value: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:7358787959af7e7e589edfc043a97d80ebab87536bde365d33be7a600071bf0e
+                  value: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e
                 - name: RELATED_IMAGE_KEYCLOAK_INIT_CONTAINER
-                  value: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:63a42ced50b0caa94e5905c29df13d114fa7ef365e7a699eece43719c3e1ff96
+                  value: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504
                 - name: RELATED_IMAGE_RHSSO_INIT_CONTAINER
-                  value: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:63a42ced50b0caa94e5905c29df13d114fa7ef365e7a699eece43719c3e1ff96
-                image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d1f3225e0d465ccf7015cbdf5d61f16979e1b1bb3c10fa221a211ef1801dc03b
+                  value: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504
+                image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b
                 imagePullPolicy: Always
                 name: rhsso-operator
                 resources: {}
@@ -381,20 +381,20 @@ spec:
   maturity: stable
   provider:
     name: Red Hat
-  version: 7.6.11-opr-006
-  replaces: rhsso-operator.7.6.11-opr-005
+  version: 7.6.12-opr-005
+  replaces: rhsso-operator.7.6.12-opr-004
   skips:
   - rhsso-operator.7.6.0-opr-001
   relatedImages:
-  - name: sso7-rhel8-operator-369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da-annotation
-    image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:369cc19c3c6340978208389499775f687ea752e792c5bd8f5a689571f14b84da
+  - name: sso7-rhel8-operator-1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b-annotation
+    image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b
   - name: rhsso-operator
-    image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:d1f3225e0d465ccf7015cbdf5d61f16979e1b1bb3c10fa221a211ef1801dc03b
+    image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b
   - name: rhsso_openjdk
-    image: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:7358787959af7e7e589edfc043a97d80ebab87536bde365d33be7a600071bf0e
+    image: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e
   - name: rhsso_openj9
-    image: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:7358787959af7e7e589edfc043a97d80ebab87536bde365d33be7a600071bf0e
+    image: registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e
   - name: keycloak_init_container
-    image: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:63a42ced50b0caa94e5905c29df13d114fa7ef365e7a699eece43719c3e1ff96
+    image: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504
   - name: rhsso_init_container
-    image: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:63a42ced50b0caa94e5905c29df13d114fa7ef365e7a699eece43719c3e1ff96
+    image: registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504

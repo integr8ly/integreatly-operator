@@ -1,6 +1,8 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
   creationTimestamp: null
   name: keycloakclients.keycloak.org
 spec:
@@ -18,10 +20,19 @@ spec:
         description: KeycloakClient is the Schema for the keycloakclients API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -50,19 +61,26 @@ spec:
                     description: Authentication Flow Binding Overrides.
                     type: object
                   authorizationServicesEnabled:
-                    description: True if fine-grained authorization support is enabled for this client.
+                    description: True if fine-grained authorization support is enabled
+                      for this client.
                     type: boolean
                   authorizationSettings:
                     description: Authorization settings for this resource server.
                     properties:
                       allowRemoteResourceManagement:
-                        description: True if resources should be managed remotely by the resource server.
+                        description: True if resources should be managed remotely
+                          by the resource server.
                         type: boolean
                       clientId:
                         description: Client ID.
                         type: string
                       decisionStrategy:
-                        description: The decision strategy dictates how permissions are evaluated and how a final decision is obtained. 'Affirmative' means that at least one permission must evaluate to a positive decision in order to grant access to a resource and its scopes. 'Unanimous' means that all permissions must evaluate to a positive decision in order for the final decision to be also positive.
+                        description: |-
+                          The decision strategy dictates how permissions are evaluated and how a
+                          final decision is obtained. 'Affirmative' means that at least one
+                          permission must evaluate to a positive decision in order to grant access
+                          to a resource and its scopes. 'Unanimous' means that all permissions must
+                          evaluate to a positive decision in order for the final decision to be also positive.
                         type: string
                       id:
                         description: ID.
@@ -81,7 +99,13 @@ spec:
                               description: Config.
                               type: object
                             decisionStrategy:
-                              description: The decision strategy dictates how the policies associated with a given permission are evaluated and how a final decision is obtained. 'Affirmative' means that at least one policy must evaluate to a positive decision in order for the final decision to be also positive. 'Unanimous' means that all policies must evaluate to a positive decision in order for the final decision to be also positive. 'Consensus' means that the number of positive decisions must be greater than the number of negative decisions. If the number of positive and negative is the same, the final decision will be negative.
+                              description: |-
+                                The decision strategy dictates how the policies associated with a given permission are evaluated and how
+                                a final decision is obtained. 'Affirmative' means that at least one policy must evaluate to a positive
+                                decision in order for the final decision to be also positive. 'Unanimous' means that all policies must
+                                evaluate to a positive decision in order for the final decision to be also positive. 'Consensus' means
+                                that the number of positive decisions must be greater than the number of negative decisions. If the number
+                                of positive and negative is the same, the final decision will be negative.
                               type: string
                             description:
                               description: A description for this policy.
@@ -90,7 +114,10 @@ spec:
                               description: ID.
                               type: string
                             logic:
-                              description: The logic dictates how the policy decision should be made. If 'Positive', the resulting effect (permit or deny) obtained during the evaluation of this policy will be used to perform a decision. If 'Negative', the resulting effect will be negated, in other words, a permit becomes a deny and vice-versa.
+                              description: |-
+                                The logic dictates how the policy decision should be made. If 'Positive', the resulting effect
+                                (permit or deny) obtained during the evaluation of this policy will be used to perform a decision.
+                                If 'Negative', the resulting effect will be negated, in other words, a permit becomes a deny and vice-versa.
                               type: string
                             name:
                               description: The name of this policy.
@@ -119,19 +146,25 @@ spec:
                                   attributes:
                                     additionalProperties:
                                       type: string
-                                    description: The attributes associated with the resource.
+                                    description: The attributes associated with the
+                                      resource.
                                     type: object
                                   displayName:
-                                    description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                    description: |-
+                                      A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                      querying for a specific resource.
                                     type: string
                                   icon_uri:
                                     description: An URI pointing to an icon.
                                     type: string
                                   name:
-                                    description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                    description: |-
+                                      A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                      querying for a specific resource.
                                     type: string
                                   ownerManagedAccess:
-                                    description: True if the access to this resource can be managed by the resource owner.
+                                    description: True if the access to this resource
+                                      can be managed by the resource owner.
                                     type: boolean
                                   scopes:
                                     description: The scopes associated with this resource.
@@ -139,10 +172,13 @@ spec:
                                       x-kubernetes-preserve-unknown-fields: true
                                     type: array
                                   type:
-                                    description: The type of this resource. It can be used to group different resource instances with the same type.
+                                    description: The type of this resource. It can
+                                      be used to group different resource instances
+                                      with the same type.
                                     type: string
                                   uris:
-                                    description: Set of URIs which are protected by resource.
+                                    description: Set of URIs which are protected by
+                                      resource.
                                     items:
                                       type: string
                                     type: array
@@ -164,7 +200,11 @@ spec:
                           type: object
                         type: array
                       policyEnforcementMode:
-                        description: The policy enforcement mode dictates how policies are enforced when evaluating authorization requests. 'Enforcing' means requests are denied by default even when there is no policy associated with a given resource. 'Permissive' means requests are allowed even when there is no policy associated with a given resource. 'Disabled' completely disables the evaluation of policies and allows access to any resource.
+                        description: |-
+                          The policy enforcement mode dictates how policies are enforced when evaluating authorization requests.
+                          'Enforcing' means requests are denied by default even when there is no policy associated with a given resource.
+                          'Permissive' means requests are allowed even when there is no policy associated with a given resource.
+                          'Disabled' completely disables the evaluation of policies and allows access to any resource.
                         type: string
                       resources:
                         description: Resources.
@@ -180,16 +220,21 @@ spec:
                               description: The attributes associated with the resource.
                               type: object
                             displayName:
-                              description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                              description: |-
+                                A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                querying for a specific resource.
                               type: string
                             icon_uri:
                               description: An URI pointing to an icon.
                               type: string
                             name:
-                              description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                              description: |-
+                                A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                querying for a specific resource.
                               type: string
                             ownerManagedAccess:
-                              description: True if the access to this resource can be managed by the resource owner.
+                              description: True if the access to this resource can
+                                be managed by the resource owner.
                               type: boolean
                             scopes:
                               description: The scopes associated with this resource.
@@ -197,7 +242,9 @@ spec:
                                 x-kubernetes-preserve-unknown-fields: true
                               type: array
                             type:
-                              description: The type of this resource. It can be used to group different resource instances with the same type.
+                              description: The type of this resource. It can be used
+                                to group different resource instances with the same
+                                type.
                               type: string
                             uris:
                               description: Set of URIs which are protected by resource.
@@ -212,7 +259,9 @@ spec:
                           description: https://www.keycloak.org/docs-api/12.0/rest-api/index.html#_scoperepresentation
                           properties:
                             displayName:
-                              description: A unique name for this scope. The name can be used to uniquely identify a scope, useful when querying for a specific scope.
+                              description: |-
+                                A unique name for this scope. The name can be used to uniquely identify a scope, useful when querying
+                                for a specific scope.
                               type: string
                             iconUri:
                               description: An URI pointing to an icon.
@@ -221,7 +270,9 @@ spec:
                               description: ID.
                               type: string
                             name:
-                              description: A unique name for this scope. The name can be used to uniquely identify a scope, useful when querying for a specific scope.
+                              description: |-
+                                A unique name for this scope. The name can be used to uniquely identify a scope, useful when querying
+                                for a specific scope.
                               type: string
                             policies:
                               description: Policies.
@@ -234,7 +285,13 @@ spec:
                                     description: Config.
                                     type: object
                                   decisionStrategy:
-                                    description: The decision strategy dictates how the policies associated with a given permission are evaluated and how a final decision is obtained. 'Affirmative' means that at least one policy must evaluate to a positive decision in order for the final decision to be also positive. 'Unanimous' means that all policies must evaluate to a positive decision in order for the final decision to be also positive. 'Consensus' means that the number of positive decisions must be greater than the number of negative decisions. If the number of positive and negative is the same, the final decision will be negative.
+                                    description: |-
+                                      The decision strategy dictates how the policies associated with a given permission are evaluated and how
+                                      a final decision is obtained. 'Affirmative' means that at least one policy must evaluate to a positive
+                                      decision in order for the final decision to be also positive. 'Unanimous' means that all policies must
+                                      evaluate to a positive decision in order for the final decision to be also positive. 'Consensus' means
+                                      that the number of positive decisions must be greater than the number of negative decisions. If the number
+                                      of positive and negative is the same, the final decision will be negative.
                                     type: string
                                   description:
                                     description: A description for this policy.
@@ -243,7 +300,10 @@ spec:
                                     description: ID.
                                     type: string
                                   logic:
-                                    description: The logic dictates how the policy decision should be made. If 'Positive', the resulting effect (permit or deny) obtained during the evaluation of this policy will be used to perform a decision. If 'Negative', the resulting effect will be negated, in other words, a permit becomes a deny and vice-versa.
+                                    description: |-
+                                      The logic dictates how the policy decision should be made. If 'Positive', the resulting effect
+                                      (permit or deny) obtained during the evaluation of this policy will be used to perform a decision.
+                                      If 'Negative', the resulting effect will be negated, in other words, a permit becomes a deny and vice-versa.
                                     type: string
                                   name:
                                     description: The name of this policy.
@@ -272,30 +332,41 @@ spec:
                                         attributes:
                                           additionalProperties:
                                             type: string
-                                          description: The attributes associated with the resource.
+                                          description: The attributes associated with
+                                            the resource.
                                           type: object
                                         displayName:
-                                          description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                          description: |-
+                                            A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                            querying for a specific resource.
                                           type: string
                                         icon_uri:
                                           description: An URI pointing to an icon.
                                           type: string
                                         name:
-                                          description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                          description: |-
+                                            A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                            querying for a specific resource.
                                           type: string
                                         ownerManagedAccess:
-                                          description: True if the access to this resource can be managed by the resource owner.
+                                          description: True if the access to this
+                                            resource can be managed by the resource
+                                            owner.
                                           type: boolean
                                         scopes:
-                                          description: The scopes associated with this resource.
+                                          description: The scopes associated with
+                                            this resource.
                                           items:
                                             x-kubernetes-preserve-unknown-fields: true
                                           type: array
                                         type:
-                                          description: The type of this resource. It can be used to group different resource instances with the same type.
+                                          description: The type of this resource.
+                                            It can be used to group different resource
+                                            instances with the same type.
                                           type: string
                                         uris:
-                                          description: Set of URIs which are protected by resource.
+                                          description: Set of URIs which are protected
+                                            by resource.
                                           items:
                                             type: string
                                           type: array
@@ -327,19 +398,25 @@ spec:
                                   attributes:
                                     additionalProperties:
                                       type: string
-                                    description: The attributes associated with the resource.
+                                    description: The attributes associated with the
+                                      resource.
                                     type: object
                                   displayName:
-                                    description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                    description: |-
+                                      A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                      querying for a specific resource.
                                     type: string
                                   icon_uri:
                                     description: An URI pointing to an icon.
                                     type: string
                                   name:
-                                    description: A unique name for this resource. The name can be used to uniquely identify a resource, useful when querying for a specific resource.
+                                    description: |-
+                                      A unique name for this resource. The name can be used to uniquely identify a resource, useful when
+                                      querying for a specific resource.
                                     type: string
                                   ownerManagedAccess:
-                                    description: True if the access to this resource can be managed by the resource owner.
+                                    description: True if the access to this resource
+                                      can be managed by the resource owner.
                                     type: boolean
                                   scopes:
                                     description: The scopes associated with this resource.
@@ -347,10 +424,13 @@ spec:
                                       x-kubernetes-preserve-unknown-fields: true
                                     type: array
                                   type:
-                                    description: The type of this resource. It can be used to group different resource instances with the same type.
+                                    description: The type of this resource. It can
+                                      be used to group different resource instances
+                                      with the same type.
                                     type: string
                                   uris:
-                                    description: Set of URIs which are protected by resource.
+                                    description: Set of URIs which are protected by
+                                      resource.
                                     items:
                                       type: string
                                     type: array
@@ -375,7 +455,10 @@ spec:
                     description: True if Consent Screen is required.
                     type: boolean
                   defaultClientScopes:
-                    description: A list of default client scopes. Default client scopes are always applied when issuing OpenID Connect tokens or SAML assertions for this client.
+                    description: |-
+                      A list of default client scopes. Default client scopes are
+                      always applied when issuing OpenID Connect tokens or SAML
+                      assertions for this client.
                     items:
                       type: string
                     type: array
@@ -415,7 +498,11 @@ spec:
                     description: Not Before setting.
                     type: integer
                   optionalClientScopes:
-                    description: A list of optional client scopes. Optional client scopes are applied when issuing tokens for this client, but only when they are requested by the scope parameter in the OpenID Connect authorization request.
+                    description: |-
+                      A list of optional client scopes. Optional client scopes are
+                      applied when issuing tokens for this client, but only when they
+                      are requested by the scope parameter in the OpenID Connect
+                      authorization request.
                     items:
                       type: string
                     type: array
@@ -463,7 +550,8 @@ spec:
                     description: Application root URL.
                     type: string
                   secret:
-                    description: Client Secret. The Operator will automatically create a Secret based on this value.
+                    description: Client Secret. The Operator will automatically create
+                      a Secret based on this value.
                     type: string
                   serviceAccountsEnabled:
                     description: True if Service Accounts are enabled.
@@ -495,32 +583,48 @@ spec:
                 description: Selector for looking up KeycloakRealm Custom Resources.
                 properties:
                   matchExpressions:
-                    description: matchExpressions is a list of label selector requirements. The requirements are ANDed.
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
                     items:
-                      description: A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
                       properties:
                         key:
-                          description: key is the label key that the selector applies to.
+                          description: key is the label key that the selector applies
+                            to.
                           type: string
                         operator:
-                          description: operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
                           type: string
                         values:
-                          description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
                           items:
                             type: string
                           type: array
+                          x-kubernetes-list-type: atomic
                       required:
                       - key
                       - operator
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   matchLabels:
                     additionalProperties:
                       type: string
-                    description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
                     type: object
                 type: object
+                x-kubernetes-map-type: atomic
               roles:
                 description: Client Roles
                 items:
@@ -711,20 +815,24 @@ spec:
             description: KeycloakClientStatus defines the observed state of KeycloakClient
             properties:
               message:
-                description: Human-readable message indicating details about current operator phase or error.
+                description: Human-readable message indicating details about current
+                  operator phase or error.
                 type: string
               phase:
                 description: Current phase of the operator.
                 type: string
               ready:
-                description: True if all resources are in a ready state and all work is done.
+                description: True if all resources are in a ready state and all work
+                  is done.
                 type: boolean
               secondaryResources:
                 additionalProperties:
                   items:
                     type: string
                   type: array
-                description: 'A map of all the secondary resources types and names created for this CR. e.g "Deployment": [ "DeploymentName1", "DeploymentName2" ]'
+                description: 'A map of all the secondary resources types and names
+                  created for this CR. e.g "Deployment": [ "DeploymentName1", "DeploymentName2"
+                  ]'
                 type: object
             required:
             - message
