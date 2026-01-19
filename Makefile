@@ -353,7 +353,7 @@ create/marin3r/index:
 
 .PHONY: create/cloud-resource-operator/index
 create/cloud-resource-operator/index:
-	PRODUCT=cloud-resources ./scripts/create-product-index.sh
+	PRODUCT=cloud-resources BUNDLE_FILE=bundles/cloud-resource-operator/bundles.yaml ./scripts/create-product-index.sh
 
 .PHONY: create/rhsso/index
 create/rhsso/index:
