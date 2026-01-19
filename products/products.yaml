@@ -13,7 +13,7 @@ products:
     manifestsDir: "integreatly-3scale"
     quayScan: true
   - name: cloud-resource-operator
-    version: v1.1.5
+    version: v1.1.7
     url: "https://github.com/integr8ly/cloud-resource-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-cloud-resources"
