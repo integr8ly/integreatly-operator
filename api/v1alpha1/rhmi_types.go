@@ -78,7 +78,7 @@ var (
 	OperatorVersionRHSSO          OperatorVersion = "7.6.12-9"
 	OperatorVersionRHSSOUser      OperatorVersion = "7.6.12-9"
 	OperatorVersionCloudResources OperatorVersion = "1.1.6"
-	OperatorVersion3Scale         OperatorVersion = "0.12.5"
+	OperatorVersion3Scale         OperatorVersion = "0.13.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.13.4"
 
 	// Event reasons to be used when emitting events
