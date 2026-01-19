@@ -49,7 +49,12 @@ generate_from() {
         exit 1
     fi
 
-    index=$(yq e ".products[\"$PRODUCT\"].index" products/installation.yaml)
+    # Special case for cloud-resource-operator: product name vs YAML key mismatch
+    if [ "$PRODUCT" = "cloud-resource" ]; then
+        index=$(yq e ".products[\"cloud-resources\"].index" products/installation.yaml)
+    else
+        index=$(yq e ".products[\"$PRODUCT\"].index" products/installation.yaml)
+    fi
 
     printf "Building index $1\n\tFrom: $index\n\tIncluding: $bundle\n"
 
