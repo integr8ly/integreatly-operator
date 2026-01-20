@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	EnvoyImage = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.12-1767872298"
+	EnvoyImage = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.9-6"
 )
 
 type envoyProxyServer struct {
