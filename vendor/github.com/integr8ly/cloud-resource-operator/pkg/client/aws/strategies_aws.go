@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
 	stratType "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	errorUtil "github.com/pkg/errors"

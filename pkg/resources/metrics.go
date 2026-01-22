@@ -29,7 +29,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	cro1types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	cro1types "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 
 	"github.com/pkg/errors"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
@@ -38,7 +38,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/api/v1alpha1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"

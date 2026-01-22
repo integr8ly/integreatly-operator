@@ -16,10 +16,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatch"
-	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cloudWatchTypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
@@ -80,13 +80,14 @@ func (p PostgresMetricsProvider) ScrapePostgresMetrics(ctx context.Context, post
 	}
 
 	// create a session from postgres strategy (region) and reconciled aws keys
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, postgresStrategyConfig)
+	cfg, err := CreateConfigFromStrategy(ctx, p.Client, providerCreds, postgresStrategyConfig)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to create aws session to scrape rds cloud watch metrics")
 	}
 
+	cloudwatchClient := NewCloudWatchClient(*cfg)
 	// scrape metric data from cloud watch
-	cloudMetrics, err := p.scrapeRDSCloudWatchMetricData(ctx, cloudwatch.New(sess), postgres, metricTypes)
+	cloudMetrics, err := p.scrapeRDSCloudWatchMetricData(ctx, cloudwatchClient, postgres, metricTypes)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to scrape rds cloud watch metrics")
 	}
@@ -98,7 +99,7 @@ func (p PostgresMetricsProvider) ScrapePostgresMetrics(ctx context.Context, post
 
 // scrapeRDSCloudWatchMetricData fetches cloud watch metrics for rds
 // and parses it to a GenericCloudMetric in order to return to the controller
-func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Context, cloudWatchApi cloudwatchiface.CloudWatchAPI, postgres *v1alpha1.Postgres, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
+func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Context, cloudWatchClient CloudWatchAPI, postgres *v1alpha1.Postgres, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
 	resourceID, err := resources.BuildInfraNameFromObject(ctx, p.Client, postgres.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return nil, errorUtil.Errorf("error occurred building instance name: %v", err)
@@ -108,7 +109,7 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 	// for more info see https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html
 	logger := resources.NewActionLogger(p.Logger, "scrapeRDSCloudWatchMetricData")
 	logger.Infof("scraping rds instance %s cloud watch metrics", resourceID)
-	metricOutput, err := cloudWatchApi.GetMetricData(&cloudwatch.GetMetricDataInput{
+	metricOutput, err := cloudWatchClient.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
 		// build metric data query array from `metricTypes`
 		MetricDataQueries: buildRDSMetricDataQuery(metricTypes, resourceID),
 		// metrics gathered from start time to end time
@@ -126,7 +127,7 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 	}
 
 	// ensure metric data results are not nil
-	if metricOutput.MetricDataResults == nil || len(metricOutput.MetricDataResults) == 0 {
+	if len(metricOutput.MetricDataResults) == 0 {
 		return nil, errorUtil.New("no metric data returned from rds cloudwatch")
 	}
 
@@ -135,7 +136,7 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 	var metrics []*providers.GenericCloudMetric
 	for _, metricData := range metricOutput.MetricDataResults {
 		// status code complete ensures all metrics have been successful
-		if *metricData.StatusCode != cloudwatch.StatusCodeComplete {
+		if metricData.StatusCode != cloudWatchTypes.StatusCodeComplete {
 			continue
 		}
 		// depending on the number of data points, several values can be returned
@@ -151,7 +152,7 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 					resources.LabelProductNameKey: postgres.Labels["productName"],
 					resources.LabelStrategyKey:    postgresProviderName,
 				},
-				Value: *value,
+				Value: value,
 			})
 		}
 	}
@@ -159,18 +160,18 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 }
 
 // buildRDSMetricDataQuery builds an aws query from wanted rds metric types
-func buildRDSMetricDataQuery(metricTypes []providers.CloudProviderMetricType, resourceID string) []*cloudwatch.MetricDataQuery {
-	var metricDataQueries []*cloudwatch.MetricDataQuery
+func buildRDSMetricDataQuery(metricTypes []providers.CloudProviderMetricType, resourceID string) []cloudWatchTypes.MetricDataQuery {
+	var metricDataQueries []cloudWatchTypes.MetricDataQuery
 	for _, metricType := range metricTypes {
-		metricDataQueries = append(metricDataQueries, &cloudwatch.MetricDataQuery{
+		metricDataQueries = append(metricDataQueries, cloudWatchTypes.MetricDataQuery{
 			// id needs to be unique, and is built from the metric name and type
 			// the metric name is converted from camel case to snake case to allow it to be easily reused when exposing the metric
 			Id: aws.String(metricType.PrometheusMetricName),
-			MetricStat: &cloudwatch.MetricStat{
-				Metric: &cloudwatch.Metric{
+			MetricStat: &cloudWatchTypes.MetricStat{
+				Metric: &cloudWatchTypes.Metric{
 					MetricName: aws.String(metricType.ProviderMetricName),
 					Namespace:  aws.String("AWS/RDS"),
-					Dimensions: []*cloudwatch.Dimension{
+					Dimensions: []cloudWatchTypes.Dimension{
 						{
 							Name:  aws.String(cloudWatchRDSDBDimension),
 							Value: aws.String(resourceID),
@@ -178,7 +179,7 @@ func buildRDSMetricDataQuery(metricTypes []providers.CloudProviderMetricType, re
 					},
 				},
 				Stat:   aws.String(metricType.Statistic),
-				Period: aws.Int64(int64(resources.GetMetricReconcileTimeOrDefault(resources.MetricsWatchDuration).Seconds())),
+				Period: aws.Int32(int32(resources.GetMetricReconcileTimeOrDefault(resources.MetricsWatchDuration).Seconds())),
 			},
 		})
 	}
