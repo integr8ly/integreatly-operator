@@ -48,7 +48,7 @@ type Target struct {
 
 func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 	res, err := catalogSourceReconciler.Reconcile(ctx, t.SubscriptionName)
-	if res.Requeue {
+	if res.RequeueAfter > 0 {
 		return fmt.Errorf("Requeue")
 	}
 	if err != nil {

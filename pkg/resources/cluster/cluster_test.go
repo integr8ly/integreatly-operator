@@ -314,10 +314,6 @@ func TestGetClusterVersionCR(t *testing.T) {
 				),
 			},
 			want: &configv1.ClusterVersion{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ClusterVersion",
-					APIVersion: "config.openshift.io/v1",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "version",
 					ResourceVersion: "999",

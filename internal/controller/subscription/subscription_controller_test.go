@@ -236,7 +236,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
 				}
-				if !res.Requeue {
+				if res.RequeueAfter == 0 {
 					t.Fatalf("expected reconciler to await manual approval of the upgrade")
 				}
 			},
