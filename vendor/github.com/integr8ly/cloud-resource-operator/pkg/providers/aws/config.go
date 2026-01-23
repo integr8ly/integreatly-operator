@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
-	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 
 	"github.com/integr8ly/cloud-resource-operator/internal/k8sutil"
 
@@ -124,33 +123,42 @@ func BuildDefaultConfigMap(name, namespace string) *v1.ConfigMap {
 	}
 }
 
-func CreateSessionFromStrategy(ctx context.Context, c client.Client, credentials *Credentials, strategy *StrategyConfig) (*session.Session, error) {
+func CreateConfigFromStrategy(ctx context.Context, c client.Client, credentials *Credentials, strategy *StrategyConfig) (*aws.Config, error) {
 	region, err := GetRegionFromStrategyOrDefault(ctx, c, strategy)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get region from strategy while creating aws session")
 	}
 
-	awsConfig := aws.Config{
-		Region: aws.String(region),
+	awsConfig := config.WithRegion(region)
+	// get the aws config used instead of sessions in V2 aws-go-sdk
+	cfg, err := config.LoadDefaultConfig(context.TODO(), awsConfig)
+	if err != nil {
+		return nil, err
 	}
+
 	// Check if STS credentials are passed
 	if len(credentials.RoleArn) > 0 {
+		stsclient := sts.NewFromConfig(cfg)
 		// If running locally and STS role to assume is created, assume this role locally
 		// Local IAM user must be a principle in the role created with the sts:AssumeRole action
 		// Otherwise assume running in a pod in STS cluster
 		if k8sutil.IsRunModeLocal() {
-			sess := session.Must(session.NewSession(&awsConfig))
-			awsConfig.Credentials = stscreds.NewCredentials(sess, credentials.RoleArn)
+			cfg.Credentials = stscreds.NewAssumeRoleProvider(stsclient, credentials.RoleArn)
 		} else {
-			svc := sts.New(session.Must(session.NewSession(&awsConfig)))
-			credentialsProvider := stscreds.NewWebIdentityRoleProviderWithOptions(svc, credentials.RoleArn, "Red-Hat-cloud-resources-operator", stscreds.FetchTokenPath(credentials.TokenFilePath))
-			awsConfig.Credentials = awsCredentials.NewCredentials(credentialsProvider)
+			cfg.Credentials = aws.NewCredentialsCache(
+				stscreds.NewWebIdentityRoleProvider(
+					stsclient,
+					credentials.RoleArn,
+					stscreds.IdentityTokenFile(credentials.TokenFilePath),
+					func(o *stscreds.WebIdentityRoleOptions) {
+						o.RoleSessionName = "Red-Hat-cloud-resources-operator"
+					}))
 		}
 	} else {
-		awsConfig.Credentials = awsCredentials.NewStaticCredentials(credentials.AccessKeyID, credentials.SecretAccessKey, "")
+		cfg.Credentials = aws.NewCredentialsCache(awscreds.NewStaticCredentialsProvider(credentials.AccessKeyID, credentials.SecretAccessKey, ""))
 	}
-	sess := session.Must(session.NewSession(&awsConfig))
-	return sess, nil
+
+	return &cfg, nil
 }
 
 func GetRegionFromStrategyOrDefault(ctx context.Context, c client.Client, strategy *StrategyConfig) (string, error) {

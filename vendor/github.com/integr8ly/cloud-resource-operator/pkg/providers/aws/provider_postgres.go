@@ -3,16 +3,18 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/aws/smithy-go"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 
-	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	croType "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/annotations"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -22,12 +24,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/rds/rdsiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
-	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +45,7 @@ const (
 	defaultAwsDBInstanceClass            = "db.t3.small"
 	defaultAwsDeleteAutomatedBackups     = true
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "13.18"
+	defaultAwsEngineVersion              = "15.15"
 	defaultAwsIdentifierLength           = 40
 	defaultAwsMaxAllocatedStorage        = 100
 	defaultAwsMultiAZ                    = true
@@ -64,7 +65,7 @@ const (
 )
 
 var (
-	defaultSupportedEngineVersions = []string{"13.13", "13.12", "13.11"}
+	defaultSupportedEngineVersions = []string{"15.15", "13.18", "13.13", "13.12", "13.11"}
 	healthyAWSDBInstanceStatuses   = []string{
 		"backtracking",
 		"available",
@@ -139,7 +140,7 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 	rdsCfg, _, serviceUpdates, strategyConfig, err := p.getRDSConfig(ctx, pg)
 	if err != nil {
 		msg := "failed to retrieve aws rds cluster config for instance"
-		return nil, croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 	}
 
 	// create the credentials to be used by the aws resource providers, not to be used by end-user
@@ -162,21 +163,36 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 	})
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to create or update secret %s, action was %s", sec.Name, or)
-		return nil, croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	// setup aws RDS instance sdk session
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, strategyConfig)
+	// setup aws RDS instance sdk config
+	cfg, err := CreateConfigFromStrategy(ctx, p.Client, providerCreds, strategyConfig)
 	if err != nil {
 		errMsg := "failed to create aws session to create rds db instance"
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if apiErr.ErrorCode() == "AuthFailure" {
+				logger.Info("AuthFailure creating AWS config, credentials may not be propagated yet, requeuing")
+				return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+			}
+		}
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
 	// check is a standalone network is required
-	networkManager := NewNetworkManager(sess, p.Client, logger, isSTSCluster(ctx, p.Client))
+	networkManager := NewNetworkManager(*cfg, p.Client, logger, isSTSCluster(ctx, p.Client))
 	isEnabled, err := networkManager.IsEnabled(ctx)
 	if err != nil {
 		errMsg := "failed to check cluster vpc subnets"
+		// Check if the error is an AuthFailure and re-que if present
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if apiErr.ErrorCode() == "AuthFailure" {
+				logger.Info("AuthFailure when checking network manager, credentials may not be propagated yet, requeuing")
+				return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+			}
+		}
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
@@ -201,7 +217,7 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 			errMsg := "failed to create resource network"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
-		logger.Infof("created standalone network %s", aws.StringValue(standaloneNetwork.Vpc.VpcId))
+		logger.Infof("created standalone network %s", aws.ToString(standaloneNetwork.Vpc.VpcId))
 
 		// we've created the standalone vpc, now we peer it to the cluster vpc
 		logger.Infof("creating network peering")
@@ -210,7 +226,7 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 			errMsg := "failed to peer standalone network"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
-		logger.Infof("created network peering %s", aws.StringValue(networkPeering.PeeringConnection.VpcPeeringConnectionId))
+		logger.Infof("created network peering %s", aws.ToString(networkPeering.PeeringConnection.VpcPeeringConnectionId))
 
 		// we have created the peering connection we must now create the security groups and update the route tables
 		securityGroup, err := networkManager.CreateNetworkConnection(ctx, standaloneNetwork)
@@ -218,12 +234,12 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 			errMsg := "failed to create standalone network"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
-		logger.Infof("created security group %s", aws.StringValue(securityGroup.StandaloneSecurityGroup.GroupName))
+		logger.Infof("created security group %s", aws.ToString(securityGroup.StandaloneSecurityGroup.GroupName))
 	}
 
-	session := rds.New(sess)
+	rdsClient := rds.NewFromConfig(*cfg)
 	// create the aws RDS instance
-	postgres, reconcileStatus, err := p.reconcileRDSInstance(ctx, pg, session, ec2.New(sess), rdsCfg, isEnabled, maintenanceWindow)
+	postgres, reconcileStatus, err := p.reconcileRDSInstance(ctx, pg, rdsClient, NewEC2Client(*cfg), rdsCfg, isEnabled, maintenanceWindow)
 	if err != nil {
 		errMsg := "failed to reconcile rds instance"
 		return nil, reconcileStatus, errorUtil.Wrap(err, errMsg)
@@ -234,7 +250,7 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 
 	if maintenanceWindow {
 		if serviceUpdates != nil && len(serviceUpdates.updates) > 0 {
-			pi, err := getRDSInstances(session)
+			pi, err := getRDSInstances(ctx, rdsClient)
 			if err != nil {
 				// return nil error so this function can be requeued
 				msg := "error getting replication groups"
@@ -243,7 +259,7 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 			// check if the cluster has already been created
 			foundInstance := getFoundInstance(pi, rdsCfg)
 
-			updating, message, err := p.rdsApplyServiceUpdates(session, serviceUpdates, foundInstance)
+			updating, message, err := p.rdsApplyServiceUpdates(ctx, rdsClient, serviceUpdates, foundInstance)
 			if err != nil {
 				errMsg := "failed to service update rds instance"
 				return nil, croType.StatusMessage(errMsg), err
@@ -264,10 +280,10 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 
 }
 
-func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha1.Postgres, rdsSvc rdsiface.RDSAPI, ec2Svc ec2iface.EC2API, rdsCfg *rds.CreateDBInstanceInput, standaloneNetworkExists bool, maintenanceWindow bool) (*providers.PostgresInstance, croType.StatusMessage, error) {
+func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha1.Postgres, rdsClient RDSAPI, ec2Client EC2API, rdsCfg *rds.CreateDBInstanceInput, standaloneNetworkExists bool, maintenanceWindow bool) (*providers.PostgresInstance, croType.StatusMessage, error) {
 	logger := p.Logger.WithField("action", "reconcileRDSInstance")
 	// the aws access key can sometimes still not be registered in aws on first try, so loop
-	pi, err := getRDSInstances(rdsSvc)
+	pi, err := getRDSInstances(ctx, rdsClient)
 	if err != nil {
 		// return nil error so this function can be requeued
 		msg := "error getting replication groups"
@@ -281,13 +297,13 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 	// standaloneNetworkExists if no bundled resources are found in the cluster vpc
 	if !standaloneNetworkExists {
 		// setup networking in cluster vpc rds vpc
-		if err := p.configureRDSVpc(ctx, rdsSvc, ec2Svc); err != nil {
+		if err := p.configureRDSVpc(ctx, rdsClient, ec2Client); err != nil {
 			msg := "error setting up resource vpc"
 			return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 		}
 
 		// setup security group for cluster vpc
-		if err := configureSecurityGroup(ctx, p.Client, ec2Svc, logger); err != nil {
+		if err := configureSecurityGroup(ctx, p.Client, ec2Client, logger); err != nil {
 			msg := "error setting up security group"
 			return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 		}
@@ -303,11 +319,11 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 	postgresPass := string(credSec.Data[defaultPostgresPasswordKey])
 	if postgresPass == "" {
 		msg := "unable to retrieve rds password"
-		return nil, croType.StatusMessage(msg), errorUtil.Errorf(msg)
+		return nil, croType.StatusMessage(msg), errorUtil.New(msg)
 	}
 
 	// verify and build rds create config
-	if err := p.buildRDSCreateStrategy(ctx, cr, ec2Svc, rdsCfg, postgresPass); err != nil {
+	if err := p.buildRDSCreateStrategy(ctx, cr, ec2Client, rdsCfg, postgresPass); err != nil {
 		msg := "failed to build and verify aws rds instance configuration"
 		return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 	}
@@ -316,10 +332,10 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 	foundInstance := getFoundInstance(pi, rdsCfg)
 
 	// expose pending maintenance metric
-	defer p.setPostgresServiceMaintenanceMetric(ctx, rdsSvc, foundInstance)
+	defer p.setPostgresServiceMaintenanceMetric(ctx, rdsClient, foundInstance)
 
 	// set status metric
-	defer p.exposePostgresMetrics(ctx, cr, foundInstance, ec2Svc)
+	defer p.exposePostgresMetrics(ctx, cr, foundInstance, ec2Client)
 
 	// create connection metric
 	defer p.createRDSConnectionMetric(ctx, cr, foundInstance)
@@ -340,7 +356,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 			return nil, croType.StatusMessage(msg), errorUtil.New(msg)
 		}
 		if *foundInstance.DBInstanceStatus != "available" {
-			logger.Infof(msg)
+			logger.Info(msg)
 			return nil, croType.StatusMessage(fmt.Sprintf("reconcileRDSInstance() in progress, current aws rds resource status is %s", *foundInstance.DBInstanceStatus)), nil
 		}
 
@@ -353,7 +369,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 				return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 			}
 			if mi != nil {
-				_, err := rdsSvc.ModifyDBInstance(mi)
+				_, err := rdsClient.ModifyDBInstance(ctx, mi)
 				if err != nil {
 					errMsg := fmt.Sprintf("error experienced trying to modify db instance: %s", *foundInstance.DBInstanceIdentifier)
 					return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -365,7 +381,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 		}
 
 		if !isSTS {
-			croStatus, err := p.TagRDSPostgres(ctx, cr, rdsSvc, foundInstance)
+			croStatus, err := p.TagRDSPostgres(ctx, cr, rdsClient, foundInstance)
 			if err != nil {
 				errMsg := fmt.Sprintf("failed to add tags to rds: %s", croStatus)
 				return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -373,7 +389,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 		}
 
 		msg = fmt.Sprintf("rds instance %s is as expected", *foundInstance.DBInstanceIdentifier)
-		logger.Infof(msg)
+		logger.Info(msg)
 		pdd := &providers.PostgresDeploymentDetails{
 			Username: *foundInstance.MasterUsername,
 			Password: postgresPass,
@@ -397,7 +413,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 	if annotations.Has(cr, ResourceIdentifierAnnotation) {
 		errMsg := fmt.Sprintf("Postgres CR %s in %s namespace has %s annotation with value %s, but no corresponding RDS instance was found",
 			cr.Name, cr.Namespace, ResourceIdentifierAnnotation, cr.ObjectMeta.Annotations[ResourceIdentifierAnnotation])
-		return nil, croType.StatusMessage(errMsg), fmt.Errorf(errMsg)
+		return nil, croType.StatusMessage(errMsg), fmt.Errorf("%s", errMsg)
 	}
 	// the tag should be added to the create strategy in cases where sts is enabled
 	// and in the same api request of the first creation of the postgres to allow
@@ -410,7 +426,7 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 	}
 
 	logger.Info("creating rds instance")
-	if _, err := rdsSvc.CreateDBInstance(rdsCfg); err != nil {
+	if _, err := rdsClient.CreateDBInstance(ctx, rdsCfg); err != nil {
 		return nil, croType.StatusMessage(fmt.Sprintf("error creating rds instance %s", err)), err
 	}
 
@@ -426,26 +442,26 @@ func (p *PostgresProvider) buildRDSTagCreateStrategy(ctx context.Context, cr *v1
 	rdsTags, err := p.getDefaultRdsTags(ctx, cr)
 	if err != nil {
 		msg := "Failed to build default tags"
-		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 
 	}
 
 	if cr.ObjectMeta.Labels["addonName"] != "" {
-		addonTag := &rds.Tag{
+		addonTag := &rdstypes.Tag{
 			Key:   aws.String("add-on-name"),
 			Value: aws.String(cr.ObjectMeta.Labels["addonName"]),
 		}
-		rdsTags = append(rdsTags, addonTag)
+		rdsTags = append(rdsTags, *addonTag)
 	}
 
 	// adding tags to rds postgres create strategy instance
-	rdsCreateConfig.SetTags(rdsTags)
-	rdsCreateConfig.SetCopyTagsToSnapshot(true)
+	rdsCreateConfig.Tags = rdsTags
+	rdsCreateConfig.CopyTagsToSnapshot = aws.Bool(true)
 
 	return "", nil
 }
 
-func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Postgres, rdsSvc rdsiface.RDSAPI, foundInstance *rds.DBInstance) (croType.StatusMessage, error) {
+func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Postgres, rdsClient RDSAPI, foundInstance *rdstypes.DBInstance) (croType.StatusMessage, error) {
 
 	logger := p.Logger.WithField("action", "TagRDSPostgres")
 	logger.Infof("adding tags to rds instance %s", *foundInstance.DBInstanceIdentifier)
@@ -453,18 +469,18 @@ func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Post
 	rdsTag, err := p.getDefaultRdsTags(ctx, cr)
 	if err != nil {
 		msg := "Failed to build default tags"
-		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 
 	}
 
 	// adding tags to rds postgres instance
-	_, err = rdsSvc.AddTagsToResource(&rds.AddTagsToResourceInput{
+	_, err = rdsClient.AddTagsToResource(ctx, &rds.AddTagsToResourceInput{
 		ResourceName: aws.String(*foundInstance.DBInstanceArn),
 		Tags:         rdsTag,
 	})
 	if err != nil {
 		msg := "Failed to add Tags to RDS instance"
-		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 
 	}
 
@@ -472,10 +488,10 @@ func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Post
 	rdsSnapshotAttributeInput := &rds.DescribeDBSnapshotsInput{
 		DBInstanceIdentifier: aws.String(*foundInstance.DBInstanceIdentifier),
 	}
-	rdsSnapshotList, err := rdsSvc.DescribeDBSnapshots(rdsSnapshotAttributeInput)
+	rdsSnapshotList, err := rdsClient.DescribeDBSnapshots(ctx, rdsSnapshotAttributeInput)
 	if err != nil {
 		msg := "Can't get Snapshot info"
-		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 	}
 
 	// Adding tags to each DB Snapshots from list on AWS
@@ -485,10 +501,10 @@ func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Post
 			Tags:         rdsTag,
 		}
 		// Adding Tags to RDS Snapshot
-		_, err = rdsSvc.AddTagsToResource(inputRdsSnapshot)
+		_, err = rdsClient.AddTagsToResource(ctx, inputRdsSnapshot)
 		if err != nil {
 			msg := "Failed to add Tags to RDS Snapshot"
-			return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 		}
 	}
 
@@ -515,15 +531,15 @@ func (p *PostgresProvider) DeletePostgres(ctx context.Context, r *v1alpha1.Postg
 		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 	}
 
-	// setup aws postgres instance sdk session
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, stratCfg)
+	// setup aws postgres instance sdk config
+	cfg, err := CreateConfigFromStrategy(ctx, p.Client, providerCreds, stratCfg)
 	if err != nil {
 		errMsg := "failed to create aws session to delete rds db instance"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
 	// network manager required for cleaning up network vpc, subnet and subnet groups.
-	networkManager := NewNetworkManager(sess, p.Client, logger, isSTSCluster(ctx, p.Client))
+	networkManager := NewNetworkManager(*cfg, p.Client, logger, isSTSCluster(ctx, p.Client))
 
 	isEnabled, err := networkManager.IsEnabled(ctx)
 	if err != nil {
@@ -536,15 +552,14 @@ func (p *PostgresProvider) DeletePostgres(ctx context.Context, r *v1alpha1.Postg
 		errMsg := "failed to check if this cr is the last cr of type postgres and redis"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
-
-	return p.deleteRDSInstance(ctx, r, networkManager, rds.New(sess), ec2.New(sess), rdsCreateConfig, rdsDeleteConfig, isEnabled, isLastResource)
+	return p.deleteRDSInstance(ctx, r, networkManager, NewRDSClient(*cfg), NewEC2Client(*cfg), rdsCreateConfig, rdsDeleteConfig, isEnabled, isLastResource)
 }
 
-func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.Postgres, networkManager NetworkManager, instanceSvc rdsiface.RDSAPI, ec2Svc ec2iface.EC2API, rdsCreateConfig *rds.CreateDBInstanceInput, rdsDeleteConfig *rds.DeleteDBInstanceInput, isEnabled bool, isLastResource bool) (croType.StatusMessage, error) {
+func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.Postgres, networkManager NetworkManager, rdsClient RDSAPI, ec2Client EC2API, rdsCreateConfig *rds.CreateDBInstanceInput, rdsDeleteConfig *rds.DeleteDBInstanceInput, isEnabled bool, isLastResource bool) (croType.StatusMessage, error) {
 	logger := p.Logger.WithField("action", "deleteRDSInstance")
 
 	// the aws access key can sometimes still not be registered in aws on first try, so loop
-	pgs, err := getRDSInstances(instanceSvc)
+	pgs, err := getRDSInstances(ctx, rdsClient)
 	if err != nil {
 		return "error getting aws rds instances", err
 	}
@@ -556,10 +571,11 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 	}
 
 	// check if the instance has already been deleted
-	var foundInstance *rds.DBInstance
+	var foundInstance *rdstypes.DBInstance
 	for _, i := range pgs {
-		if *i.DBInstanceIdentifier == *rdsDeleteConfig.DBInstanceIdentifier {
-			foundInstance = i
+		currentInstance := i //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+		if *currentInstance.DBInstanceIdentifier == *rdsDeleteConfig.DBInstanceIdentifier {
+			foundInstance = &currentInstance
 			break
 		}
 	}
@@ -568,7 +584,7 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 	// if not delete finalizer and credential secret
 	if foundInstance != nil {
 		// set status metric
-		p.exposePostgresMetrics(ctx, pg, foundInstance, ec2Svc)
+		p.exposePostgresMetrics(ctx, pg, foundInstance, ec2Client)
 
 		// return if rds instance is not available
 		if *foundInstance.DBInstanceStatus != "available" {
@@ -579,17 +595,20 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 
 		// delete rds instance if deletion protection is false
 		if !*foundInstance.DeletionProtection {
-			_, err = instanceSvc.DeleteDBInstance(rdsDeleteConfig)
-			rdsErr, isAwsErr := err.(awserr.Error)
-			if err != nil && (!isAwsErr || rdsErr.Code() != rds.ErrCodeDBInstanceNotFoundFault) {
+			_, err = rdsClient.DeleteDBInstance(ctx, rdsDeleteConfig)
+			if err != nil {
+				var notFoundErr *rdstypes.DBInstanceNotFoundFault
+				if errors.As(err, &notFoundErr) {
+					return "delete detected, deleteDBInstance() started", err
+				}
 				msg := fmt.Sprintf("failed to delete rds instance : %s", err)
-				return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+				return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 			}
 			return "delete detected, deleteDBInstance() started", nil
 		}
 
 		// modify rds instance to turn off deletion protection
-		_, err = instanceSvc.ModifyDBInstance(&rds.ModifyDBInstanceInput{
+		_, err = rdsClient.ModifyDBInstance(ctx, &rds.ModifyDBInstanceInput{
 			DBInstanceIdentifier: rdsDeleteConfig.DBInstanceIdentifier,
 			DeletionProtection:   aws.Bool(false),
 		})
@@ -603,7 +622,7 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 
 	// isEnabled is true if no bundled resources are found in the cluster vpc
 	if isEnabled && isLastResource {
-		saVPC, err := getStandaloneVpc(ctx, p.Client, ec2Svc, logger)
+		saVPC, err := getStandaloneVpc(ctx, p.Client, ec2Client, logger)
 		if err != nil {
 			msg := "failed to get standalone VPC"
 			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
@@ -622,7 +641,7 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 				return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 			}
 
-			if err = networkManager.DeleteNetworkPeering(networkPeering); err != nil {
+			if err = networkManager.DeleteNetworkPeering(ctx, networkPeering); err != nil {
 				msg := "failed to delete cluster network peering"
 				return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 			}
@@ -661,16 +680,16 @@ func (p *PostgresProvider) deleteRDSInstance(ctx context.Context, pg *v1alpha1.P
 	resources.RemoveFinalizer(&pg.ObjectMeta, DefaultFinalizer)
 	if err := p.Client.Update(ctx, pg); err != nil {
 		msg := "failed to update instance as part of finalizer reconcile"
-		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+		return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 	}
 	return croType.StatusEmpty, nil
 }
 
 // function to get rds instances, used to check/wait on AWS credentials
-func getRDSInstances(cacheSvc rdsiface.RDSAPI) ([]*rds.DBInstance, error) {
-	var pi []*rds.DBInstance
+func getRDSInstances(ctx context.Context, rdsClient RDSAPI) ([]rdstypes.DBInstance, error) {
+	var pi []rdstypes.DBInstance
 	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, timeOut, true, func(ctx context.Context) (done bool, err error) {
-		listOutput, err := cacheSvc.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
+		listOutput, err := rdsClient.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{})
 		if err != nil {
 			return false, nil
 		}
@@ -683,11 +702,12 @@ func getRDSInstances(cacheSvc rdsiface.RDSAPI) ([]*rds.DBInstance, error) {
 	return pi, nil
 }
 
-func getFoundInstance(pi []*rds.DBInstance, config *rds.CreateDBInstanceInput) *rds.DBInstance {
-	var foundInstance *rds.DBInstance
+func getFoundInstance(pi []rdstypes.DBInstance, config *rds.CreateDBInstanceInput) *rdstypes.DBInstance {
+	var foundInstance *rdstypes.DBInstance
 	for _, i := range pi {
 		if *i.DBInstanceIdentifier == *config.DBInstanceIdentifier {
-			foundInstance = i
+			currentInstance := i //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+			foundInstance = &currentInstance
 			return foundInstance
 		}
 	}
@@ -729,17 +749,17 @@ func (p *PostgresProvider) getRDSConfig(ctx context.Context, r *v1alpha1.Postgre
 	return rdsCreateConfig, rdsDeleteConfig, rdsServiceUpdates, stratCfg, nil
 }
 
-func (p *PostgresProvider) getDefaultRdsTags(ctx context.Context, cr *v1alpha1.Postgres) ([]*rds.Tag, error) {
+func (p *PostgresProvider) getDefaultRdsTags(ctx context.Context, cr *v1alpha1.Postgres) ([]rdstypes.Tag, error) {
 	tags, _, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default RDS tags"
-		return nil, errorUtil.Wrapf(err, msg)
+		return nil, errorUtil.Wrap(err, msg)
 	}
 	return genericToRdsTags(tags), nil
 }
 
 // verifies if there is a change between a found instance and the configuration from the instance strat and verified the changes are not pending
-func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *rds.DBInstance, cr *v1alpha1.Postgres) (*rds.ModifyDBInstanceInput, error) {
+func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *rdstypes.DBInstance, cr *v1alpha1.Postgres) (*rds.ModifyDBInstanceInput, error) {
 	logrus.Infof("verifying that %s configuration is as expected", *foundConfig.DBInstanceIdentifier)
 	updateFound := false
 
@@ -761,10 +781,6 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 	}
 	if *rdsConfig.BackupRetentionPeriod != *foundConfig.BackupRetentionPeriod {
 		mi.BackupRetentionPeriod = rdsConfig.BackupRetentionPeriod
-		updateFound = true
-	}
-	if *rdsConfig.DBInstanceClass != *foundConfig.DBInstanceClass {
-		mi.DBInstanceClass = rdsConfig.DBInstanceClass
 		updateFound = true
 	}
 	if *rdsConfig.PubliclyAccessible != *foundConfig.PubliclyAccessible {
@@ -791,6 +807,18 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 		mi.PreferredMaintenanceWindow = rdsConfig.PreferredMaintenanceWindow
 		updateFound = true
 	}
+	// need to set applyImmediately aws flag when DBInstanceClass updates
+	if rdsConfig.DBInstanceClass != nil {
+		if *foundConfig.DBInstanceClass != *rdsConfig.DBInstanceClass {
+			logrus.Info(fmt.Sprintf("DBInstanceClass upgrade found, the current DBInstanceClass is %s and is upgrading to %s", *foundConfig.DBInstanceClass, *rdsConfig.DBInstanceClass))
+			mi.DBInstanceClass = rdsConfig.DBInstanceClass
+			if cr.Spec.ApplyImmediately {
+				mi.ApplyImmediately = aws.Bool(cr.Spec.ApplyImmediately)
+			}
+			updateFound = true
+		}
+	}
+	// need to set applyImmediately aws flag when Engine updates
 	if rdsConfig.EngineVersion != nil {
 		engineUpgradeNeeded, err := resources.VerifyVersionUpgradeNeeded(*foundConfig.EngineVersion, *rdsConfig.EngineVersion)
 		if err != nil {
@@ -815,7 +843,7 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 }
 
 // returns true if modify input is not pending
-func verifyPendingModification(mi *rds.ModifyDBInstanceInput, pm *rds.PendingModifiedValues) bool {
+func verifyPendingModification(mi *rds.ModifyDBInstanceInput, pm *rdstypes.PendingModifiedValues) bool {
 	pendingModifications := true
 	if pm == nil {
 		return pendingModifications
@@ -849,7 +877,7 @@ func verifyPendingModification(mi *rds.ModifyDBInstanceInput, pm *rds.PendingMod
 }
 
 // verify postgres create config
-func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alpha1.Postgres, ec2Svc ec2iface.EC2API, rdsCreateConfig *rds.CreateDBInstanceInput, postgresPassword string) error {
+func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alpha1.Postgres, ec2Client EC2API, rdsCreateConfig *rds.CreateDBInstanceInput, postgresPassword string) error {
 	if rdsCreateConfig.DeletionProtection == nil {
 		rdsCreateConfig.DeletionProtection = aws.Bool(defaultAwsPostgresDeletionProtection)
 	}
@@ -860,7 +888,7 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 		rdsCreateConfig.MasterUserPassword = aws.String(postgresPassword)
 	}
 	if rdsCreateConfig.Port == nil {
-		rdsCreateConfig.Port = aws.Int64(defaultAwsPostgresPort)
+		rdsCreateConfig.Port = aws.Int32(defaultAwsPostgresPort)
 	}
 	if rdsCreateConfig.AutoMinorVersionUpgrade == nil {
 		rdsCreateConfig.AutoMinorVersionUpgrade = aws.Bool(false)
@@ -869,7 +897,7 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 		rdsCreateConfig.DBName = aws.String(defaultAwsPostgresDatabase)
 	}
 	if rdsCreateConfig.BackupRetentionPeriod == nil {
-		rdsCreateConfig.BackupRetentionPeriod = aws.Int64(defaultAwsBackupRetentionPeriod)
+		rdsCreateConfig.BackupRetentionPeriod = aws.Int32(defaultAwsBackupRetentionPeriod)
 	}
 	if rdsCreateConfig.DBInstanceClass == nil {
 		rdsCreateConfig.DBInstanceClass = aws.String(defaultAwsDBInstanceClass)
@@ -878,10 +906,10 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 		rdsCreateConfig.PubliclyAccessible = aws.Bool(defaultAwsPubliclyAccessible)
 	}
 	if rdsCreateConfig.AllocatedStorage == nil {
-		rdsCreateConfig.AllocatedStorage = aws.Int64(defaultAwsAllocatedStorage)
+		rdsCreateConfig.AllocatedStorage = aws.Int32(defaultAwsAllocatedStorage)
 	}
 	if rdsCreateConfig.MaxAllocatedStorage == nil {
-		rdsCreateConfig.MaxAllocatedStorage = aws.Int64(defaultAwsMaxAllocatedStorage)
+		rdsCreateConfig.MaxAllocatedStorage = aws.Int32(defaultAwsMaxAllocatedStorage)
 	}
 	if rdsCreateConfig.EngineVersion == nil {
 		rdsCreateConfig.EngineVersion = aws.String(defaultAwsEngineVersion)
@@ -922,14 +950,14 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
 	// get security group
-	foundSecGroup, err := getSecurityGroup(ec2Svc, secName)
+	foundSecGroup, err := getSecurityGroup(ctx, ec2Client, secName)
 	if err != nil {
 		return errorUtil.Wrap(err, "")
 	}
 
 	if foundSecGroup != nil && rdsCreateConfig.VpcSecurityGroupIds == nil {
-		rdsCreateConfig.VpcSecurityGroupIds = []*string{
-			aws.String(*foundSecGroup.GroupId),
+		rdsCreateConfig.VpcSecurityGroupIds = []string{
+			*foundSecGroup.GroupId,
 		}
 	}
 	if rdsCreateConfig.CopyTagsToSnapshot == nil {
@@ -985,7 +1013,7 @@ func buildDefaultRDSSecret(ps *v1alpha1.Postgres) *v1.Secret {
 }
 
 // ensures a subnet group is in place to configure the resource to be in the same vpc as the cluster
-func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.RDSAPI, ec2Svc ec2iface.EC2API) error {
+func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsClient RDSAPI, ec2Client EC2API) error {
 	logger := p.Logger.WithField("action", "configureRDSVpc")
 	logger.Info("ensuring vpc is as expected for resource")
 	// get subnet group id
@@ -995,14 +1023,15 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 	}
 
 	// check if group exists
-	groups, err := rdsSvc.DescribeDBSubnetGroups(&rds.DescribeDBSubnetGroupsInput{})
+	groups, err := rdsClient.DescribeDBSubnetGroups(ctx, &rds.DescribeDBSubnetGroupsInput{})
 	if err != nil {
 		return errorUtil.Wrap(err, "error describing subnet groups")
 	}
-	var foundSubnet *rds.DBSubnetGroup
+	var foundSubnet *rdstypes.DBSubnetGroup
 	for _, sub := range groups.DBSubnetGroups {
 		if *sub.DBSubnetGroupName == sgID {
-			foundSubnet = sub
+			currentSubnet := sub //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+			foundSubnet = &currentSubnet
 			break
 		}
 	}
@@ -1019,7 +1048,7 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 	}
 
 	// get cluster vpc subnets
-	subIDs, err := GetPrivateSubnetIDS(ctx, p.Client, ec2Svc, logger)
+	subIDs, err := GetPrivateSubnetIDS(ctx, p.Client, ec2Client, logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting vpc subnets")
 	}
@@ -1029,7 +1058,7 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 		DBSubnetGroupDescription: aws.String(defaultSubnetGroupDesc),
 		DBSubnetGroupName:        aws.String(sgID),
 		SubnetIds:                subIDs,
-		Tags: []*rds.Tag{
+		Tags: []rdstypes.Tag{
 			{
 				Key:   aws.String(defaultOrganizationTag + "clusterID"),
 				Value: aws.String(clusterID),
@@ -1039,14 +1068,14 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 
 	// create db subnet group
 	logger.Infof("creating resource subnet group %s", *subnetGroupInput.DBSubnetGroupName)
-	if _, err := rdsSvc.CreateDBSubnetGroup(subnetGroupInput); err != nil {
+	if _, err := rdsClient.CreateDBSubnetGroup(ctx, subnetGroupInput); err != nil {
 		return errorUtil.Wrap(err, "unable to create db subnet group")
 	}
 
 	return nil
 }
 
-func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alpha1.Postgres, instance *rds.DBInstance, ec2Svc ec2iface.EC2API) {
+func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alpha1.Postgres, instance *rdstypes.DBInstance, ec2Client EC2API) {
 	// build instance name
 	instanceName, err := p.buildInstanceName(ctx, cr)
 	if err != nil {
@@ -1105,9 +1134,9 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 		instanceType := strings.TrimPrefix(*instance.DBInstanceClass, "db.")
 
 		input := &ec2.DescribeInstanceTypesInput{
-			InstanceTypes: []*string{&instanceType},
+			InstanceTypes: []ec2types.InstanceType{ec2types.InstanceType(instanceType)},
 		}
-		result, err := ec2Svc.DescribeInstanceTypes(input)
+		result, err := ec2Client.DescribeInstanceTypes(ctx, input)
 		if err != nil {
 			logrus.Errorf("error occurred while describing instance types %v", err)
 			return
@@ -1121,7 +1150,7 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 func (p *PostgresProvider) setPostgresMaxMemoryMetric(response *ec2.DescribeInstanceTypesOutput, genericLabels map[string]string) {
 	if response != nil && len(response.InstanceTypes) > 0 {
 		instanceType := response.InstanceTypes[0]
-		if instanceType != nil && instanceType.MemoryInfo != nil && instanceType.MemoryInfo.SizeInMiB != nil {
+		if instanceType.MemoryInfo != nil && instanceType.MemoryInfo.SizeInMiB != nil {
 			memorySize := float64(*instanceType.MemoryInfo.SizeInMiB) * (1024 * 1024)
 			resources.SetMetric(resources.PostgresMaxMemoryMetricName, genericLabels, memorySize)
 		}
@@ -1151,7 +1180,7 @@ func (p *PostgresProvider) setPostgresDeletionTimestampMetric(ctx context.Contex
 	}
 }
 
-func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Context, rdsSession rdsiface.RDSAPI, instance *rds.DBInstance) {
+func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Context, rdsClient RDSAPI, instance *rdstypes.DBInstance) {
 	// if the instance is nil skip this metric
 	if instance == nil {
 		logrus.Error("foundInstance is nil, skipping setPostgresServiceMaintenanceMetric")
@@ -1166,7 +1195,7 @@ func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Conte
 	}
 
 	// Retrieve service maintenance updates, create and export Prometheus metrics
-	output, err := rdsSession.DescribePendingMaintenanceActions(&rds.DescribePendingMaintenanceActionsInput{})
+	output, err := rdsClient.DescribePendingMaintenanceActions(ctx, &rds.DescribePendingMaintenanceActionsInput{})
 	if err != nil {
 		logrus.Errorf("failed to get maintenance information while exposing maintenance metric for %s : %v", *instance.DBInstanceIdentifier, err)
 		return
@@ -1207,7 +1236,7 @@ func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Conte
 }
 
 // tests to see if a simple tcp connection can be made to rds and creates a metric based on this
-func (p *PostgresProvider) createRDSConnectionMetric(ctx context.Context, cr *v1alpha1.Postgres, instance *rds.DBInstance) {
+func (p *PostgresProvider) createRDSConnectionMetric(ctx context.Context, cr *v1alpha1.Postgres, instance *rdstypes.DBInstance) {
 	// build instance name
 	instanceName, err := p.buildInstanceName(ctx, cr)
 	if err != nil {
@@ -1258,13 +1287,13 @@ func (p *PostgresProvider) buildInstanceName(ctx context.Context, pg *v1alpha1.P
 	return instanceName, nil
 }
 
-func rdsInstanceStatusIsHealthy(instance *rds.DBInstance) bool {
+func rdsInstanceStatusIsHealthy(instance *rdstypes.DBInstance) bool {
 	return resources.Contains(healthyAWSDBInstanceStatuses, *instance.DBInstanceStatus)
 }
 
-func (p *PostgresProvider) rdsApplyServiceUpdates(rdsSvc rdsiface.RDSAPI, serviceUpdates *ServiceUpdate, foundInstance *rds.DBInstance) (bool, croType.StatusMessage, error) {
+func (p *PostgresProvider) rdsApplyServiceUpdates(ctx context.Context, rdsClient RDSAPI, serviceUpdates *ServiceUpdate, foundInstance *rdstypes.DBInstance) (bool, croType.StatusMessage, error) {
 	// Retrieve service maintenance updates, create and export Prometheus metrics
-	output, err := rdsSvc.DescribePendingMaintenanceActions(&rds.DescribePendingMaintenanceActionsInput{ResourceIdentifier: foundInstance.DBInstanceArn})
+	output, err := rdsClient.DescribePendingMaintenanceActions(ctx, &rds.DescribePendingMaintenanceActionsInput{ResourceIdentifier: foundInstance.DBInstanceArn})
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to get pending maintenance information for RDS with identifier : %s", *foundInstance.DBInstanceIdentifier)
 		return false, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -1287,7 +1316,7 @@ func (p *PostgresProvider) rdsApplyServiceUpdates(rdsSvc rdsiface.RDSAPI, servic
 			if !update {
 				continue
 			}
-			_, err := rdsSvc.ApplyPendingMaintenanceAction(&rds.ApplyPendingMaintenanceActionInput{
+			_, err := rdsClient.ApplyPendingMaintenanceAction(ctx, &rds.ApplyPendingMaintenanceActionInput{
 				ApplyAction:        aws.String(*pmac.Action),
 				OptInType:          aws.String("immediate"),
 				ResourceIdentifier: aws.String(*rpma.ResourceIdentifier),

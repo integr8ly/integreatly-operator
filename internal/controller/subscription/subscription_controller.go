@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"github.com/integr8ly/integreatly-operator/version"

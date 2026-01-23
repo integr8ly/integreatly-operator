@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatch"
-	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
-	"github.com/aws/aws-sdk-go/service/elasticache"
-	"github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cloudwatchtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	elasticachetypes "github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
@@ -69,13 +70,13 @@ func (r *RedisMetricsProvider) ScrapeRedisMetrics(ctx context.Context, redis *v1
 	}
 
 	// create a session from redis strategy (region) and reconciled aws keys
-	sess, err := CreateSessionFromStrategy(ctx, r.Client, providerCreds, redisStrategyConfig)
+	cfg, err := CreateConfigFromStrategy(ctx, r.Client, providerCreds, redisStrategyConfig)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to create aws session to scrape elasticache cloud watch metrics")
 	}
 
 	// scrape metric data from cloud watch
-	cloudMetrics, err := r.scrapeRedisCloudWatchMetricData(ctx, cloudwatch.New(sess), redis, elasticache.New(sess), metricTypes)
+	cloudMetrics, err := r.scrapeRedisCloudWatchMetricData(ctx, NewCloudWatchClient(*cfg), redis, NewElasticacheClient(*cfg), metricTypes)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to scrape elasticache cloud watch metrics")
 	}
@@ -85,7 +86,7 @@ func (r *RedisMetricsProvider) ScrapeRedisMetrics(ctx context.Context, redis *v1
 	}, nil
 }
 
-func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Context, cloudWatchApi cloudwatchiface.CloudWatchAPI, redis *v1alpha1.Redis, elastiCacheApi elasticacheiface.ElastiCacheAPI, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
+func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Context, cloudwatchClient CloudWatchAPI, redis *v1alpha1.Redis, elasticacheClient ElastiCacheAPI, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
 	resourceID, err := resources.BuildInfraNameFromObject(ctx, r.Client, redis.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return nil, errorUtil.Errorf("error occurred building instance name: %v", err)
@@ -103,28 +104,30 @@ func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Conte
 	}
 
 	var metrics []*providers.GenericCloudMetric
-	listOutput, err := elastiCacheApi.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{})
+	listOutput, err := elasticacheClient.DescribeReplicationGroups(ctx, &elasticache.DescribeReplicationGroupsInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed redis metrics to describe replicationGroups")
 	}
 	replicationGroups := listOutput.ReplicationGroups
 	// Metrics are returned per node for ElastiCache
-	var foundCache *elasticache.ReplicationGroup
+	var foundCache elasticachetypes.ReplicationGroup
+	found := false
 	for _, c := range replicationGroups {
 		if *c.ReplicationGroupId == resourceID {
 			foundCache = c
+			found = true
 			break
 		}
 	}
-	if foundCache == nil {
+	if !found {
 		return nil, errorUtil.Errorf("redis metrics failed to find cache in replication group")
 	}
 
 	// poll MemberCluster array for CacheClusterId
 	for _, cacheClusterId := range foundCache.MemberClusters {
-		metricOutput, err := cloudWatchApi.GetMetricData(&cloudwatch.GetMetricDataInput{
+		metricOutput, err := cloudwatchClient.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
 			// build metric data query array from `metricType`
-			MetricDataQueries: buildRedisMetricDataQuery(*cacheClusterId, metricTypes),
+			MetricDataQueries: buildRedisMetricDataQuery(cacheClusterId, metricTypes),
 			// metrics gathered from start time to end time
 			StartTime: aws.Time(time.Now().Add(-resources.GetMetricReconcileTimeOrDefault(resources.MetricsWatchDuration))),
 			EndTime:   aws.Time(time.Now()),
@@ -145,7 +148,7 @@ func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Conte
 
 		for _, metricData := range metricOutput.MetricDataResults {
 			// status code complete ensures all metrics have been successful
-			if *metricData.StatusCode != cloudwatch.StatusCodeComplete {
+			if metricData.StatusCode != cloudwatchtypes.StatusCodeComplete {
 				continue
 			}
 			// depending on the number of data points, several values can be returned
@@ -157,11 +160,11 @@ func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Conte
 						resources.LabelClusterIDKey:   clusterID,
 						resources.LabelResourceIDKey:  redis.Name,
 						resources.LabelNamespaceKey:   redis.Namespace,
-						resources.LabelInstanceIDKey:  *cacheClusterId,
+						resources.LabelInstanceIDKey:  cacheClusterId,
 						resources.LabelProductNameKey: redis.Labels["productName"],
 						resources.LabelStrategyKey:    redisProviderName,
 					},
-					Value: *value,
+					Value: value,
 				})
 			}
 		}
@@ -171,16 +174,16 @@ func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Conte
 
 }
 
-func buildRedisMetricDataQuery(cacheClusterId string, metricTypes []providers.CloudProviderMetricType) []*cloudwatch.MetricDataQuery {
-	var metricDataQueries []*cloudwatch.MetricDataQuery
+func buildRedisMetricDataQuery(cacheClusterId string, metricTypes []providers.CloudProviderMetricType) []cloudwatchtypes.MetricDataQuery {
+	var metricDataQueries []cloudwatchtypes.MetricDataQuery
 	for _, metricType := range metricTypes {
-		metricDataQueries = append(metricDataQueries, &cloudwatch.MetricDataQuery{
+		metricDataQueries = append(metricDataQueries, cloudwatchtypes.MetricDataQuery{
 			Id: aws.String(metricType.PrometheusMetricName),
-			MetricStat: &cloudwatch.MetricStat{
-				Metric: &cloudwatch.Metric{
+			MetricStat: &cloudwatchtypes.MetricStat{
+				Metric: &cloudwatchtypes.Metric{
 					MetricName: aws.String(metricType.ProviderMetricName),
 					Namespace:  aws.String("AWS/ElastiCache"),
-					Dimensions: []*cloudwatch.Dimension{
+					Dimensions: []cloudwatchtypes.Dimension{
 						{
 							Name:  aws.String(cloudWatchElastiCacheDimension),
 							Value: aws.String(cacheClusterId),
@@ -188,7 +191,7 @@ func buildRedisMetricDataQuery(cacheClusterId string, metricTypes []providers.Cl
 					},
 				},
 				Stat:   aws.String(metricType.Statistic),
-				Period: aws.Int64(int64(resources.GetMetricReconcileTimeOrDefault(resources.MetricsWatchDuration).Seconds())),
+				Period: aws.Int32(int32(resources.GetMetricReconcileTimeOrDefault(resources.MetricsWatchDuration).Seconds())),
 			},
 		})
 	}

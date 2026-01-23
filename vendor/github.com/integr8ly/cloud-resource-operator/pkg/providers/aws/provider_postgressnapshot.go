@@ -7,16 +7,16 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/aws/smithy-go"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/aws/aws-sdk-go/service/rds/rdsiface"
-	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+	"github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	croType "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
@@ -70,34 +70,34 @@ func (p *PostgresSnapshotProvider) CreatePostgresSnapshot(ctx context.Context, s
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	session, err := p.createSessionForResource(ctx, postgres.Namespace, providers.PostgresResourceType, postgres.Spec.Tier)
+	cfg, err := p.createConfigForResource(ctx, postgres.Namespace, providers.PostgresResourceType, postgres.Spec.Tier)
 
 	if err != nil {
 		errMsg := "failed to create AWS session"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	rdsSvc := rds.New(session)
+	rdsClient := NewRDSClient(*cfg)
 
-	return p.createPostgresSnapshot(ctx, snapshot, postgres, rdsSvc)
+	return p.createPostgresSnapshot(ctx, snapshot, postgres, rdsClient)
 }
 
 func (p *PostgresSnapshotProvider) DeletePostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres) (croType.StatusMessage, error) {
 
 	// create the credentials to be used by the aws resource providers, not to be used by end-user
-	session, err := p.createSessionForResource(ctx, postgres.Namespace, providers.PostgresResourceType, postgres.Spec.Tier)
+	cfg, err := p.createConfigForResource(ctx, postgres.Namespace, providers.PostgresResourceType, postgres.Spec.Tier)
 
 	if err != nil {
 		errMsg := "failed to create AWS session"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	rdsSvc := rds.New(session)
+	rdsClient := NewRDSClient(*cfg)
 
-	return p.deletePostgresSnapshot(ctx, snapshot, postgres, rdsSvc)
+	return p.deletePostgresSnapshot(ctx, snapshot, postgres, rdsClient)
 }
 
-func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres, rdsSvc rdsiface.RDSAPI) (*providers.PostgresSnapshotInstance, croType.StatusMessage, error) {
+func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres, rdsClient RDSAPI) (*providers.PostgresSnapshotInstance, croType.StatusMessage, error) {
 	logger := resources.NewActionLogger(p.logger, "createPostgresSnapshot")
 
 	// generate snapshot name
@@ -122,7 +122,7 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	foundSnapshot, err := p.findSnapshotInstance(rdsSvc, snapshotName)
+	foundSnapshot, err := p.findSnapshotInstance(ctx, rdsClient, snapshotName)
 
 	if err != nil {
 		errMsg := "failed to describe snaphots in AWS"
@@ -146,9 +146,9 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 		tags, _, err := resources.GetDefaultResourceTags(ctx, p.client, postgres.Spec.Type, snapshotName, postgres.ObjectMeta.Labels["productName"])
 		if err != nil {
 			msg := "failed to get default postgres tags"
-			return nil, "", errorUtil.Wrapf(err, msg)
+			return nil, "", errorUtil.Wrap(err, msg)
 		}
-		_, err = rdsSvc.CreateDBSnapshot(&rds.CreateDBSnapshotInput{
+		_, err = rdsClient.CreateDBSnapshot(ctx, &rds.CreateDBSnapshotInput{
 			DBInstanceIdentifier: aws.String(instanceName),
 			DBSnapshotIdentifier: aws.String(snapshotName),
 			Tags:                 genericToRdsTags(tags),
@@ -173,9 +173,9 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 	return nil, croType.StatusMessage(msg), nil
 }
 
-func (p *PostgresSnapshotProvider) deletePostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres, rdsSvc rdsiface.RDSAPI) (croType.StatusMessage, error) {
+func (p *PostgresSnapshotProvider) deletePostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres, rdsClient RDSAPI) (croType.StatusMessage, error) {
 	snapshotName := snapshot.Status.SnapshotID
-	foundSnapshot, err := p.findSnapshotInstance(rdsSvc, snapshotName)
+	foundSnapshot, err := p.findSnapshotInstance(ctx, rdsClient, snapshotName)
 
 	if err != nil {
 		errMsg := "failed to describe snaphots in AWS"
@@ -188,7 +188,7 @@ func (p *PostgresSnapshotProvider) deletePostgresSnapshot(ctx context.Context, s
 
 		if err := p.client.Update(ctx, snapshot); err != nil {
 			msg := "failed to update instance as part of finalizer reconcile"
-			return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 		}
 		return "snapshot deleted", nil
 	}
@@ -197,7 +197,7 @@ func (p *PostgresSnapshotProvider) deletePostgresSnapshot(ctx context.Context, s
 		DBSnapshotIdentifier: foundSnapshot.DBSnapshotIdentifier,
 	}
 
-	_, err = rdsSvc.DeleteDBSnapshot(deleteSnapshotInput)
+	_, err = rdsClient.DeleteDBSnapshot(ctx, deleteSnapshotInput)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to delete snapshot %s in aws", snapshotName)
@@ -207,29 +207,30 @@ func (p *PostgresSnapshotProvider) deletePostgresSnapshot(ctx context.Context, s
 	return "snapshot deletion started", nil
 }
 
-func (p *PostgresSnapshotProvider) findSnapshotInstance(rdsSvc rdsiface.RDSAPI, snapshotName string) (*rds.DBSnapshot, error) {
+func (p *PostgresSnapshotProvider) findSnapshotInstance(ctx context.Context, rdsClient RDSAPI, snapshotName string) (*rdstypes.DBSnapshot, error) {
 	// check snapshot exists
-	listOutput, err := rdsSvc.DescribeDBSnapshots(&rds.DescribeDBSnapshotsInput{
+	listOutput, err := rdsClient.DescribeDBSnapshots(ctx, &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: aws.String(snapshotName),
 	})
 	if err != nil {
-		rdsErr, isAwsErr := err.(awserr.Error)
-		if isAwsErr && rdsErr.Code() == "DBSnapshotNotFound" {
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "DBSnapshotNotFound" {
 			return nil, nil
 		}
 		return nil, err
 	}
-	var foundSnapshot *rds.DBSnapshot
+	var foundSnapshot *rdstypes.DBSnapshot
 	for _, c := range listOutput.DBSnapshots {
 		if *c.DBSnapshotIdentifier == snapshotName {
-			foundSnapshot = c
+			currentSnapshot := c //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+			foundSnapshot = &currentSnapshot
 			break
 		}
 	}
 	return foundSnapshot, nil
 }
 
-func (p *PostgresSnapshotProvider) createSessionForResource(ctx context.Context, namespace string, resourceType providers.ResourceType, tier string) (*session.Session, error) {
+func (p *PostgresSnapshotProvider) createConfigForResource(ctx context.Context, namespace string, resourceType providers.ResourceType, tier string) (*aws.Config, error) {
 
 	// create the credentials to be used by the aws resource providers, not to be used by end-user
 	providerCreds, err := p.CredentialManager.ReconcileProviderCredentials(ctx, namespace)
@@ -244,5 +245,5 @@ func (p *PostgresSnapshotProvider) createSessionForResource(ctx context.Context,
 		return nil, err
 	}
 
-	return CreateSessionFromStrategy(ctx, p.client, providerCreds, stratCfg)
+	return CreateConfigFromStrategy(ctx, p.client, providerCreds, stratCfg)
 }

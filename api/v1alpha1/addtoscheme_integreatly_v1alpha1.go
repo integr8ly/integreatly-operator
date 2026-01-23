@@ -10,7 +10,7 @@ import (
 
 	consolev1 "github.com/openshift/api/console/v1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 

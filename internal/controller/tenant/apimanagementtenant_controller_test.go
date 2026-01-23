@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -22,10 +21,6 @@ var (
 
 func TestTenantReconciler_getAPIManagementTenant(t *testing.T) {
 	validTenant := &integreatlyv1alpha1.APIManagementTenant{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "APIManagementTenant",
-			APIVersion: "integreatly.org/v1alpha1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      validTenantName,
 			Namespace: validNamespace,
@@ -103,10 +98,6 @@ func TestTenantReconciler_getUserByTenantNamespace(t *testing.T) {
 	}
 
 	validUser := &usersv1.User{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "User",
-			APIVersion: fmt.Sprintf("%s/%s", usersv1.GroupName, usersv1.GroupVersion.Version),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: validUsername,
 		},

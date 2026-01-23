@@ -21,15 +21,16 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
 	"net"
 	"reflect"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -51,7 +52,7 @@ const (
 )
 
 // ensures a subnet group is in place for the creation of a resource
-func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) error {
+func configureSecurityGroup(ctx context.Context, c client.Client, ec2Client EC2API, logger *logrus.Entry) error {
 	// get cluster id
 	clusterID, err := resources.GetClusterID(ctx, c)
 	if err != nil {
@@ -67,12 +68,12 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 	}
 
 	// get cluster cidr group
-	vpcID, cidr, err := GetCidr(ctx, c, ec2Svc, logger)
+	vpcID, cidr, err := GetCidr(ctx, c, ec2Client, logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "error finding cidr block")
 	}
 
-	foundSecGroup, err := getSecurityGroup(ec2Svc, secName)
+	foundSecGroup, err := getSecurityGroup(ctx, ec2Client, secName)
 	if err != nil {
 		return errorUtil.Wrap(err, "error get security group")
 	}
@@ -80,7 +81,7 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 	if foundSecGroup == nil {
 		// create security group
 		logger.Infof("creating security group from cluster %s", clusterID)
-		if _, err := ec2Svc.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+		if _, err := ec2Client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
 			Description: aws.String(fmt.Sprintf("security group for cluster %s", clusterID)),
 			GroupName:   aws.String(secName),
 			VpcId:       aws.String(vpcID),
@@ -92,9 +93,9 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 	logger.Infof("found security group %s for cluster %s", *foundSecGroup.GroupId, clusterID)
 
 	// build ip permission
-	ipPermission := &ec2.IpPermission{
+	ipPermission := &ec2types.IpPermission{
 		IpProtocol: aws.String("-1"),
-		IpRanges: []*ec2.IpRange{
+		IpRanges: []ec2types.IpRange{
 			{
 				CidrIp: aws.String(cidr),
 			},
@@ -111,10 +112,10 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 
 	// authorize ingress
 	logger.Infof("setting ingress ip permissions for %s", *foundSecGroup.GroupName)
-	if _, err := ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+	if _, err := ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: aws.String(*foundSecGroup.GroupId),
-		IpPermissions: []*ec2.IpPermission{
-			ipPermission,
+		IpPermissions: []ec2types.IpPermission{
+			*ipPermission,
 		},
 	}); err != nil {
 		return errorUtil.Wrap(err, "error authorizing security group ingress")
@@ -124,10 +125,10 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 }
 
 // GetVPCSubnets returns a list of subnets associated with cluster VPC
-func GetVPCSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *ec2.Vpc) ([]*ec2.Subnet, error) {
+func GetVPCSubnets(ctx context.Context, ec2Client EC2API, logger *logrus.Entry, vpc *ec2types.Vpc) ([]*ec2types.Subnet, error) {
 	logger.Info("gathering cluster vpc and subnet information")
 	// poll subnets to ensure credentials have reconciled
-	subs, err := getSubnets(ec2Svc)
+	subs, err := getSubnets(ctx, ec2Client)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting subnets")
 	}
@@ -136,10 +137,11 @@ func GetVPCSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *ec2.Vpc) (
 		return nil, errorUtil.Wrap(err, "vpc is nil, need vpc to find associated subnets")
 	}
 	// find associated subnets
-	var associatedSubs []*ec2.Subnet
+	var associatedSubs []*ec2types.Subnet
 	for _, sub := range subs {
-		if *sub.VpcId == *vpc.VpcId {
-			associatedSubs = append(associatedSubs, sub)
+		currentSub := sub
+		if *currentSub.VpcId == *vpc.VpcId {
+			associatedSubs = append(associatedSubs, &currentSub)
 		}
 	}
 
@@ -152,31 +154,32 @@ func GetVPCSubnets(ec2Svc ec2iface.EC2API, logger *logrus.Entry, vpc *ec2.Vpc) (
 }
 
 // GetSubnetIDS returns a list of subnet ids associated with cluster vpc
-func GetPrivateSubnetIDS(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) ([]*string, error) {
+func GetPrivateSubnetIDS(ctx context.Context, c client.Client, ec2Client EC2API, logger *logrus.Entry) ([]string, error) {
 	logger.Info("gathering all private subnets in cluster vpc")
 	// get cluster vpc
-	foundVPC, err := getClusterVpc(ctx, c, ec2Svc, logger)
+	foundVPC, err := getClusterVpc(ctx, c, ec2Client, logger)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting vpcs")
 	}
 
 	// get subnets in vpc
-	subs, err := GetVPCSubnets(ec2Svc, logger, foundVPC)
+	subs, err := GetVPCSubnets(ctx, ec2Client, logger, foundVPC)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting vpc subnets")
 	}
 
 	// get a list of availability zones
-	azs, err := getAZs(ec2Svc)
+	azs, err := getAZs(ctx, ec2Client)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting availability zones")
 	}
 
 	// filter based on a tag key attached to private subnets
-	var privSubs []*ec2.Subnet
+	var privSubs []*ec2types.Subnet
 	for _, sub := range subs {
 		for _, tags := range sub.Tags {
-			if *tags.Key == defaultAWSPrivateSubnetTagKey {
+			currentTags := tags
+			if *currentTags.Key == defaultAWSPrivateSubnetTagKey {
 				privSubs = append(privSubs, sub)
 			}
 		}
@@ -184,10 +187,11 @@ func GetPrivateSubnetIDS(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 
 	// for every az check there is a private subnet, if none create one
 	for _, az := range azs {
-		logger.Infof("checking if private subnet exists in zone %s", *az.ZoneName)
-		if !privateSubnetExists(privSubs, az) {
+		currentAz := az //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+		logger.Infof("checking if private subnet exists in zone %s", *currentAz.ZoneName)
+		if !privateSubnetExists(privSubs, &currentAz) {
 			logger.Infof("no private subnet found in %s", *az.ZoneName)
-			subnet, err := createPrivateSubnet(ctx, c, ec2Svc, foundVPC, logger, *az.ZoneName)
+			subnet, err := createPrivateSubnet(ctx, c, ec2Client, foundVPC, logger, *currentAz.ZoneName)
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "failed to created private subnet")
 			}
@@ -196,9 +200,9 @@ func GetPrivateSubnetIDS(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 	}
 
 	// build list of subnet ids
-	var subIDs []*string
+	var subIDs []string
 	for _, sub := range privSubs {
-		subIDs = append(subIDs, sub.SubnetId)
+		subIDs = append(subIDs, *sub.SubnetId)
 	}
 
 	if subIDs == nil {
@@ -209,9 +213,9 @@ func GetPrivateSubnetIDS(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 }
 
 // checks is a private subnet exists and is available in an availability zone
-func privateSubnetExists(privSubs []*ec2.Subnet, zone *ec2.AvailabilityZone) bool {
+func privateSubnetExists(privSubs []*ec2types.Subnet, zone *ec2types.AvailabilityZone) bool {
 	for _, subnet := range privSubs {
-		if *subnet.AvailabilityZone == *zone.ZoneName && *zone.State == "available" {
+		if *subnet.AvailabilityZone == *zone.ZoneName && zone.State == "available" {
 			return true
 		}
 	}
@@ -219,7 +223,7 @@ func privateSubnetExists(privSubs []*ec2.Subnet, zone *ec2.AvailabilityZone) boo
 }
 
 // creates and tags a private subnet
-func createPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, vpc *ec2.Vpc, logger *logrus.Entry, zone string) (*ec2.Subnet, error) {
+func createPrivateSubnet(ctx context.Context, c client.Client, ec2Client EC2API, vpc *ec2types.Vpc, logger *logrus.Entry, zone string) (*ec2types.Subnet, error) {
 	// get list of potential subnet addresses
 	logger.Infof("creating private subnet in %s", *vpc.VpcId)
 	subs, err := buildSubnetAddress(vpc, logger)
@@ -228,23 +232,23 @@ func createPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 	}
 
 	// create subnet looping through potential subnet list
-	var subnet *ec2.Subnet
+	var subnet *ec2types.Subnet
 	for _, ip := range subs {
 		logger.Infof("attempting to create subnet with cidr block %s for vpc %s in zone %s", ip.String(), *vpc.VpcId, zone)
-		createOutput, err := ec2Svc.CreateSubnet(&ec2.CreateSubnetInput{
+		createOutput, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
 			AvailabilityZone: aws.String(zone),
 			CidrBlock:        aws.String(ip.String()),
 			VpcId:            aws.String(*vpc.VpcId),
 		})
-		ec2err, isAwsErr := err.(awserr.Error)
-		if err != nil && isAwsErr && ec2err.Code() == "InvalidSubnet.Conflict" {
+		var ec2Err *smithy.GenericAPIError
+		if err != nil && errors.As(err, &ec2Err) && ec2Err.Code == "InvalidSubnet.Conflict" {
 			logger.Infof("%s conflicts with a current subnet, trying again", ip)
 			continue
 		}
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "error creating new subnet")
 		}
-		if newErr := tagPrivateSubnet(ctx, c, ec2Svc, createOutput.Subnet, logger); newErr != nil {
+		if newErr := tagPrivateSubnet(ctx, c, ec2Client, createOutput.Subnet, logger); newErr != nil {
 			return nil, newErr
 		}
 		logger.Infof("created new subnet %s in %s", ip, *vpc.VpcId)
@@ -258,15 +262,15 @@ func createPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 }
 
 // tags a private subnet with the default aws private subnet tag
-func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, sub *ec2.Subnet, logger *logrus.Entry) error {
+func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Client EC2API, sub *ec2types.Subnet, logger *logrus.Entry) error {
 	logger.Infof("tagging cloud resource subnet %s", *sub.SubnetId)
 	tags, err := getDefaultSubnetTags(ctx, c)
 	if err != nil {
 		return err
 	}
-	_, err = ec2Svc.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{
-			aws.String(*sub.SubnetId),
+	_, err = ec2Client.CreateTags(ctx, &ec2.CreateTagsInput{
+		Resources: []string{
+			*sub.SubnetId,
 		},
 		Tags: tags,
 	})
@@ -277,7 +281,7 @@ func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2A
 }
 
 // retrieves default subnet tags
-func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, error) {
+func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]ec2types.Tag, error) {
 	// get cluster id
 	clusterID, err := resources.GetClusterID(ctx, c)
 	if err != nil {
@@ -300,7 +304,7 @@ func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, err
 	infraTags, err := resources.GetUserInfraTags(ctx, c)
 	if err != nil {
 		msg := "Failed to get user infrastructure tags"
-		return nil, errorUtil.Wrapf(err, msg)
+		return nil, errorUtil.Wrap(err, msg)
 	}
 	if infraTags != nil {
 		// merge tags into single array, where any duplicate
@@ -315,13 +319,13 @@ func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, err
 // Valid meaning it:
 // - Exists within the cluster VPC CIDR block
 // - Supports the amount of hosts that CRO requires by default for all RHOAM products
-func buildSubnetAddress(vpc *ec2.Vpc, logger *logrus.Entry) ([]net.IPNet, error) {
+func buildSubnetAddress(vpc *ec2types.Vpc, logger *logrus.Entry) ([]net.IPNet, error) {
 	logger.Infof("calculating subnet mask and address for vpc cidr %s", *vpc.CidrBlock)
 	if *vpc.CidrBlock == "" {
 		return nil, errorUtil.New("vpc cidr block can't be empty")
 	}
 
-	// AWS stores it's CIDR block as a string, convert it
+	// AWS stores its CIDR block as a string, convert it
 	_, awsCIDR, err := net.ParseCIDR(*vpc.CidrBlock)
 	if err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to parse vpc cidr block %s", *vpc.CidrBlock)
@@ -436,8 +440,8 @@ func incrementIP(ip net.IP, inc int) net.IP {
 }
 
 // returns vpc id and cidr block for found vpc
-func GetCidr(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) (string, string, error) {
-	foundVPC, err := getClusterVpc(ctx, c, ec2Svc, logger)
+func GetCidr(ctx context.Context, c client.Client, ec2Client EC2API, logger *logrus.Entry) (string, string, error) {
+	foundVPC, err := getClusterVpc(ctx, c, ec2Client, logger)
 	if err != nil {
 		return "", "", errorUtil.Wrap(err, "error getting vpcs")
 	}
@@ -451,8 +455,8 @@ func GetCidr(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logge
 }
 
 // function to get AZ
-func getAZs(ec2Svc ec2iface.EC2API) ([]*ec2.AvailabilityZone, error) {
-	azs, err := ec2Svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+func getAZs(ctx context.Context, ec2Client EC2API) ([]ec2types.AvailabilityZone, error) {
+	azs, err := ec2Client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting availability zones")
 	}
@@ -460,10 +464,10 @@ func getAZs(ec2Svc ec2iface.EC2API) ([]*ec2.AvailabilityZone, error) {
 }
 
 // function to get subnets, used to check/wait on AWS credentials
-func getSubnets(ec2Svc ec2iface.EC2API) ([]*ec2.Subnet, error) {
-	var subs []*ec2.Subnet
+func getSubnets(ctx context.Context, ec2Client EC2API) ([]ec2types.Subnet, error) {
+	var subs []ec2types.Subnet
 	err := wait.PollUntilContextTimeout(context.TODO(), time.Second*5, time.Minute*5, true, func(ctx context.Context) (bool, error) {
-		listOutput, err := ec2Svc.DescribeSubnets(&ec2.DescribeSubnetsInput{})
+		listOutput, err := ec2Client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{})
 		if err != nil {
 			return false, nil
 		}
@@ -476,16 +480,16 @@ func getSubnets(ec2Svc ec2iface.EC2API) ([]*ec2.Subnet, error) {
 	return subs, nil
 }
 
-func getVPCIDByClusterSubnets(ec2Svc ec2iface.EC2API, clusterID string) (string, error) {
-	listOutput, err := ec2Svc.DescribeSubnets(&ec2.DescribeSubnetsInput{})
+func getVPCIDByClusterSubnets(ctx context.Context, ec2Client EC2API, clusterID string) (string, error) {
+	listOutput, err := ec2Client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{})
 	if err != nil {
 		return "", err
 	}
 
 	for _, sub := range listOutput.Subnets {
 		for _, tag := range sub.Tags {
-			if tag != nil && (*tag.Value == "owned" || *tag.Value == "shared") &&
-				*tag.Key == getOSDClusterTagKey(clusterID) {
+			if tag.Value != nil && (*tag.Value == "owned" || *tag.Value == "shared") &&
+				tag.Key != nil && *tag.Key == getOSDClusterTagKey(clusterID) {
 				return *sub.VpcId, nil
 			}
 		}
@@ -494,7 +498,7 @@ func getVPCIDByClusterSubnets(ec2Svc ec2iface.EC2API, clusterID string) (string,
 }
 
 // function to get vpc of a cluster
-func getClusterVpc(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) (*ec2.Vpc, error) {
+func getClusterVpc(ctx context.Context, c client.Client, ec2Client EC2API, logger *logrus.Entry) (*ec2types.Vpc, error) {
 	// first call to aws api from the network provider is to get cluster vpc
 	// polling to allow credential minter time to reconcile credentials
 
@@ -504,12 +508,12 @@ func getClusterVpc(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API,
 		return nil, errorUtil.Wrap(err, "error getting clusterID")
 	}
 
-	vpcId, err := getVPCIDByClusterSubnets(ec2Svc, clusterID)
+	vpcId, err := getVPCIDByClusterSubnets(ctx, ec2Client, clusterID)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error getting vpc id from associated subnets")
 	}
 
-	vpcs, err := ec2Svc.DescribeVpcs(&ec2.DescribeVpcsInput{VpcIds: []*string{aws.String(vpcId)}})
+	vpcs, err := ec2Client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{vpcId}})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, fmt.Sprintf("error getting vpc with id %s", vpcId))
 	}
@@ -521,24 +525,25 @@ func getClusterVpc(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API,
 		return nil, errorUtil.New("error, more than one vpc found associated with cluster subnets")
 	}
 	logger.Infof("found cluster %s vpc %s", clusterID, *vpcs.Vpcs[0].VpcId)
-	return vpcs.Vpcs[0], nil
+	return &vpcs.Vpcs[0], nil
 }
 
 // getSecurityGroup a utility function for returning cro resource security group
 // we filter security groups based on a pre-determined security group name
 // if a security group does not exist a nil object is returned
-func getSecurityGroup(ec2Svc ec2iface.EC2API, secName string) (*ec2.SecurityGroup, error) {
+func getSecurityGroup(ctx context.Context, ec2Client EC2API, secName string) (*ec2types.SecurityGroup, error) {
 	// get security groups
-	secGroups, err := ec2Svc.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{})
+	secGroups, err := ec2Client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{})
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to return information about security groups")
 	}
 
 	// check if security group exists
-	var foundSecGroup *ec2.SecurityGroup
+	var foundSecGroup *ec2types.SecurityGroup
 	for _, sec := range secGroups.SecurityGroups {
-		if *sec.GroupName == secName {
-			foundSecGroup = sec
+		currentSec := sec //fix gosec error G601 (CWE-118): Implicit memory aliasing in for loop.
+		if *currentSec.GroupName == secName {
+			foundSecGroup = &currentSec
 			break
 		}
 	}

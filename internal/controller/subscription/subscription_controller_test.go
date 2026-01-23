@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/utils"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -236,7 +236,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
 				}
-				if !res.Requeue {
+				if res.RequeueAfter == 0 {
 					t.Fatalf("expected reconciler to await manual approval of the upgrade")
 				}
 			},

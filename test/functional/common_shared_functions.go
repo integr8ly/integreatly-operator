@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/test/common"

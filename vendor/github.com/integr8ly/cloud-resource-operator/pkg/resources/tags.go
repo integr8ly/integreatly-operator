@@ -69,7 +69,7 @@ func GetDefaultResourceTags(ctx context.Context, c client.Client, specType strin
 	clusterID, err := GetClusterID(ctx, c)
 	if err != nil {
 		msg := "Failed to get cluster id"
-		return nil, "", errorUtil.Wrapf(err, msg)
+		return nil, "", errorUtil.Wrap(err, msg)
 	}
 	tags := []*Tag{
 		{
@@ -98,7 +98,7 @@ func GetDefaultResourceTags(ctx context.Context, c client.Client, specType strin
 	infraTags, err := GetUserInfraTags(ctx, c)
 	if err != nil {
 		msg := "Failed to get user infrastructure tags"
-		return nil, "", errorUtil.Wrapf(err, msg)
+		return nil, "", errorUtil.Wrap(err, msg)
 	}
 	if infraTags != nil {
 		// merge tags into single array, where any duplicate
@@ -114,7 +114,7 @@ func GetUserInfraTags(ctx context.Context, c client.Client) ([]*Tag, error) {
 	infra, err := GetClusterInfrastructure(ctx, c)
 	if err != nil {
 		msg := "failed to get cluster infrastructure"
-		return nil, errorUtil.Wrapf(err, msg)
+		return nil, errorUtil.Wrap(err, msg)
 	}
 
 	var tags []*Tag

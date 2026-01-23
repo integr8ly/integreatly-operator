@@ -22,7 +22,6 @@ import (
 	"context"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/client/aws"
-	"github.com/integr8ly/cloud-resource-operator/pkg/client/gcp"
 	stratType "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	configv1 "github.com/openshift/api/config/v1"
@@ -48,9 +47,6 @@ func ReconcileStrategyMaps(ctx context.Context, client client.Client, timeConfig
 	case configv1.AWSPlatformType:
 		// reconciles aws specific strategy map
 		strategyProvider = aws.NewAWSStrategyProvider(client, tier, namespace)
-	case configv1.GCPPlatformType:
-		// reconciles gcp specific strategy map
-		strategyProvider = gcp.NewGCPStrategyProvider(client, tier, namespace)
 	default:
 		return errorUtil.New("Unsupported platform type")
 	}
