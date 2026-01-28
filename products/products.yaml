@@ -7,7 +7,7 @@
 # quayScan - decide whether the image should be scanned or not 
 products:
   - name: 3scale-operator
-    version: 3scale-2.13.1-GA
+    version: 3scale-2.16.1-GA
     url: "https://github.com/3scale/3scale-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-3scale"
