@@ -320,6 +320,12 @@ fi
 update_base_csv
 create_or_update_csv
 
+# Ensure no local operator-sdk binary is committed
+if [[ -f "$PROJECT_ROOT/bin/operator-sdk" ]]; then
+  rm -f "$PROJECT_ROOT/bin/operator-sdk"
+  rmdir "$PROJECT_ROOT/bin" 2>/dev/null || true
+fi
+
 # Update version if needed
 if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   set_version
