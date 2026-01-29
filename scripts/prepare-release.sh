@@ -62,10 +62,14 @@ elif [[ -f "/usr/local/bin/operator-sdk" ]]; then
 elif [[ -f "/go/bin/operator-sdk" ]]; then
   OPERATOR_SDK="/go/bin/operator-sdk"
 else
-  OPERATOR_SDK=$(which operator-sdk)
+  OPERATOR_SDK=$(which operator-sdk 2>/dev/null || echo "")
 fi
 
-echo "Using operator-sdk path: $OPERATOR_SDK"
+if [[ -n "$OPERATOR_SDK" ]]; then
+  echo "Using operator-sdk path: $OPERATOR_SDK"
+else
+  echo "operator-sdk not found in PATH, will be downloaded during bundle generation"
+fi
 
 # Path to gofmt
 if [[ -z $GOROOT ]]; then
