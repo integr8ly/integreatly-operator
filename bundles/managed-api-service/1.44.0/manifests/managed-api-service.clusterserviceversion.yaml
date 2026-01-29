@@ -43,7 +43,8 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.44.0
+    createdAt: "2026-01-29T12:38:17Z"
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.19"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.39.0
@@ -51,23 +52,22 @@ metadata:
     support: RHOAM
     containerImages: |-
       {
-        "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.12.5": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fcea6a77d0a48f35f4c3ce63e72dde104aac6b580f340950b311eb418fff5ec9",
-          "3scale-rhel9-operator-fcea6a77d0a48f35f4c3ce63e72dde104aac6b580f340950b311eb418fff5ec9-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fcea6a77d0a48f35f4c3ce63e72dde104aac6b580f340950b311eb418fff5ec9",
-          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:fcea6a77d0a48f35f4c3ce63e72dde104aac6b580f340950b311eb418fff5ec9",
-          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:eb2288de900dc42ead755b28cdb2509b25ecc8dd256781beaa4a2a86e7cbe532",
-          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:cd1c4e0a2259d244eee0c552755d80a4dc751aa3cb0d3a69a5342c3135a0216a",
-          "system": "registry.redhat.io/3scale-amp2/system-rhel8@sha256:4c72dfeb1919a1de4fbc47f4611d0c830ef89cf9f17255ad55a9b370618e0e8f",
-          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:df9d62897ff286165772150a8b5e6952d2ce3b52a8afa07bd693a2d95c2c67ff",
+        "3scale-operator.3scale-2.16.1-GA": {
+          "3scale-operator.v0.13.1": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:cabde1dd88dc5b38ae2a385603c44276358bc44e14127e529529ff920dc8c8a6",
+          "3scale-rhel9-operator-cabde1dd88dc5b38ae2a385603c44276358bc44e14127e529529ff920dc8c8a6-annotation": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:cabde1dd88dc5b38ae2a385603c44276358bc44e14127e529529ff920dc8c8a6",
+          "manager": "registry.redhat.io/3scale-amp2/3scale-rhel9-operator@sha256:cabde1dd88dc5b38ae2a385603c44276358bc44e14127e529529ff920dc8c8a6",
+          "backend": "registry.redhat.io/3scale-amp2/backend-rhel8@sha256:a2019a42e84b3135d0abd5abc9a5b81fc62625520c0a87885bab9e0af70ed0d6",
+          "apicast": "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:5555fb6b7e8907a52f54fd93a19105e36fded2407c344d938dbdc0723b03baed",
+          "system": "registry.redhat.io/3scale-amp2/system-rhel9@sha256:3a01cbf4581099bad69c4fea7cf9182b275f5f60f38610de9a6c1f3038f1b949",
+          "zync": "registry.redhat.io/3scale-amp2/zync-rhel9@sha256:8e42d4f2946786cf5579f23967490c57c8edeac981be1b3af34a4564bae7d6b9",
           "system_memcached": "registry.redhat.io/rhel9/memcached@sha256:8738110ef16c9e35deeb07c0577ffe09d6ef029761b504a8d20253fa715da394",
-          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:a95d09fc3b224f550dec3de3d23fd2dbfc0a220dc869b4ad9559ee2f85327daa",
-          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:ccf6baf5f2e9494a34739a79abe0f46e36d8ab9dc81c426f7a3a8964e8f39859"
+          "system_searchd": "registry.redhat.io/3scale-amp2/manticore-rhel9@sha256:aa1320041d549dad6e7c5436e211b31627c089625a0666f7ecc3f89be5b88059"
         },
-        "cloud-resource-operator.v1.1.5": {
+        "cloud-resource-operator.v1.1.7": {
           "cloud-resources.v1.1.6": "quay.io/integreatly/cloud-resource-operator:v1.1.6"
         },
         "marin3r.v0.13.4": {
-          "marin3r.v0.13.4": "quay.io/integreatly/marin3r-operator:v0.13.4"
+          "marin3r.v0.13.4": "quay.io/3scale-sre/marin3r:v0.13.4"
         },
         "rhsso-operator.18.0.x": {
           "rhsso-operator.7.6.12-opr-005": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b",
@@ -665,7 +665,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.44.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
@@ -838,7 +838,7 @@ spec:
       type: OwnNamespace
     - supported: false
       type: SingleNamespace
-    - supported: false
+    - supported: true
       type: MultiNamespace
     - supported: false
       type: AllNamespaces
