@@ -103,7 +103,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 }
 
 func getPrometheusTargets(ctx *TestingContext) (*prometheusv1.TargetsResult, error) {
-	output, err := execToPod("curl -s localhost:9090/api/v1/targets?state=active",
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
