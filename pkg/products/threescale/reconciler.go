@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -1308,9 +1309,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// Build the new URL
+	sslMode := detectSSLMode(postgresCredSec.Data["host"])
+
 	username := postgresCredSec.Data["username"]
 	password := postgresCredSec.Data["password"]
-	newURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+	newURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"], sslMode)
 
 	// Track if the URL changed
 	urlChanged := false
@@ -3666,4 +3669,30 @@ func (r *Reconciler) reconcileTenantOutgoingEmailAddress(ctx context.Context, se
 
 	}
 	return nil
+}
+
+func detectSSLMode(rawHost []byte) string {
+	if v := os.Getenv("DATABASE_SSL_MODE"); v != "" {
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "require", "disable", "verify-full":
+			return v
+		case "true":
+			return "require"
+		case "false":
+			return "disable"
+		default:
+		}
+	}
+
+	host := strings.ToLower(strings.TrimSpace(string(rawHost)))
+	if host == "localhost" ||
+		strings.HasSuffix(host, ".svc") ||
+		strings.HasSuffix(host, ".cluster.local") ||
+		net.ParseIP(host) != nil {
+		return "disable"
+	}
+	if strings.Contains(host, ".rds.") || strings.Contains(host, ".rds.amazonaws.") {
+		return "require"
+	}
+	return "require"
 }
