@@ -1310,7 +1310,15 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// Build the new URL
 	username := postgresCredSec.Data["username"]
 	password := postgresCredSec.Data["password"]
-	newURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+
+	// Only require SSL when using RDS (UseClusterStorage == "false")
+	// When using cluster storage (local PostgreSQL in Prow/CI), SSL is not available
+	var newURL string
+	if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
+		newURL = fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+	} else {
+		newURL = fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+	}
 
 	// Track if the URL changed
 	urlChanged := false

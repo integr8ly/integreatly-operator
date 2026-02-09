@@ -4518,6 +4518,30 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 		},
 	}
 
+	// Installation with RDS (UseClusterStorage: false) - requires SSL
+	rdsInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "test",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type:              "managed",
+			UseClusterStorage: "false",
+		},
+	}
+
+	// Installation with cluster storage (UseClusterStorage: true) - no SSL needed
+	clusterStorageInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "test",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type:              "managed",
+			UseClusterStorage: "true",
+		},
+	}
+
 	type args struct {
 		ctx          context.Context
 		serverClient k8sclient.Client
@@ -4526,34 +4550,50 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 	tests := []struct {
 		name                 string
 		args                 args
+		installation         *integreatlyv1alpha1.RHMI
 		want                 integreatlyv1alpha1.StatusPhase
 		wantErr              bool
 		expectJobDeleted     bool
 		expectURLWithSSLMode bool
 	}{
 		{
-			name: "URL change triggers job deletion and adds sslmode",
+			name: "RDS: URL change triggers job deletion and adds sslmode",
 			args: args{
 				ctx:          context.TODO(),
 				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds, existingPostgresSecret, existingJob),
 				platformType: configv1.AWSPlatformType,
 			},
+			installation:         rdsInstallation,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
 			expectJobDeleted:     true,
 			expectURLWithSSLMode: true,
 		},
 		{
-			name: "fresh install creates secret with sslmode but no job deletion needed",
+			name: "RDS: fresh install creates secret with sslmode",
 			args: args{
 				ctx:          context.TODO(),
 				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds),
 				platformType: configv1.AWSPlatformType,
 			},
+			installation:         rdsInstallation,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
 			expectJobDeleted:     false,
 			expectURLWithSSLMode: true,
+		},
+		{
+			name: "Cluster storage: fresh install creates secret without sslmode",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds),
+				platformType: configv1.AWSPlatformType,
+			},
+			installation:         clusterStorageInstallation,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			expectJobDeleted:     false,
+			expectURLWithSSLMode: false,
 		},
 	}
 
@@ -4564,7 +4604,7 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 					"NAMESPACE": "test",
 				}),
 				log:          getLogger(),
-				installation: getTestInstallation("managed"),
+				installation: tt.installation,
 			}
 
 			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient, "", tt.args.platformType)
@@ -4576,19 +4616,23 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 				t.Errorf("reconcileExternalDatasources() got = %v, want %v", got, tt.want)
 			}
 
-			// Verify the secret has sslmode=require in the URL
+			// Verify the secret URL has correct SSL mode based on UseClusterStorage
+			secret := &corev1.Secret{}
+			err = tt.args.serverClient.Get(tt.args.ctx, k8sTypes.NamespacedName{
+				Name:      "system-database",
+				Namespace: "test",
+			}, secret)
+			if err != nil {
+				t.Errorf("failed to get system-database secret: %v", err)
+			}
+			url := string(secret.Data["URL"])
 			if tt.expectURLWithSSLMode {
-				secret := &corev1.Secret{}
-				err := tt.args.serverClient.Get(tt.args.ctx, k8sTypes.NamespacedName{
-					Name:      "system-database",
-					Namespace: "test",
-				}, secret)
-				if err != nil {
-					t.Errorf("failed to get system-database secret: %v", err)
-				}
-				url := string(secret.Data["URL"])
 				if !strings.Contains(url, "sslmode=require") {
 					t.Errorf("expected URL to contain sslmode=require, got: %s", url)
+				}
+			} else {
+				if strings.Contains(url, "sslmode=require") {
+					t.Errorf("expected URL to NOT contain sslmode=require (cluster storage), got: %s", url)
 				}
 			}
 
