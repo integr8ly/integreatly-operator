@@ -45,6 +45,7 @@ import (
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
@@ -4324,6 +4325,327 @@ func TestIsQuotaChanged(t *testing.T) {
 			got := isQuotaChanged(tt.newQuota, tt.activeQuota)
 			if got != tt.expected {
 				t.Errorf("isQuotaChanged() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestReconciler_deleteSystemAppPreJob(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	existingJob := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-app-pre",
+			Namespace: "test",
+		},
+	}
+
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "successfully deletes existing job",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, existingJob),
+			},
+			wantErr: false,
+		},
+		{
+			name: "no error when job does not exist",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme),
+			},
+			wantErr: false,
+		},
+		{
+			name: "returns error on delete failure",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
+						return fmt.Errorf("delete error")
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				log: getLogger(),
+			}
+			err := r.deleteSystemAppPreJob(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("deleteSystemAppPreJob() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-postgres-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "postgres-creds",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "postgres-creds",
+				Namespace: "test",
+			},
+		},
+	}
+
+	backendRedis := &crov1.Redis{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-backend-redis-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "backend-redis-creds",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "backend-redis-creds",
+				Namespace: "test",
+			},
+		},
+	}
+
+	systemRedis := &crov1.Redis{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-redis-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "system-redis-creds",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "system-redis-creds",
+				Namespace: "test",
+			},
+		},
+	}
+
+	postgresCreds := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "postgres-creds",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"username": []byte("testuser"),
+			"password": []byte("testpass"),
+			"host":     []byte("testhost"),
+			"port":     []byte("5432"),
+			"database": []byte("testdb"),
+		},
+	}
+
+	backendRedisCreds := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "backend-redis-creds",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"uri": []byte("redis://localhost:6379"),
+		},
+	}
+
+	systemRedisCreds := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-redis-creds",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"uri": []byte("redis://localhost:6380"),
+		},
+	}
+
+	// Existing secret with old URL (without sslmode)
+	existingPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-database",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"URL":         []byte("postgresql://testuser:testpass@testhost:5432/testdb"),
+			"DB_USER":     []byte("testuser"),
+			"DB_PASSWORD": []byte("testpass"),
+		},
+	}
+
+	existingJob := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-app-pre",
+			Namespace: "test",
+		},
+	}
+
+	// Installation with RDS (UseClusterStorage: false) - requires SSL
+	rdsInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "test",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type:              "managed",
+			UseClusterStorage: "false",
+		},
+	}
+
+	// Installation with cluster storage (UseClusterStorage: true) - no SSL needed
+	clusterStorageInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "test",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type:              "managed",
+			UseClusterStorage: "true",
+		},
+	}
+
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+		platformType configv1.PlatformType
+	}
+	tests := []struct {
+		name                 string
+		args                 args
+		installation         *integreatlyv1alpha1.RHMI
+		want                 integreatlyv1alpha1.StatusPhase
+		wantErr              bool
+		expectJobDeleted     bool
+		expectURLWithSSLMode bool
+	}{
+		{
+			name: "RDS: URL change triggers job deletion and adds sslmode",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds, existingPostgresSecret, existingJob),
+				platformType: configv1.AWSPlatformType,
+			},
+			installation:         rdsInstallation,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			expectJobDeleted:     true,
+			expectURLWithSSLMode: true,
+		},
+		{
+			name: "RDS: fresh install creates secret with sslmode",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds),
+				platformType: configv1.AWSPlatformType,
+			},
+			installation:         rdsInstallation,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			expectJobDeleted:     false,
+			expectURLWithSSLMode: true,
+		},
+		{
+			name: "Cluster storage: fresh install creates secret without sslmode",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, postgresCreds, backendRedisCreds, systemRedisCreds),
+				platformType: configv1.AWSPlatformType,
+			},
+			installation:         clusterStorageInstallation,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			expectJobDeleted:     false,
+			expectURLWithSSLMode: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				log:          getLogger(),
+				installation: tt.installation,
+			}
+
+			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient, "", tt.args.platformType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileExternalDatasources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileExternalDatasources() got = %v, want %v", got, tt.want)
+			}
+
+			// Verify the secret URL has correct SSL mode based on UseClusterStorage
+			secret := &corev1.Secret{}
+			err = tt.args.serverClient.Get(tt.args.ctx, k8sTypes.NamespacedName{
+				Name:      "system-database",
+				Namespace: "test",
+			}, secret)
+			if err != nil {
+				t.Errorf("failed to get system-database secret: %v", err)
+			}
+			url := string(secret.Data["URL"])
+			if tt.expectURLWithSSLMode {
+				if !strings.Contains(url, "sslmode=require") {
+					t.Errorf("expected URL to contain sslmode=require, got: %s", url)
+				}
+			} else {
+				if strings.Contains(url, "sslmode=require") {
+					t.Errorf("expected URL to NOT contain sslmode=require (cluster storage), got: %s", url)
+				}
+			}
+
+			// Verify job was deleted when URL changed
+			if tt.expectJobDeleted {
+				job := &batchv1.Job{}
+				err := tt.args.serverClient.Get(tt.args.ctx, k8sTypes.NamespacedName{
+					Name:      "system-app-pre",
+					Namespace: "test",
+				}, job)
+				if err == nil {
+					t.Errorf("expected system-app-pre job to be deleted, but it still exists")
+				}
 			}
 		})
 	}

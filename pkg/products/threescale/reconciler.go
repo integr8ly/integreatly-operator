@@ -66,6 +66,7 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1305,18 +1306,45 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		},
 		Data: map[string][]byte{},
 	}
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgresSecret, func() error {
-		username := postgresCredSec.Data["username"]
-		password := postgresCredSec.Data["password"]
-		url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
 
-		postgresSecret.Data["URL"] = []byte(url)
+	// Build the new URL
+	username := postgresCredSec.Data["username"]
+	password := postgresCredSec.Data["password"]
+
+	// Only require SSL when using RDS (UseClusterStorage == "false")
+	// When using cluster storage (local PostgreSQL in Prow/CI), SSL is not available
+	var newURL string
+	if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
+		newURL = fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+	} else {
+		newURL = fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+	}
+
+	// Track if the URL changed
+	urlChanged := false
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgresSecret, func() error {
+		existingURL := string(postgresSecret.Data["URL"])
+		if existingURL != "" && existingURL != newURL {
+			urlChanged = true
+		}
+
+		postgresSecret.Data["URL"] = []byte(newURL)
 		postgresSecret.Data["DB_USER"] = username
 		postgresSecret.Data["DB_PASSWORD"] = password
 		return nil
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalPostgresSecretName, err)
+	}
+
+	// Delete system-app-pre job only if the URL changed so it gets recreated with updated secret
+	// This is needed during upgrades when the database connection URL changes
+	if urlChanged {
+		r.log.Info("Database URL changed, deleting system-app-pre job to allow recreation with updated secret")
+		if err := r.deleteSystemAppPreJob(ctx, serverClient); err != nil {
+			r.log.Warning("Failed to delete system-app-pre job: " + err.Error())
+		}
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1329,6 +1357,29 @@ func isQuotaChanged(newQuota string, activeQuota string) bool {
 	}
 
 	return newQuota != activeQuota
+}
+
+// deleteSystemAppPreJob deletes the system-app-pre job if it exists
+// This is needed during upgrades when the database connection URL changes
+// so that the job is recreated with the updated secret values
+func (r *Reconciler) deleteSystemAppPreJob(ctx context.Context, serverClient k8sclient.Client) error {
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-app-pre",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	err := serverClient.Delete(ctx, job)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return fmt.Errorf("failed to delete system-app-pre job: %w", err)
+	}
+
+	if err == nil {
+		r.log.Info("Deleted system-app-pre job to allow recreation with updated database secret")
+	}
+
+	return nil
 }
 
 func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
