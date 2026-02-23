@@ -1574,7 +1574,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 			res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 
 			if err != nil {
-				r.log.Error("msg", nil, err)
+				r.log.Infof("3scale user creation failed for username", l.Fields{"username": kcUser.UserName, "error": err.Error()})
 			} else {
 				statusCode = res.StatusCode
 			}
@@ -1587,7 +1587,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 			metrics.SetThreeScaleUserAction(statusCode, kcUser.UserName, http.MethodPost)
 
 			if statusCode != http.StatusCreated {
-				r.log.Error("msg", nil, errors.New("error on http request"))
+				r.log.Infof("3scale user creation rejected", l.Fields{"username": kcUser.UserName, "httpStatusCode": statusCode})
 			}
 		}
 	}

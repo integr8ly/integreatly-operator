@@ -80,3 +80,11 @@ and push it to quay.io:
 ```
 make image/functional/push
 ```
+
+## Notes
+
+- B08B: To debug B08B with chromedp step logging: 
+  `CHROMEDP_DEBUG=1 TEST="B08B" make test/e2e/single`
+
+- H24 (self-managed APIcast): OLM installs the default channel head by default (no Channel/StartingCSV). Optional pinning:
+   `H24_APICAST_CHANNEL=threescale-2.14 H24_APICAST_CSV=apicast-operator.v0.8.1 TEST="H24" make test/e2e/single` 

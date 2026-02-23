@@ -152,17 +152,26 @@ func testLoginToRHSSOForUser(t TestingTB, rhssoConsoleUrl string, userName strin
 }
 
 func ChromeDpTimeOutWithActions(t TestingTB, timeOut time.Duration, actions ...chromedp.Action) {
-	// Create chromedp context
 	ctxC, cancel := chromedp.NewContext(context.TODO())
-
 	defer cancel()
-	// Create context with timeout
 	ctx, cancel := context.WithTimeout(ctxC, timeOut)
 	defer cancel()
 
+	// When CHROMEDP_DEBUG=1, run each action with a log line so timeout shows which step failed
+	if os.Getenv("CHROMEDP_DEBUG") == "1" {
+		for i, a := range actions {
+			t.Logf("[chromedp] step %d/%d", i+1, len(actions))
+			if err := chromedp.Run(ctx, a); err != nil {
+				t.Errorf("ChromeDP test failed at step %d/%d: %s", i+1, len(actions), err)
+				return
+			}
+		}
+		return
+	}
+
 	err := chromedp.Run(ctx, actions...)
 	if err != nil {
-		t.Errorf("ChromeDP test failed with error: %s", err)
+		t.Errorf("ChromeDP test failed with error: %s (set CHROMEDP_DEBUG=1 to see which step fails)", err)
 	}
 }
 

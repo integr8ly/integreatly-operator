@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -129,12 +130,55 @@ func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 	}
 
 }
-func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
+
+// prometheusAlertsExec fetches localhost:9090/api/v1/alerts from the prometheus pod. Tries curl first, then wget (image may have either).
+func prometheusAlertsExec(t TestingTB, ctx *TestingContext) (string, error) {
+	url := "http://localhost:9090/api/v1/alerts"
+	output, err := execToPod("curl -sS "+url,
 		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
+	if err == nil {
+		return output, nil
+	}
+	if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "No such file") {
+		output, wgetErr := execToPod("wget -qO - http://localhost:9090/api/v1/alerts",
+			ObservabilityPrometheusPodName,
+			ObservabilityProductNamespace,
+			"prometheus",
+			ctx)
+		if wgetErr == nil {
+			return output, nil
+		}
+		return "", wgetErr
+	}
+	return "", err
+}
+
+// WaitForAlertFiring polls until the given alert is firing or timeout. Returns nil when the alert is firing, or an error (e.g. context.DeadlineExceeded) when it never fired.
+// Callers can use this to handle "alert missing" with a skip when appropriate (e.g. operator running locally).
+func WaitForAlertFiring(t TestingTB, ctx *TestingContext, alertName string) error {
+	return wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*10, true, func(ctx2 context.Context) (done bool, err error) {
+		getAlertErr := getFiringAlerts(t, ctx)
+		if getAlertErr == nil {
+			return false, nil
+		}
+		var alertsErr *alertsFiringError
+		if !errors.As(getAlertErr, &alertsErr) {
+			return false, getAlertErr
+		}
+		for _, alert := range alertsErr.alertsFiring {
+			if alert.alertName == alertName {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
+func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
+	output, err := prometheusAlertsExec(t, ctx)
 	if err != nil {
 		return fmt.Errorf("failed to exec to prometheus pod: %w", err)
 	}
@@ -187,12 +231,11 @@ func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 		}
 		isIgnored := false
 		for _, ignoredAlertPattern := range ignoredAlertsPatterns {
-			t.Logf("\tPattern ignored: %s", ignoredAlertPattern)
 			matchFound, err := regexp.MatchString(ignoredAlertPattern, alertName)
 			if err == nil && matchFound {
-				t.Logf("\tFiring alert to be ignored: %s", alertName)
+				t.Logf("\tFiring alert ignored (pattern %s): %s", ignoredAlertPattern, alertName)
 				isIgnored = true
-				continue
+				break
 			}
 		}
 		// end of tmp workaround - don't forget to remove the isIgnored reference below
@@ -275,11 +318,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 }
 
 func getFiringOrPendingAlerts(t TestingTB, ctx *TestingContext) error {
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
-		ObservabilityPrometheusPodName,
-		ObservabilityProductNamespace,
-		"prometheus",
-		ctx)
+	output, err := prometheusAlertsExec(t, ctx)
 	if err != nil {
 		return fmt.Errorf("failed to exec to prometheus pod: %w", err)
 	}

@@ -83,9 +83,10 @@ func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedC
 	actions = append(actions, chromeDPLoginIDPActions(userName)...)
 	// Actions after logging in for user
 	actions = append(actions, []chromedp.Action{
+		chromedp.Sleep(5 * time.Second), // allow redirects after login to complete
+		chromedp.WaitReady(`body`),      // ensure document is stable before querying (avoids "No node with given id found")
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var html string
-			// This OuterHTML action implicitly waits for the page to load the HTML
 			if err := chromedp.OuterHTML(`html`, &html).Do(ctx); err != nil {
 				return err
 			}
@@ -145,8 +146,8 @@ func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAss
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Check if the clusterVersion matches 4.19 or 4.20
-		match2, err := regexp.MatchString("4\\.19\\.|4\\.20\\.", clusterVersion)
+		// Check if the clusterVersion matches 4.19, 4.20 or 4.21
+		match2, err := regexp.MatchString("4\\.19\\.|4\\.20\\.|4\\.21\\.", clusterVersion)
 		if err != nil {
 			t.Fatal(err)
 		}

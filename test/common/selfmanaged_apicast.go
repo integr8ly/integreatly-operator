@@ -323,6 +323,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 		log.Error("Error create Operator Group in "+apicastNamespace+" namespace", nil, err)
 		return err
 	}
+	// Create a Subscription without Channel and StartingCSV so OLM installs the head of the package's default channel for this cluster
 	subscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "apicast-operator",
@@ -333,13 +334,20 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 			Generation: 1,
 		},
 		Spec: &operatorsv1alpha1.SubscriptionSpec{
-			Channel:                apicastOperatorChannel,
 			InstallPlanApproval:    operatorsv1alpha1.ApprovalAutomatic,
 			Package:                "apicast-operator",
 			CatalogSource:          "redhat-operators",
 			CatalogSourceNamespace: "openshift-marketplace",
-			StartingCSV:            "apicast-operator.v" + apicastOperatorVersion,
 		},
+	}
+	// Optional overrides for reproducibility: set via env vars if needed
+	if ch := strings.TrimSpace(os.Getenv("H24_APICAST_CHANNEL")); ch != "" {
+		log.Info("Using H24_APICAST_CHANNEL override: " + ch)
+		subscription.Spec.Channel = ch
+	}
+	if csv := strings.TrimSpace(os.Getenv("H24_APICAST_CSV")); csv != "" {
+		log.Info("Using H24_APICAST_CSV override: " + csv)
+		subscription.Spec.StartingCSV = csv
 	}
 	err = client.Create(context.TODO(), subscription)
 	if err != nil {

@@ -62,10 +62,131 @@ func createRealmInUserSSO(t TestingTB, userSSOConsoleUrl, userName string) {
 	ChromeDpTimeOutWithActions(t, 10*time.Minute, createRealmInUserSSOActions(t, userSSOConsoleUrl, userName)...)
 }
 
+// waitForKeycloakAdminUI waits for the Keycloak admin UI to be visible (old Angular or new React UI).
+func waitForKeycloakAdminUI(t TestingTB) chromedp.ActionFunc {
+	selectors := []string{
+		`div[data-ng-controller="RealmTabCtrl"]`, // old Angular admin
+		`#realm-selector`,                        // common id
+		`[data-testid="realmSelector"]`,          // new Keycloak admin
+		`.pf-c-page`,                             // PatternFly 4 page (new admin)
+		`#view`,                                  // old admin container
+	}
+	return func(ctx context.Context) error {
+		for _, sel := range selectors {
+			subCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
+			err := chromedp.WaitVisible(sel).Do(subCtx)
+			cancel()
+			if err == nil {
+				t.Logf("Keycloak admin UI ready (selector: %s)", sel)
+				return nil
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+		}
+		return fmt.Errorf("Keycloak admin UI did not appear (tried %d selectors)", len(selectors))
+	}
+}
+
+// clickRealmSelectorDropdown opens the realm dropdown in the sidebar (tries several selectors).
+func clickRealmSelectorDropdown(t TestingTB) chromedp.ActionFunc {
+	selectors := []string{
+		`div.realm-selector > h2 > i`,
+		`div.realm-selector h2 i`,
+		`.realm-selector i`,
+		`div.realm-selector h2`, // click h2 if no i
+		`div.realm-selector`,    // click whole realm-selector div
+		`.sidebar-pf .realm-selector h2`,
+		`.sidebar-pf-left .realm-selector`,
+		`[class*="realm-selector"] h2`,
+		`[class*="realm-selector"]`,
+		`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > h2:nth-child(1) > i`,
+	}
+	return func(ctx context.Context) error {
+		// Try normal click first
+		if err := tryClickSelectors(t, "realm selector dropdown", selectors)(ctx); err == nil {
+			return nil
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// Fallback: JavaScript click in case element is covered or chromedp click fails
+		for _, sel := range selectors {
+			subCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			script := fmt.Sprintf("(function(){ var e = document.querySelector(%q); if (e) { e.click(); return true; } return false; })()", sel)
+			var clicked bool
+			err := chromedp.Evaluate(script, &clicked).Do(subCtx)
+			cancel()
+			if err == nil && clicked {
+				t.Logf("Clicked realm selector via JS (selector: %s)", sel)
+				return nil
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+		}
+		return fmt.Errorf("could not click realm selector dropdown (tried %d selectors + JS fallback)", len(selectors))
+	}
+}
+
+// waitAndClickCreateRealmLink waits for and clicks the "Create realm" link in the dropdown.
+func waitAndClickCreateRealmLink(t TestingTB) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		selectors := []string{
+			`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > div > div > a`,
+			`div.realm-selector div a`,
+			`.realm-selector a`,
+		}
+		for _, sel := range selectors {
+			subCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			err := chromedp.WaitVisible(sel).Do(subCtx)
+			cancel()
+			if err != nil {
+				continue
+			}
+			if err = chromedp.Click(sel).Do(ctx); err == nil {
+				t.Logf("Clicked create realm link (selector: %s)", sel)
+				return nil
+			}
+		}
+		return fmt.Errorf("could not find or click create realm link")
+	}
+}
+
+// clickCreateRealmSubmitButton submits the create-realm form.
+func clickCreateRealmSubmitButton(t TestingTB) chromedp.ActionFunc {
+	selectors := []string{
+		`#view > div.col-sm-9.col-md-10.col-sm-push-3.col-md-push-2.ng-scope > form > div > div > button.ng-binding.btn.btn-primary`,
+		`form button.btn-primary`,
+		`button.ng-binding.btn.btn-primary`,
+		`button.btn-primary`,
+	}
+	return tryClickSelectors(t, "create realm submit", selectors)
+}
+
+func tryClickSelectors(t TestingTB, name string, selectors []string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		for _, sel := range selectors {
+			subCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+			err := chromedp.Click(sel).Do(subCtx)
+			cancel()
+			if err == nil {
+				t.Logf("Clicked %s (selector: %s)", name, sel)
+				return nil
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+		}
+		return fmt.Errorf("could not click %s (tried %d selectors)", name, len(selectors))
+	}
+}
+
 func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string) []chromedp.Action {
 	logger.Infof("Attempting to create realm in User SSO: %s for user: %s", userSSOConsoleUrl, userName)
 
-	randomName := rand.HexadecimalString(6)
+	// Random name so the same user can run the test repeatedly (each run creates a new realm)
+	realmName := rand.HexadecimalString(6)
 
 	return []chromedp.Action{
 		chromedp.Navigate(userSSOConsoleUrl),
@@ -74,15 +195,17 @@ func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
 		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
-		chromedp.WaitVisible(`div[data-ng-controller="RealmTabCtrl"]`),
-		chromedp.Click(`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > h2:nth-child(1) > i`),
-		chromedp.WaitVisible(`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > div > div > a`),
-		chromedp.Click(`#view > div.col-sm-3.col-md-2.col-sm-pull-9.col-md-pull-10.sidebar-pf.sidebar-pf-left > div.realm-selector > div > div > a`),
+		chromedp.Sleep(5 * time.Second), // allow redirect after login
+		chromedp.WaitReady(`body`),      // ensure document is stable before waiting for admin UI
+		waitForKeycloakAdminUI(t),       // old Angular (RealmTabCtrl) or new React admin
+		chromedp.Sleep(2 * time.Second), // let realm selector render
+		clickRealmSelectorDropdown(t),   // open realm dropdown (try several selectors)
+		waitAndClickCreateRealmLink(t),
 		chromedp.WaitVisible(`#name`),
 		chromedp.WaitEnabled(`#name`),
-		chromedp.SendKeys(`#name`, randomName),
+		chromedp.SendKeys(`#name`, realmName),
 		chromedp.Sleep(5 * time.Second),
-		chromedp.Click(`#view > div.col-sm-9.col-md-10.col-sm-push-3.col-md-push-2.ng-scope > form > div > div > button.ng-binding.btn.btn-primary`),
+		clickCreateRealmSubmitButton(t),
 		chromedp.Sleep(5 * time.Second),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			html, err := chromeDPGetHtml(ctx)
