@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.20
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.25-openshift-4.21
 
 ENV OPERATOR_SDK_VERSION=v1.39.0 \
     DELOREAN_VERSION=master \
