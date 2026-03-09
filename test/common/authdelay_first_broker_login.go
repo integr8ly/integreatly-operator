@@ -344,10 +344,22 @@ func selectRHSSOIDP(browser *browser.Browser, idp string) error {
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
-	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		return fmt.Errorf("selectRHSSOIDP(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
+	// Try multiple selectors: newer OCP login pages may use title or different structure
+	idpSelectors := []string{
+		fmt.Sprintf("a[href*='idp=%s']", idp),
+		fmt.Sprintf("a:contains('%s')", idp),
+		fmt.Sprintf("a[title*='%s']", idp),
 	}
-
+	var clickErr error
+	for _, sel := range idpSelectors {
+		if clickErr = browser.Click(sel); clickErr == nil {
+			return nil
+		}
+	}
+	// Fallback: find IDP link by iterating anchors (handles HTML structure changes)
+	if openErr := resources.OpenIDPLinkByScanningAnchors(browser, idp); openErr != nil {
+		return fmt.Errorf("selectRHSSOIDP(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", clickErr)
+	}
 	return nil
 }
 

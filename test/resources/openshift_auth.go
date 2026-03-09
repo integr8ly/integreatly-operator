@@ -109,9 +109,24 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
-	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		l.Log("Error clicking IDP link")
-		return fmt.Errorf("OpenshiftClientSubmitForm(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
+	// Try multiple selectors: newer OCP login pages may use title or different structure
+	idpSelectors := []string{
+		fmt.Sprintf("a[href*='idp=%s']", idp),
+		fmt.Sprintf("a:contains('%s')", idp),
+		fmt.Sprintf("a[title*='%s']", idp),
+	}
+	var clickErr error
+	for _, sel := range idpSelectors {
+		if clickErr = browser.Click(sel); clickErr == nil {
+			break
+		}
+	}
+	if clickErr != nil {
+		// Fallback: find IDP link by iterating anchors (handles HTML structure changes)
+		if openErr := OpenIDPLinkByScanningAnchors(browser, idp); openErr != nil {
+			l.Log("Error clicking IDP link")
+			return fmt.Errorf("OpenshiftClientSubmitForm(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", clickErr)
+		}
 	}
 
 	loginForm, err := browser.Form("#kc-form-login")
@@ -128,17 +143,42 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	if err = loginForm.Submit(); err != nil {
 		return fmt.Errorf("failed to submit login form on oauth proxy screen: %w", err)
 	}
-	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
-	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
+	// Sometimes we reach an accept-permissions page if the user hasn't accepted scope requests before.
+	// If the form is not present (e.g. already approved, or invalid user / error page), skip without failing.
 	if strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
 		permissionsForm, err := browser.Form("[action=approve]")
-		if err != nil {
-			l.Log("Error looking for permissions form on page", browser.Url().Host, browser.Body())
-			return fmt.Errorf("failed to get permissions form: %w", err)
+		if err == nil {
+			if err = permissionsForm.Submit(); err != nil {
+				return fmt.Errorf("failed to submit acceptance button for permissions: %w", err)
+			}
 		}
-		if err = permissionsForm.Submit(); err != nil {
-			return fmt.Errorf("failed to submit acceptance button for permissions: %w", err)
+	}
+	return nil
+}
+
+// OpenIDPLinkByScanningAnchors finds an anchor that matches the given IDP (by href, title, or text) and opens its URL.
+// Use when selector-based Click fails due to HTML structure changes on the OAuth login page.
+func OpenIDPLinkByScanningAnchors(browser *browser.Browser, idp string) error {
+	baseURL := browser.Url()
+	var idpLink string
+	browser.Dom().Find("a").Each(func(i int, s *goquery.Selection) {
+		href, _ := s.Attr("href")
+		title, _ := s.Attr("title")
+		text := strings.TrimSpace(s.Text())
+		if strings.Contains(href, idp) || strings.Contains(title, idp) || strings.Contains(text, idp) {
+			idpLink = href
 		}
+	})
+	if idpLink == "" {
+		return fmt.Errorf("no anchor matching idp %q found", idp)
+	}
+	parsed, err := url.Parse(idpLink)
+	if err != nil {
+		return fmt.Errorf("failed to parse IDP link %q: %w", idpLink, err)
+	}
+	resolved := baseURL.ResolveReference(parsed)
+	if err := browser.Open(resolved.String()); err != nil {
+		return fmt.Errorf("failed to open IDP link: %w", err)
 	}
 	return nil
 }

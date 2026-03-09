@@ -2,19 +2,20 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 	"time"
 )
 
@@ -60,7 +61,20 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	// Create User
+	// Delete both long-name OpenShift users if left over from a previous run so test is re-runnable
+	for _, name := range []string{userLong1, userLong2} {
+		_ = ctx.Client.Delete(goCtx, &userv1.User{ObjectMeta: metav1.ObjectMeta{Name: name}})
+	}
+	for _, name := range []string{userLong1, userLong2} {
+		if err := wait.PollUntilContextTimeout(goCtx, time.Second, 15*time.Second, true, func(ctx2 context.Context) (bool, error) {
+			err := ctx.Client.Get(ctx2, types.NamespacedName{Name: name}, &userv1.User{})
+			return k8errors.IsNotFound(err), nil
+		}); err != nil {
+			t.Fatalf("timed out waiting for openshift user %s to be deleted: %v", name, err)
+		}
+	}
+
+	// Create first long-name OpenShift user
 	if err := ctx.Client.Create(goCtx, userLongName); err != nil {
 		t.Fatalf("Error creating openshift user: %s", err)
 	}
@@ -79,8 +93,26 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 	masterURL := rhmi.Spec.MasterURL
 	pollOpenshiftUserLogin(t, ctx, masterURL, userLong2)
 
-	// Validate ThreeScaleUserCreationFailed alerts is firing
-	validateAlertIsFiring(t, ctx, userFailedCreateAlertName)
+	// Give 3scale user sync time to attempt creation (metric threescale_user_action is set on that attempt)
+	time.Sleep(60 * time.Second)
+
+	// Validate ThreeScaleUserCreationFailed alert is firing; if alert is missing and RHOAM runs locally, skip instead of fail
+	if err := WaitForAlertFiring(t, ctx, userFailedCreateAlertName); err != nil {
+		// Log what alerts were firing to help diagnose
+		if getAlertErr := getFiringAlerts(t, ctx); getAlertErr != nil {
+			var alertsErr *alertsFiringError
+			if errors.As(getAlertErr, &alertsErr) {
+				t.Logf("Firing alerts at timeout: %s", getAlertErr.Error())
+			}
+		} else {
+			t.Logf("At timeout: no unexpected alerts firing (only DeadMansSwitch or none)")
+		}
+		if isOperatorLocal(ctx) {
+			t.Skipf("ThreeScaleUserCreationFailed alert was not firing; expected when RHOAM operator runs locally (operator metrics not scraped by Prometheus). Skipping C19 alert validation.")
+		}
+		t.Fatalf("%s alert was not firing (expected for invalid-username flow): %s", userFailedCreateAlertName, err)
+	}
+	t.Logf("%s alert is firing", userFailedCreateAlertName)
 
 	// Delete user from Openshift
 	if err := ctx.Client.Delete(goCtx, &userv1.User{ObjectMeta: metav1.ObjectMeta{Name: userLong2}}); err != nil {
@@ -110,6 +142,13 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 	t.Logf("Test passed")
 }
 
+// isOperatorLocal returns true when the RHOAM operator is not running in-cluster (e.g. running locally with make code/run).
+// In that case Prometheus cannot scrape operator metrics, so ThreeScaleUserCreationFailed will not fire.
+func isOperatorLocal(ctx *TestingContext) bool {
+	operatorPod, err := getRHMIOperatorPod(ctx)
+	return err != nil || operatorPod == nil || operatorPod.Status.Phase != corev1.PodRunning
+}
+
 func validateUserNotListedInKeyCloakCR(t TestingTB, ctx *TestingContext, goCtx context.Context, userName string) {
 	keycloakUsers := &keycloak.KeycloakUserList{}
 	if err := ctx.Client.List(goCtx, keycloakUsers, []k8sclient.ListOption{k8sclient.InNamespace(RHSSOProductNamespace)}...); err != nil {
@@ -117,12 +156,14 @@ func validateUserNotListedInKeyCloakCR(t TestingTB, ctx *TestingContext, goCtx c
 	}
 
 	for _, keycloakUser := range keycloakUsers.Items {
-		if strings.Contains(keycloakUser.Name, userName) {
-			t.Fatalf("Expected no keycloak user cr with name %s but found %s", userName, keycloakUser.Name)
+		// Match by spec username (exact), not CR name: CR names can be generated and
+		// "userLong1" is a substring of "userLong2", so Contains would false-positive.
+		if keycloakUser.Spec.User.UserName == userName {
+			t.Fatalf("Expected no keycloak user cr with username %s but found %s (cr name %s)", userName, keycloakUser.Spec.User.UserName, keycloakUser.Name)
 		}
 	}
 
-	t.Logf("No keycloak cr found containing %s in name in %s namespace", userName, RHSSOProductNamespace)
+	t.Logf("No keycloak cr found with username %s in %s namespace", userName, RHSSOProductNamespace)
 }
 
 func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userName string) {
@@ -152,26 +193,18 @@ func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userNam
 }
 
 func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string) {
-	if err := wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*8, true, func(ctx2 context.Context) (done bool, err error) {
-		getAlertErr := getFiringAlerts(t, ctx)
-
-		// getAlertErr should not be nil as DeadMansSwitch & at least specific alert should be firing
-		if getAlertErr == nil {
-			return false, nil
-		}
-
-		for _, alert := range getAlertErr.(*alertsFiringError).alertsFiring {
-			if alert.alertName == alertName {
-				return true, nil
+	if err := WaitForAlertFiring(t, ctx, alertName); err != nil {
+		// Log what alerts were firing to help diagnose (e.g. wrong name, 3scale not ready)
+		if getAlertErr := getFiringAlerts(t, ctx); getAlertErr != nil {
+			var alertsErr *alertsFiringError
+			if errors.As(getAlertErr, &alertsErr) {
+				t.Logf("Firing alerts at timeout: %s", getAlertErr.Error())
 			}
+		} else {
+			t.Logf("At timeout: no unexpected alerts firing (only DeadMansSwitch or none)")
 		}
-
-		return false, nil
-	}); err != nil {
-		//t.Fatalf("%s alert was not firing: %s", alertName, err)
-		t.Skipf("Known flaky test - https://issues.redhat.com/browse/MGDAPI-2581: %s alert was not firing: %s", alertName, err)
+		t.Fatalf("%s alert was not firing: %s", alertName, err)
 	}
-
 	t.Logf("%s alert is firing", alertName)
 }
 
@@ -183,7 +216,11 @@ func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string
 			return true, nil
 		}
 
-		for _, alert := range getAlertErr.(*alertsFiringError).alertsFiring {
+		var alertsErr *alertsFiringError
+		if !errors.As(getAlertErr, &alertsErr) {
+			return false, getAlertErr
+		}
+		for _, alert := range alertsErr.alertsFiring {
 			if alert.alertName == alertName {
 				return false, nil
 			}
@@ -194,14 +231,14 @@ func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string
 		t.Fatalf("%s alert was still firing: %s", alertName, err)
 	}
 
-	t.Logf("%s alerts is no longer firing", alertName)
+	t.Logf("%s alert is no longer firing", alertName)
 }
 
 func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, threeScaleUsername string) {
 	if err := wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*8, true, func(ctx2 context.Context) (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
-			t.Logf("Error gettting 3scale users: %s", err)
+			t.Logf("Error getting 3scale users: %s", err)
 			return false, nil
 		}
 

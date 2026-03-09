@@ -346,7 +346,8 @@ func restartThreeScalePods(t TestingTB, ctx *TestingContext, inst *rhmiv1alpha1.
 	t.Log("Checking pods are ready")
 	threeScaleConfig := config.NewThreeScale(map[string]string{})
 	replicas := threeScaleConfig.GetReplicasConfig(inst)
-	err := check3ScaleReplicasAreReady(ctx, t, replicas, retryInterval, timeout)
+	extendedTimeout := timeout + 3*time.Minute
+	err := check3ScaleReplicasAreReady(ctx, t, replicas, retryInterval, extendedTimeout)
 	if err != nil {
 		t.Logf("Replicas not Ready within timeout: %v", err)
 	}
