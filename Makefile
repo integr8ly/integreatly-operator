@@ -626,12 +626,12 @@ KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 MOQ ?= $(LOCALBIN)/moq
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.4.3
-CONTROLLER_TOOLS_VERSION ?= v0.16.1
+CONTROLLER_TOOLS_VERSION ?= v0.17.0
 ENVTEST_VERSION ?= release-0.19
 MOQ_VERSION ?= v0.5.3
 GOLANGCI_LINT_VERSION ?= v1.64.2
@@ -675,11 +675,7 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	@if [ ! -f $(GOLANGCI_LINT) ]; then \
-		echo "Downloading golangci-lint $(GOLANGCI_LINT_VERSION) binary..."; \
-		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION:v%=%)-linux-amd64.tar.gz \
-		  | tar -xz -C $(LOCALBIN) --strip-components=1 golangci-lint-$(GOLANGCI_LINT_VERSION:v%=%)-linux-amd64/golangci-lint; \
-	fi
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 
 

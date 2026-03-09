@@ -1,6 +1,6 @@
 module github.com/integr8ly/integreatly-operator
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/3scale-sre/marin3r/api v0.13.2

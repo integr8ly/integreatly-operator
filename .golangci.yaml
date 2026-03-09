@@ -22,5 +22,6 @@ presets:
   - unused
 
 run:
+  go: "1.25"
   modules-download-mode: readonly
   timeout: 5m
