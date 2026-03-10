@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    name: rhmi-operator
+  name: rhoam-operator-metrics-service
+spec:
+  ports:
+  - name: http-metrics
+    port: 8383
+    targetPort: 8383
+  selector:
+    name: rhmi-operator
+status:
+  loadBalancer: {}

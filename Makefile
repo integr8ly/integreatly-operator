@@ -59,9 +59,11 @@ else
 	OPENAPI_GEN ?= go run k8s.io/kube-openapi/cmd/openapi-gen
 endif
 
+# operator-sdk version (keep in sync with openshift-ci/Dockerfile.tools and scripts/prepare-release.sh)
+OPERATOR_SDK_VERSION ?= v1.42.0
 # If the _correct_ version of operator-sdk is on the path, use that (faster);
 # otherwise use it through "go run" (slower but will always work and will use correct version)
-ifeq ($(shell operator-sdk version 2> /dev/null | sed -e 's/", .*/"/' -e 's/.* //'), "v$(OPERATOR_SDK_VERSION)")
+ifeq ($(shell operator-sdk version 2> /dev/null | sed -e 's/", .*/"/' -e 's/.* //'), "$(OPERATOR_SDK_VERSION)")
 	OPERATOR_SDK ?= operator-sdk
 else
 	OPERATOR_SDK ?= go run github.com/operator-framework/operator-sdk/cmd/operator-sdk

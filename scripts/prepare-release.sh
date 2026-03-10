@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Tool versions
-readonly OPERATOR_SDK_VERSION="v1.39.0"
+readonly OPERATOR_SDK_VERSION="v1.42.0"
 
 if [[ -z "$OLM_TYPE" ]]; then
   OLM_TYPE="managed-api-service"
