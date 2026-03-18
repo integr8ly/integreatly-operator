@@ -130,106 +130,137 @@ func testConsoleLinksForUser(t TestingTB, consoleUrl, userName string, expectedC
 	ChromeDpTimeOutWithActions(t, 2*time.Minute, actions...)
 }
 
-// assertConsoleLinksAction checks that the console links from
+// assertConsoleLinksAction checks that the console links from the Application Launcher dropdown match expected RHOAM links.
+// It tries multiple section selectors (OCP/PatternFly versions differ) and collects RHOAM links from all sections so it works for both developer and dedicated-admin views.
 func assertConsoleLinksAction(t TestingTB, expectedConsoleLinks []ConsoleLinkAssertion, clusterVersion string) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
-		// Get all the sections from the dropdown as there could be multiple depending on developer user and dedicated admin
-		var sections []*cdp.Node
+		sectionSelectors := sectionSelectorsForVersion(clusterVersion)
 
-		sectionSelector := `section[class="pf-c-app-launcher__group"]`
-		match, err := regexp.MatchString("4\\.1[567]\\.", clusterVersion)
-		if err != nil {
-			t.Fatal(err)
+		var allSections []*cdp.Node
+		var usedSelector string
+		for _, sel := range sectionSelectors {
+			var sections []*cdp.Node
+			if err := chromedp.Nodes(sel, &sections, chromedp.ByQueryAll).Do(ctx); err != nil {
+				continue
+			}
+			if len(sections) > 0 {
+				allSections = sections
+				usedSelector = sel
+				break
+			}
 		}
-		// Check if the clusterVersion matches 4.18
-		match1, err := regexp.MatchString("4\\.18\\.", clusterVersion)
-		if err != nil {
-			t.Fatal(err)
-		}
-		// Check if the clusterVersion matches 4.19, 4.20 or 4.21
-		match2, err := regexp.MatchString("4\\.19\\.|4\\.20\\.|4\\.21\\.", clusterVersion)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if match {
-			sectionSelector = `section[class="pf-v5-c-app-launcher__group"]`
-		} else if match1 {
-			// For versions 4.18:
-			sectionSelector = `section[class="pf-v5-c-menu__group"]`
-		} else if match2 {
-			// For versions 4.19 or 4.20:
-			sectionSelector = `section[class="pf-v6-c-menu__group"]`
+		if len(allSections) == 0 {
+			t.Fatal("unable to find sections containing console links (tried multiple selectors)")
 		}
 
-		if err := chromedp.Nodes(sectionSelector, &sections, chromedp.ByQueryAll).Do(ctx); err != nil {
-			return err
+		if isBroadAppLauncherSectionSelector(usedSelector) {
+			t.Logf("WARNING: console-links check used a broad section selector %q (narrower selectors matched nothing). "+
+				"Links are still validated by exact URL; consider updating selectors if OCP/console DOM changed. clusterVersion=%q",
+				usedSelector, clusterVersion)
 		}
 
-		if len(sections) == 0 {
-			t.Fatal("unable to find sections containing console links")
-		}
-
-		// Use the last element in the slice as a dedicated-admin have 2 console link sections
-		// Managed service links are in the last section (at the time of writing) for both developer and dedicated admin users
-		lastElement := sections[len(sections)-1]
-
-		// Get all the links from this section
-		var links []*cdp.Node
-
-		err = chromedp.Nodes(`a`, &links, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Remove non-RHOAM links from the list
+		// Collect all links with href containing rhoam or 3scale from ALL sections (RHOAM links may be in any section in 4.21)
 		var filteredLinks []*cdp.Node
-		for _, link := range links {
-			if strings.Contains(link.AttributeValue("href"), "rhoam") {
-				filteredLinks = append(filteredLinks, link)
-			} else if strings.Contains(link.AttributeValue("href"), "3scale") {
-				filteredLinks = append(filteredLinks, link)
+		for _, section := range allSections {
+			var links []*cdp.Node
+			if err := chromedp.Nodes(`a`, &links, chromedp.FromNode(section), chromedp.ByQueryAll).Do(ctx); err != nil {
+				continue
 			}
-		}
-		links = filteredLinks
-
-		// Assert number of links is as expected
-		if len(links) != len(expectedConsoleLinks) {
-			return fmt.Errorf("expected %d console links but got %d", len(expectedConsoleLinks), len(links))
-		}
-
-		// Assert the links itself are as expected
-		for idx := range links {
-			consoleLinkHref := links[idx].AttributeValue("href")
-			expectedLinkHref := expectedConsoleLinks[idx].URL
-			if consoleLinkHref != expectedLinkHref {
-				return fmt.Errorf("expected %s as a console link url but got: %s", expectedLinkHref, consoleLinkHref)
+			for _, link := range links {
+				href := link.AttributeValue("href")
+				if strings.Contains(href, "rhoam") || strings.Contains(href, "3scale") {
+					filteredLinks = append(filteredLinks, link)
+				}
 			}
 		}
 
-		// get all the icons
-		var icons []*cdp.Node
-		err = chromedp.Nodes(`img`, &icons, chromedp.FromNode(lastElement), chromedp.ByQueryAll).Do(ctx)
-
-		// Assert number of icons is as expected, can be more if other add-ons are installed
-		if len(icons) < len(expectedConsoleLinks) {
-			return fmt.Errorf("expected at least %d console icons but got %d", len(expectedConsoleLinks), len(icons))
+		if len(filteredLinks) < len(expectedConsoleLinks) {
+			return fmt.Errorf("expected at least %d console links (3scale, Grafana, User SSO) but got %d (selector used: %s)", len(expectedConsoleLinks), len(filteredLinks), usedSelector)
 		}
 
-		// Assert the icons itself are as expected
+		// Match expected URLs (order may differ in DOM)
+		matched := make([]bool, len(expectedConsoleLinks))
+		for _, link := range filteredLinks {
+			href := link.AttributeValue("href")
+			for i, expected := range expectedConsoleLinks {
+				if !matched[i] && href == expected.URL {
+					matched[i] = true
+					break
+				}
+			}
+		}
+		for i, m := range matched {
+			if !m {
+				return fmt.Errorf("expected console link %q not found in launcher", expectedConsoleLinks[i].URL)
+			}
+		}
+
+		// Icons: collect from all sections
+		var allIcons []*cdp.Node
+		for _, section := range allSections {
+			var icons []*cdp.Node
+			if err := chromedp.Nodes(`img`, &icons, chromedp.FromNode(section), chromedp.ByQueryAll).Do(ctx); err != nil {
+				continue
+			}
+			allIcons = append(allIcons, icons...)
+		}
+		if len(allIcons) < len(expectedConsoleLinks) {
+			return fmt.Errorf("expected at least %d console icons but got %d", len(expectedConsoleLinks), len(allIcons))
+		}
 		totalRhoamIcons := 0
-		for idx := range links {
-			consoleLinkIcon := icons[idx].AttributeValue("src")
-			expectedLinkIcon := expectedConsoleLinks[idx].Icon
-			if consoleLinkIcon == expectedLinkIcon {
-				totalRhoamIcons += 1
+		for _, icon := range allIcons {
+			src := icon.AttributeValue("src")
+			for _, expected := range expectedConsoleLinks {
+				if src == expected.Icon {
+					totalRhoamIcons++
+					break
+				}
 			}
 		}
-		if totalRhoamIcons != len(expectedConsoleLinks) {
+		if totalRhoamIcons < len(expectedConsoleLinks) {
 			return fmt.Errorf("expected %d RHOAM console icons but got %d", len(expectedConsoleLinks), totalRhoamIcons)
 		}
 
 		return nil
+	}
+}
+
+// isBroadAppLauncherSectionSelector reports selectors that may match non-launcher sections
+// (e.g. any element with *menu__group or *__group in class). Prefer updating sectionSelectorsForVersion
+// if tests log this warning on a supported OCP version.
+func isBroadAppLauncherSectionSelector(sel string) bool {
+	switch sel {
+	case `section[class*="menu__group"]`, `section[class*="__group"]`:
+		return true
+	default:
+		return false
+	}
+}
+
+// sectionSelectorsForVersion returns CSS selectors for app launcher menu sections, in order of preference.
+func sectionSelectorsForVersion(clusterVersion string) []string {
+	match, _ := regexp.MatchString("4\\.1[567]\\.", clusterVersion)
+	match1, _ := regexp.MatchString("4\\.18\\.", clusterVersion)
+	match2, _ := regexp.MatchString("4\\.19\\.|4\\.20\\.|4\\.21\\.", clusterVersion)
+
+	switch {
+	case match:
+		return []string{`section[class="pf-v5-c-app-launcher__group"]`, `section[class*="app-launcher__group"]`}
+	case match1:
+		return []string{`section[class="pf-v5-c-menu__group"]`, `section[class*="menu__group"]`}
+	case match2:
+		return []string{
+			`section[class="pf-v6-c-menu__group"]`,
+			`section[class*="pf-v6-c-menu__group"]`,
+			`section[class*="menu__group"]`,
+			`section[class*="__group"]`,
+		}
+	default:
+		return []string{
+			`section[class="pf-c-app-launcher__group"]`,
+			`section[class*="app-launcher__group"]`,
+			`section[class*="menu__group"]`,
+			`section[class*="__group"]`,
+		}
 	}
 }

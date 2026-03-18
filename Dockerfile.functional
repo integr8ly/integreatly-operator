@@ -32,11 +32,17 @@ COPY Makefile ./
 RUN make test/compile/functional
 
 FROM registry.access.redhat.com/ubi9/ubi:latest
-# Install chrome for tests - download RPM directly and install with --nodeps to skip missing dependencies
-RUN yum install -y wget \
+# Chrome needs many libs; installing with only --nodeps causes "chrome failed to start" in the pod.
+# --noscripts: Chrome %post needs xdg-icon-resource (xdg-utils), not in UBI repos; skip for headless.
+RUN yum install -y wget nspr nss \
+    alsa-lib atk at-spi2-atk cups-libs gtk3 libdrm \
+    libX11 libXcomposite libXdamage libXext libXfixes libXrandr \
+    mesa-libgbm libxcb dbus-libs libxshmfence \
+    xorg-x11-fonts-Type1 fontconfig \
     && wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
-    && rpm -i --nodeps ./google-chrome-stable_current_*.rpm \
+    && rpm -i --nodeps --noscripts ./google-chrome-stable_current_*.rpm \
     && rm -f google-chrome-stable_current_*.rpm \
+    && (google-chrome-stable --headless --no-sandbox --disable-gpu --dump-dom about:blank >/dev/null 2>&1 || true) \
     && yum clean all
 
 RUN bash -c 'curl -s -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz \
