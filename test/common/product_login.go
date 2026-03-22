@@ -151,8 +151,30 @@ func testLoginToRHSSOForUser(t TestingTB, rhssoConsoleUrl string, userName strin
 	ChromeDpTimeOutWithActions(t, 2*time.Minute, loginToRHSSOActions(t, rhssoConsoleUrl, userName)...)
 }
 
+// ChromeDpTimeOutWithActions runs chromedp actions with a timeout. Uses a desktop viewport
+// (1920x1080) so that CI/headless and remote clusters get the same layout as local (e.g.
+// OpenShift console application launcher visible in header instead of hidden on small viewports).
 func ChromeDpTimeOutWithActions(t TestingTB, timeOut time.Duration, actions ...chromedp.Action) {
-	ctxC, cancel := chromedp.NewContext(context.TODO())
+	// Chrome in OpenShift/K8s: arbitrary UID, small /dev/shm, no setuid sandbox.
+	userDataDir, err := os.MkdirTemp("", "chromedp-*")
+	if err != nil {
+		t.Errorf("ChromeDP: could not create user data dir: %v", err)
+		return
+	}
+	defer func() { _ = os.RemoveAll(userDataDir) }()
+
+	allocOpts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.WindowSize(1920, 1080),
+		chromedp.UserDataDir(userDataDir),
+		chromedp.Flag("no-sandbox", true),
+		chromedp.Flag("disable-setuid-sandbox", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("disable-extensions", true),
+	)
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), allocOpts...)
+	defer allocCancel()
+	ctxC, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 	ctx, cancel := context.WithTimeout(ctxC, timeOut)
 	defer cancel()
@@ -169,7 +191,7 @@ func ChromeDpTimeOutWithActions(t TestingTB, timeOut time.Duration, actions ...c
 		return
 	}
 
-	err := chromedp.Run(ctx, actions...)
+	err = chromedp.Run(ctx, actions...)
 	if err != nil {
 		t.Errorf("ChromeDP test failed with error: %s (set CHROMEDP_DEBUG=1 to see which step fails)", err)
 	}
