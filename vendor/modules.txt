@@ -31,8 +31,8 @@ github.com/RHsyseng/operator-utils/pkg/olm
 # github.com/antchfx/xmlquery v1.3.5
 ## explicit; go 1.14
 github.com/antchfx/xmlquery
-# github.com/antchfx/xpath v1.1.10
-## explicit
+# github.com/antchfx/xpath v1.3.6
+## explicit; go 1.14
 github.com/antchfx/xpath
 # github.com/antlr4-go/antlr/v4 v4.13.0
 ## explicit; go 1.20

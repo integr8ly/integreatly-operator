@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"unicode"
+	"unicode/utf8"
 )
 
 // A XPath expression token type.
@@ -65,11 +66,13 @@ const (
 	nodeOperator
 	nodeVariable
 	nodeConstantOperand
+	nodeGroup
 )
 
 type parser struct {
-	r *scanner
-	d int
+	r          *scanner
+	d          int
+	namespaces map[string]string
 }
 
 // newOperatorNode returns new operator node OperatorNode.
@@ -83,15 +86,20 @@ func newOperandNode(v interface{}) node {
 }
 
 // newAxisNode returns new axis node AxisNode.
-func newAxisNode(axeTyp, localName, prefix, prop string, n node) node {
-	return &axisNode{
+func newAxisNode(axisType string, typeTest NodeType, localName, prefix, prop string, n node, opts ...func(p *axisNode)) node {
+	a := axisNode{
 		nodeType:  nodeAxis,
+		typeTest:  typeTest,
 		LocalName: localName,
 		Prefix:    prefix,
-		AxeType:   axeTyp,
+		AxisType:  axisType,
 		Prop:      prop,
 		Input:     n,
 	}
+	for _, o := range opts {
+		o(&a)
+	}
+	return &a
 }
 
 // newVariableNode returns new variable node VariableNode.
@@ -102,6 +110,10 @@ func newVariableNode(prefix, name string) node {
 // newFilterNode returns a new filter node FilterNode.
 func newFilterNode(n, m node) node {
 	return &filterNode{nodeType: nodeFilter, Input: n, Condition: m}
+}
+
+func newGroupNode(n node) node {
+	return &groupNode{nodeType: nodeGroup, Input: n}
 }
 
 // newRootNode returns a root node.
@@ -218,8 +230,9 @@ Loop:
 }
 
 // RelationalExpr ::= AdditiveExpr	| RelationalExpr '<' AdditiveExpr | RelationalExpr '>' AdditiveExpr
-//					| RelationalExpr '<=' AdditiveExpr
-//					| RelationalExpr '>=' AdditiveExpr
+//
+//	| RelationalExpr '<=' AdditiveExpr
+//	| RelationalExpr '>=' AdditiveExpr
 func (p *parser) parseRelationalExpr(n node) node {
 	opnd := p.parseAdditiveExpr(n)
 Loop:
@@ -264,7 +277,8 @@ Loop:
 }
 
 // MultiplicativeExpr ::= UnaryExpr	| MultiplicativeExpr MultiplyOperator(*) UnaryExpr
-//						| MultiplicativeExpr 'div' UnaryExpr | MultiplicativeExpr 'mod' UnaryExpr
+//
+//	| MultiplicativeExpr 'div' UnaryExpr | MultiplicativeExpr 'mod' UnaryExpr
 func (p *parser) parseMultiplicativeExpr(n node) node {
 	opnd := p.parseUnaryExpr(n)
 Loop:
@@ -298,7 +312,7 @@ func (p *parser) parseUnaryExpr(n node) node {
 	return opnd
 }
 
-// 	UnionExpr ::= PathExpr | UnionExpr '|' PathExpr
+// UnionExpr ::= PathExpr | UnionExpr '|' PathExpr
 func (p *parser) parseUnionExpr(n node) node {
 	opnd := p.parsePathExpr(n)
 Loop:
@@ -325,7 +339,7 @@ func (p *parser) parsePathExpr(n node) node {
 			opnd = p.parseRelativeLocationPath(opnd)
 		case itemSlashSlash:
 			p.next()
-			opnd = p.parseRelativeLocationPath(newAxisNode("descendant-or-self", "", "", "", opnd))
+			opnd = p.parseRelativeLocationPath(newAxisNode("descendant-or-self", allNode, "", "", "", opnd))
 		}
 	} else {
 		opnd = p.parseLocationPath(nil)
@@ -342,7 +356,7 @@ func (p *parser) parseFilterExpr(n node) node {
 	return opnd
 }
 
-// 	Predicate ::=  '[' PredicateExpr ']'
+// Predicate ::=  '[' PredicateExpr ']'
 func (p *parser) parsePredicate(n node) node {
 	p.skipItem(itemLBracket)
 	opnd := p.parseExpression(n)
@@ -362,7 +376,7 @@ func (p *parser) parseLocationPath(n node) (opnd node) {
 	case itemSlashSlash:
 		p.next()
 		opnd = newRootNode("//")
-		opnd = p.parseRelativeLocationPath(newAxisNode("descendant-or-self", "", "", "", opnd))
+		opnd = p.parseRelativeLocationPath(newAxisNode("descendant-or-self", allNode, "", "", "", opnd))
 	default:
 		opnd = p.parseRelativeLocationPath(n)
 	}
@@ -378,7 +392,7 @@ Loop:
 		switch p.r.typ {
 		case itemSlashSlash:
 			p.next()
-			opnd = newAxisNode("descendant-or-self", "", "", "", opnd)
+			opnd = newAxisNode("descendant-or-self", allNode, "", "", "", opnd)
 		case itemSlash:
 			p.next()
 		default:
@@ -390,30 +404,33 @@ Loop:
 
 // Step	::= AxisSpecifier NodeTest Predicate* | AbbreviatedStep
 func (p *parser) parseStep(n node) (opnd node) {
-	axeTyp := "child" // default axes value.
 	if p.r.typ == itemDot || p.r.typ == itemDotDot {
 		if p.r.typ == itemDot {
-			axeTyp = "self"
+			opnd = newAxisNode("self", allNode, "", "", "", n)
 		} else {
-			axeTyp = "parent"
+			opnd = newAxisNode("parent", allNode, "", "", "", n)
 		}
 		p.next()
-		opnd = newAxisNode(axeTyp, "", "", "", n)
 		if p.r.typ != itemLBracket {
 			return opnd
 		}
 	} else {
+		axisType := "child" // default axes value.
 		switch p.r.typ {
 		case itemAt:
+			axisType = "attribute"
 			p.next()
-			axeTyp = "attribute"
 		case itemAxe:
-			axeTyp = p.r.name
+			axisType = p.r.name
 			p.next()
 		case itemLParens:
 			return p.parseSequence(n)
 		}
-		opnd = p.parseNodeTest(n, axeTyp)
+		matchType := ElementNode
+		if axisType == "attribute" {
+			matchType = AttributeNode
+		}
+		opnd = p.parseNodeTest(n, axisType, matchType)
 	}
 	for p.r.typ == itemLBracket {
 		opnd = newFilterNode(opnd, p.parsePredicate(opnd))
@@ -437,8 +454,8 @@ func (p *parser) parseSequence(n node) (opnd node) {
 	return opnd
 }
 
-// 	NodeTest ::= NameTest | nodeType '(' ')' | 'processing-instruction' '(' Literal ')'
-func (p *parser) parseNodeTest(n node, axeTyp string) (opnd node) {
+// NodeTest ::= NameTest | nodeType '(' ')' | 'processing-instruction' '(' Literal ')'
+func (p *parser) parseNodeTest(n node, axeTyp string, matchType NodeType) (opnd node) {
 	switch p.r.typ {
 	case itemName:
 		if p.r.canBeFunc && isNodeType(p.r) {
@@ -456,7 +473,19 @@ func (p *parser) parseNodeTest(n node, axeTyp string) (opnd node) {
 				p.next()
 			}
 			p.skipItem(itemRParens)
-			opnd = newAxisNode(axeTyp, name, "", prop, n)
+			switch prop {
+			case "comment":
+				matchType = CommentNode
+			case "text":
+				matchType = TextNode
+			case "processing-instruction":
+			case "node":
+				matchType = allNode
+			default:
+				matchType = RootNode
+			}
+
+			opnd = newAxisNode(axeTyp, matchType, name, "", prop, n)
 		} else {
 			prefix := p.r.prefix
 			name := p.r.name
@@ -464,10 +493,19 @@ func (p *parser) parseNodeTest(n node, axeTyp string) (opnd node) {
 			if p.r.name == "*" {
 				name = ""
 			}
-			opnd = newAxisNode(axeTyp, name, prefix, "", n)
+			opnd = newAxisNode(axeTyp, matchType, name, prefix, "", n, func(a *axisNode) {
+				if prefix != "" && p.namespaces != nil {
+					if ns, ok := p.namespaces[prefix]; ok {
+						a.hasNamespaceURI = true
+						a.namespaceURI = ns
+					} else {
+						panic(fmt.Sprintf("prefix %s not defined.", prefix))
+					}
+				}
+			})
 		}
 	case itemStar:
-		opnd = newAxisNode(axeTyp, "", "", "", n)
+		opnd = newAxisNode(axeTyp, matchType, "", "", "", n)
 		p.next()
 	default:
 		panic("expression must evaluate to a node-set")
@@ -492,6 +530,9 @@ func (p *parser) parsePrimaryExpr(n node) (opnd node) {
 	case itemLParens:
 		p.next()
 		opnd = p.parseExpression(n)
+		if opnd.Type() != nodeConstantOperand {
+			opnd = newGroupNode(opnd)
+		}
 		p.skipItem(itemRParens)
 	case itemName:
 		if p.r.canBeFunc && !isNodeType(p.r) {
@@ -523,11 +564,11 @@ func (p *parser) parseMethod(n node) node {
 }
 
 // Parse parsing the XPath express string expr and returns a tree node.
-func parse(expr string) node {
+func parse(expr string, namespaces map[string]string) node {
 	r := &scanner{text: expr}
 	r.nextChar()
 	r.nextItem()
-	p := &parser{r: r}
+	p := &parser{r: r, namespaces: namespaces}
 	return p.parseExpression(nil)
 }
 
@@ -555,17 +596,20 @@ func (o *operatorNode) String() string {
 // axisNode holds a location step.
 type axisNode struct {
 	nodeType
-	Input     node
-	Prop      string // node-test name.[comment|text|processing-instruction|node]
-	AxeType   string // name of the axes.[attribute|ancestor|child|....]
-	LocalName string // local part name of node.
-	Prefix    string // prefix name of node.
+	Input           node
+	Prop            string // node-test name.[comment|text|processing-instruction|node]
+	AxisType        string // name of the axis.[attribute|ancestor|child|....]
+	LocalName       string // local part name of node.
+	Prefix          string // prefix name of node.
+	namespaceURI    string // namespace URI of node
+	hasNamespaceURI bool   // if namespace URI is set (can be "")
+	typeTest        NodeType
 }
 
 func (a *axisNode) String() string {
 	var b bytes.Buffer
-	if a.AxeType != "" {
-		b.Write([]byte(a.AxeType + "::"))
+	if a.AxisType != "" {
+		b.Write([]byte(a.AxisType + "::"))
 	}
 	if a.Prefix != "" {
 		b.Write([]byte(a.Prefix + ":"))
@@ -585,6 +629,16 @@ type operandNode struct {
 
 func (o *operandNode) String() string {
 	return fmt.Sprintf("%v", o.Val)
+}
+
+// groupNode holds a set of node expression
+type groupNode struct {
+	nodeType
+	Input node
+}
+
+func (g *groupNode) String() string {
+	return fmt.Sprintf("%s", g.Input)
 }
 
 // filterNode holds a condition filter.
@@ -638,6 +692,7 @@ type scanner struct {
 
 	pos       int
 	curr      rune
+	currSize  int
 	typ       itemType
 	strval    string  // text value at current pos
 	numval    float64 // number value at current pos
@@ -647,10 +702,18 @@ type scanner struct {
 func (s *scanner) nextChar() bool {
 	if s.pos >= len(s.text) {
 		s.curr = rune(0)
+		s.currSize = 1
 		return false
 	}
-	s.curr = rune(s.text[s.pos])
-	s.pos++
+
+	r, size := rune(s.text[s.pos]), 1
+	if r >= 0x80 { // handle multi-byte runes
+		r, size = utf8.DecodeRuneInString(s.text[s.pos:])
+	}
+
+	s.curr = r
+	s.currSize = size
+	s.pos += size
 	return true
 }
 
@@ -805,31 +868,36 @@ func (s *scanner) scanNumber() float64 {
 
 func (s *scanner) scanString() string {
 	var (
-		c   = 0
 		end = s.curr
 	)
 	s.nextChar()
-	i := s.pos - 1
+	i := s.pos - s.currSize
+	c := s.currSize
 	for s.curr != end {
 		if !s.nextChar() {
 			panic(errors.New("xpath: scanString got unclosed string"))
 		}
-		c++
+		c += s.currSize
 	}
+	c -= 1
 	s.nextChar()
 	return s.text[i : i+c]
 }
 
 func (s *scanner) scanName() string {
 	var (
-		c int
-		i = s.pos - 1
+		c = s.currSize - 1
+		i = s.pos - s.currSize
 	)
+
+	// Detect current rune size
+
 	for isName(s.curr) {
-		c++
 		if !s.nextChar() {
+			c += s.currSize
 			break
 		}
+		c += s.currSize
 	}
 	return s.text[i : i+c]
 }
