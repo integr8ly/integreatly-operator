@@ -30,7 +30,9 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	configv1 "github.com/openshift/api/config/v1"
@@ -727,6 +729,10 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
+
+			if err == nil && !tc.ExpectError {
+				assertRhssoOperatorMetricsServiceReconciled(t, context.TODO(), tc.FakeClient, tc.Installation, testReconciler.Config.GetOperatorNamespace())
+			}
 		})
 	}
 }
@@ -1087,6 +1093,10 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+
+			if err == nil && !tc.ExpectError {
+				assertRhssoOperatorMetricsServiceReconciled(t, context.TODO(), tc.FakeClient, tc.Installation, testReconciler.Config.GetOperatorNamespace())
 			}
 		})
 	}
@@ -1600,4 +1610,22 @@ func configureTestServer(t *testing.T) *httptest.Server {
 		}
 	}))
 	return server
+}
+
+func assertRhssoOperatorMetricsServiceReconciled(t *testing.T, ctx context.Context, c k8sclient.Client, installation *integreatlyv1alpha1.RHMI, operatorNamespace string) {
+	t.Helper()
+	svc := &corev1.Service{}
+	key := types.NamespacedName{Namespace: operatorNamespace, Name: rhssocommon.RhssoOperatorMetricsServiceName}
+	if err := c.Get(ctx, key, svc); err != nil {
+		t.Fatalf("rhsso-operator metrics Service not found in namespace %q: %v", operatorNamespace, err)
+	}
+	if got := svc.Spec.Selector["name"]; got != "rhsso-operator" {
+		t.Fatalf("metrics Service selector[name]: got %q, want rhsso-operator", got)
+	}
+	if svc.Annotations[owner.IntegreatlyOwnerName] != installation.Name {
+		t.Errorf("annotation %s: got %q, want %q", owner.IntegreatlyOwnerName, svc.Annotations[owner.IntegreatlyOwnerName], installation.Name)
+	}
+	if svc.Annotations[owner.IntegreatlyOwnerNamespace] != installation.Namespace {
+		t.Errorf("annotation %s: got %q, want %q", owner.IntegreatlyOwnerNamespace, svc.Annotations[owner.IntegreatlyOwnerNamespace], installation.Namespace)
+	}
 }
