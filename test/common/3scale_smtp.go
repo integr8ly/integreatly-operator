@@ -30,10 +30,11 @@ import (
 )
 
 const (
-	testNamespace = "smtp-server"
-	none          = "None"
-	partial       = "Partial"
-	full          = "Full"
+	testNamespace         = "smtp-server"
+	none                  = "None"
+	partial               = "Partial"
+	full                  = "Full"
+	smtpStatusPollTimeout = 10 * time.Minute
 )
 
 var (
@@ -67,7 +68,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	}
 
 	if !okToTest {
-		t.Skip("Addon custom smtp values are configured. This test is not ok to run.")
+		t.Skip("Custom SMTP parameters are configured. This test is not ok to run.")
 	}
 
 	defer restartThreeScalePods(t, ctx, inst)
@@ -165,7 +166,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 			return nil
 		})
 		if err != nil {
-			return
+			t.Fatalf("failed to patch addon parameters secret for full custom SMTP test: %v", err)
 		}
 
 		defer resetSecretData(t, ctx, data, secret)
@@ -178,10 +179,10 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 	}
 
 	if !okToTest {
-		t.Skip("Addon custom smtp values are not fully configured. This test is not ok to run.")
+		t.Skip("Custom SMTP parameters are not fully configured. This test is not ok to run.")
 	}
 
-	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
+	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, smtpStatusPollTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		inst, err = GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Logf("failed to get RHOAM instance %v", err)
@@ -197,7 +198,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 
 	})
 	if err != nil {
-		t.Errorf("CR conditions not meet", err)
+		t.Fatalf("CR conditions not met for full custom SMTP: %v", err)
 	}
 
 	if inst.Status.CustomSmtp.Error != "" {
@@ -276,7 +277,7 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 			return nil
 		})
 		if err != nil {
-			return
+			t.Fatalf("failed to patch addon parameters secret for partial custom SMTP test: %v", err)
 		}
 
 		defer resetSecretData(t, ctx, data, secret)
@@ -288,10 +289,10 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 	}
 
 	if !okToTest {
-		t.Skip("Addon custom smtp values are not partial configured. This test is not ok to run.")
+		t.Skip("Custom SMTP parameters are not partially configured. This test is not ok to run.")
 	}
 
-	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, timeout, false, func(ctx2 goctx.Context) (done bool, err error) {
+	err = wait.PollUntilContextTimeout(goctx.TODO(), retryInterval, smtpStatusPollTimeout, false, func(ctx2 goctx.Context) (done bool, err error) {
 		inst, err = GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Logf("failed to get RHOAM instance %v", err)
@@ -802,7 +803,7 @@ func copyAddonSecretData(secret *v1.Secret, ctx *TestingContext, inst *rhmiv1alp
 	// copy the current custom smtp values
 	newSecret, err := addonSecret(inst, ctx.Client)
 	if err != nil {
-		return nil, fmt.Errorf("error getting addon: %v", err)
+		return nil, fmt.Errorf("error getting addon parameters secret: %v", err)
 	}
 
 	data := make(map[string][]byte)
