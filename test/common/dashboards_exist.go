@@ -40,10 +40,17 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
-	output, err := execToPod(fmt.Sprintf("wget -qO - %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	grafanaSearchURL := fmt.Sprintf("http://%v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP)
+	output, err := execToPod("curl -sS "+grafanaSearchURL,
 		prometheusPodName,
 		ObservabilityProductNamespace,
 		curlContainerName, ctx)
+	if err != nil && (strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "No such file")) {
+		output, err = execToPod("wget -qO - "+grafanaSearchURL,
+			prometheusPodName,
+			ObservabilityProductNamespace,
+			curlContainerName, ctx)
+	}
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", ObservabilityProductNamespace)
 	}
