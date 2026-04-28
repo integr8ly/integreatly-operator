@@ -284,6 +284,23 @@ func execToPod(command string, podName string, namespace string, container strin
 	return ExecToPod(ctx.KubeClient, ctx.KubeConfig, command, podName, namespace, container)
 }
 
+// PrometheusPodLocalhostGET execs into the Prometheus pod and GETs http://localhost:9090{path} (curl/wget).
+// Currently used by C04; intended for reuse in other tests.
+func PrometheusPodLocalhostGET(ctx *TestingContext, podName, path string) (string, error) {
+	if path == "" || path[0] != '/' {
+		return "", fmt.Errorf("path must be non-empty and start with /, got %q", path)
+	}
+	fullURL := "http://localhost:9090" + path
+	out, err := ExecToPodArgs(ctx.KubeClient, ctx.KubeConfig, []string{"curl", "-sS", fullURL}, podName, ObservabilityProductNamespace, "prometheus")
+	if err == nil {
+		return out, nil
+	}
+	if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "No such file") {
+		return ExecToPodArgs(ctx.KubeClient, ctx.KubeConfig, []string{"wget", "-qO", "-", fullURL}, podName, ObservabilityProductNamespace, "prometheus")
+	}
+	return "", err
+}
+
 // Is the cluster using on cluster or external storage
 func isClusterStorage(ctx *TestingContext) (bool, error) {
 	rhmi, err := GetRHMI(ctx.Client, true)

@@ -165,9 +165,14 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhoam-component-reconciling-errors.yaml",
 			Rules: []string{
-				"RHOAMIsInReconcilingErrorState",
+				"RHOAMRHSSOIsInReconcilingErrorState",
+				"RHOAM3ScaleIsInReconcilingErrorState",
+				"RHOAMCloudResourcesIsInReconcilingErrorState",
+				"RHOAMMarin3rIsInReconcilingErrorState",
+				"RHOAMGrafanaIsInReconcilingErrorState",
+				"RHOAMRHSSOUserIsInReconcilingErrorState",
 			},
 		},
 	}
@@ -235,9 +240,14 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhoam-component-reconciling-errors.yaml",
 			Rules: []string{
-				"RHOAMIsInReconcilingErrorState",
+				"RHOAMRHSSOIsInReconcilingErrorState",
+				"RHOAM3ScaleIsInReconcilingErrorState",
+				"RHOAMCloudResourcesIsInReconcilingErrorState",
+				"RHOAMMarin3rIsInReconcilingErrorState",
+				"RHOAMGrafanaIsInReconcilingErrorState",
+				"RHOAMRHSSOUserIsInReconcilingErrorState",
 			},
 		},
 		{
@@ -750,12 +760,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get expected cloud platform rules: %s", err)
 	}
 
-	// exec into the prometheus pod
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
-
-		ObservabilityPrometheusPodName,
-		ObservabilityProductNamespace,
-		"prometheus", ctx)
+	output, err := PrometheusPodLocalhostGET(ctx, ObservabilityPrometheusPodName, "/api/v1/rules")
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)
 	}
