@@ -20,27 +20,15 @@ func mangedApiTargets() map[string][]string {
 			"/integreatly-rhssouser",
 		},
 		"serviceMonitor/" + ObservabilityProductNamespace: {
+			"/threescale-operator-controller-manager-metrics-monitor/0",
+			"/3scale-service-monitor/0",
+			"/cloud-resource-operator-metrics/0",
+			"/ratelimit/0",
 			"/rhsso-keycloak-service-monitor/0",
 			"/rhsso-keycloak-service-monitor/1",
-		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
-			"/rhsso-operator-metrics/0",
-			"/rhsso-operator-metrics/1",
-		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/user-sso-keycloak-service-monitor/0",
 			"/user-sso-keycloak-service-monitor/1",
 		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
-			"/user-sso-operator-rhsso-operator-metrics/0",
-			"/user-sso-operator-rhsso-operator-metrics/1",
-		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/cloud-resource-operator-metrics/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/ratelimit/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/threescale-operator-controller-manager-metrics-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/3scale-service-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/openshift-monitoring-federation/0"},
-		"serviceMonitor/" + RHOAMOperatorNamespace:        {"/rhmi-operator-metrics/0"},
 	}
 }
 
@@ -54,19 +42,15 @@ func mtMangedApiTargets() map[string][]string {
 			"/integreatly-rhsso",
 		},
 		"serviceMonitor/" + ObservabilityProductNamespace: {
+			"/threescale-operator-controller-manager-metrics-monitor/0",
+			"/3scale-service-monitor/0",
+			"/cloud-resource-operator-metrics/0",
+			"/ratelimit/0",
 			"/rhsso-keycloak-service-monitor/0",
 			"/rhsso-keycloak-service-monitor/1",
+			"/user-sso-keycloak-service-monitor/0",
+			"/user-sso-keycloak-service-monitor/1",
 		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
-			"/rhsso-operator-metrics/0",
-			"/rhsso-operator-metrics/1",
-		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/cloud-resource-operator-metrics/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/ratelimit/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/threescale-operator-controller-manager-metrics-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/3scale-service-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace: {"/openshift-monitoring-federation/0"},
-		"serviceMonitor/" + RHOAMOperatorNamespace:        {"/rhmi-operator-metrics/0"},
 	}
 }
 
@@ -103,13 +87,9 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 }
 
 func getPrometheusTargets(ctx *TestingContext) (*prometheusv1.TargetsResult, error) {
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		ObservabilityPrometheusPodName,
-		ObservabilityProductNamespace,
-		"prometheus",
-		ctx)
+	output, err := PrometheusPodLocalhostGET(ctx, ObservabilityPrometheusPodName, "/api/v1/targets?state=active")
 	if err != nil {
-		return nil, fmt.Errorf("failed to exec to prometheus pod: %v", err)
+		return nil, fmt.Errorf("failed to fetch prometheus targets from pod: %w", err)
 	}
 
 	// get all found active targets from the prometheus api

@@ -285,7 +285,6 @@ func execToPod(command string, podName string, namespace string, container strin
 }
 
 // PrometheusPodLocalhostGET execs into the Prometheus pod and GETs http://localhost:9090{path} (curl/wget).
-// Currently used by C04; intended for reuse in other tests.
 func PrometheusPodLocalhostGET(ctx *TestingContext, podName, path string) (string, error) {
 	if path == "" || path[0] != '/' {
 		return "", fmt.Errorf("path must be non-empty and start with /, got %q", path)
