@@ -30,8 +30,8 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.86.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/common v0.63.0
-	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.80.1-rhobs1
-	github.com/rhobs/observability-operator v1.2.0
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.83.0-rhobs1
+	github.com/rhobs/observability-operator/pkg/apis v0.0.0-20251104134935-9a4dc0f833db
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sync v0.19.0
 	golang.org/x/text v0.32.0
@@ -80,6 +80,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/containerd/containerd v1.7.29 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v28.4.0+incompatible // indirect
 	github.com/docker/docker v28.4.0+incompatible // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
@@ -99,7 +100,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.26.0 // indirect
+	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect

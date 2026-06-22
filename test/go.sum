@@ -584,8 +584,8 @@ github.com/prometheus/procfs v0.6.0/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
-github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.80.1-rhobs1 h1:YnL4nDnEb7u54H/M02OwSldGO5muwjmQt9dQU21GaR8=
-github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.80.1-rhobs1/go.mod h1:BkCsHUsmtN0H45bszS8X8ZBU71RlScoUcQZxF5RpvC8=
+github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.83.0-rhobs1 h1:tnuw3oTPuZN/srWcVXU6+BqtXJTxOQebsI+MYMKdE08=
+github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.83.0-rhobs1/go.mod h1:cVp/Ggq8Y2v3WUDhwbDAF4b07C8P75lozrsJg6eIYxw=
 github.com/rhobs/observability-operator v1.2.0 h1:q0z5H33hilc6HaHw+M5U+w5A1E4FMSJo2qMtEVAVUes=
 github.com/rhobs/observability-operator v1.2.0/go.mod h1:crKGz6tGQHBjEUocGdtL2d75NIBJDKT3/bhKLxsbcSA=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
@@ -623,8 +623,8 @@ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81P
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
-github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
