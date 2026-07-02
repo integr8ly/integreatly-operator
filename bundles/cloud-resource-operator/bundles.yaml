@@ -4,3 +4,5 @@ bundles:
       image: quay.io/integreatly/cloud-resource-operator:v1.1.6-bundle
     - name: cloud-resource-operator.v1.1.7
       image: quay.io/integreatly/cloud-resource-operator:v1.1.7-bundle
+    - name: cloud-resource-operator.v1.1.8
+      image: quay.io/integreatly/cloud-resource-operator:v1.1.8-bundle

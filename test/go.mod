@@ -13,18 +13,18 @@ require (
 	github.com/chromedp/chromedp v0.14.2
 	github.com/google/go-cmp v0.7.0
 	github.com/headzoo/surf v1.0.1
-	github.com/integr8ly/cloud-resource-operator v1.1.7
+	github.com/integr8ly/cloud-resource-operator v1.1.8
 	github.com/integr8ly/integreatly-operator v1.19.1-0.20230418125645-5aec6c015174
 	github.com/integr8ly/keycloak-client v0.1.14
-	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
+	github.com/onsi/ginkgo/v2 v2.27.2
+	github.com/onsi/gomega v1.38.2
 	github.com/openshift-online/ocm-sdk-go v0.1.344
 	github.com/openshift/addon-operator/apis v0.0.0-20230706051718-4032d89c8b54
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/operator-framework/api v0.23.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.86.1
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.2
 	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.83.0-rhobs1
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.48.0
@@ -43,6 +43,7 @@ require (
 require (
 	cel.dev/expr v0.25.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/RHsyseng/operator-utils v1.4.13 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antchfx/xmlquery v1.3.5 // indirect
@@ -128,8 +129,8 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.63.0 // indirect
-	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/prometheus/common v0.66.1 // indirect
+	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rhobs/observability-operator v1.2.0 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
@@ -137,11 +138,11 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
@@ -178,3 +179,6 @@ replace github.com/integr8ly/integreatly-operator => ../
 
 // Required for marin3r module path mismatch
 replace github.com/3scale-ops/marin3r => github.com/3scale-sre/marin3r v0.13.2
+
+// TODO(MGDAPI-6598): remove once integr8ly/cloud-resource-operator v1.1.8 is tagged and published
+replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b

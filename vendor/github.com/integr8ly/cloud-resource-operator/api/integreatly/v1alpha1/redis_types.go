@@ -46,3 +46,22 @@ type RedisList struct {
 func init() {
 	SchemeBuilder.Register(&Redis{}, &RedisList{})
 }
+
+func (r *Redis) GetEngine() string {
+	if r.Spec.Engine == "" {
+		return types.EngineRedis
+	}
+	return r.Spec.Engine
+}
+
+func (r *Redis) GetEngineVersion() string {
+	return r.Spec.EngineVersion
+}
+
+func (r *Redis) IsValkey() bool {
+	return r.GetEngine() == types.EngineValkey
+}
+
+func (r *Redis) EngineDisplayName() string {
+	return types.EngineDisplayName(r.GetEngine())
+}

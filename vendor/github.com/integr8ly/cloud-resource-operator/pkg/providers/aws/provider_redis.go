@@ -34,10 +34,12 @@ import (
 )
 
 const (
-	defaultAtRestEncryption = true
-	defaultCacheNodeType    = "cache.t3.micro"
-	defaultDescription      = "A Redis replication group"
-	defaultEngineVersion    = "7.1"
+	defaultAtRestEncryption    = true
+	defaultCacheNodeType       = "cache.t3.micro"
+	defaultDescription         = "A Redis replication group"
+	defaultRedisEngineVersion  = "7.1"
+	defaultValkeyEngineVersion = "7.2"
+	defaultEngineVersion       = defaultRedisEngineVersion
 	// 3scale does not support in transit encryption (redis with tls)
 	defaultInTransitEncryption = false
 	defaultNumCacheClusters    = 2
@@ -329,6 +331,11 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 	for _, checkedCluster := range cacheClustersOutput.CacheClusters {
 		cluster := checkedCluster
 		if resources.SafeStringDereference(cluster.ReplicationGroupId) == *foundCache.ReplicationGroupId {
+			if cluster.Engine != nil && *cluster.Engine != r.GetEngine() {
+				errMsg := fmt.Sprintf("%s to %s engine migration is not supported",
+					croType.EngineDisplayName(*cluster.Engine), r.EngineDisplayName())
+				return nil, croType.StatusMessage(errMsg), errors.New(errMsg)
+			}
 			replicationGroupClusters = append(replicationGroupClusters, checkedCluster)
 
 			if checkedCluster.EngineVersion != nil && r.Status.Version != *checkedCluster.EngineVersion {
@@ -720,6 +727,17 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 		elasticacheCreateConfig.CacheNodeType = aws.String(r.Spec.Size)
 	}
 
+	// Override engine from the CR spec
+	engine := r.GetEngine()
+	engineVersion := r.GetEngineVersion()
+	elasticacheCreateConfig.Engine = aws.String(engine)
+	if engineVersion != "" {
+		elasticacheCreateConfig.EngineVersion = aws.String(engineVersion)
+	} else if r.Spec.Engine != "" {
+		// Clear a strategy default from a different engine so provider defaults apply.
+		elasticacheCreateConfig.EngineVersion = nil
+	}
+
 	elasticacheDeleteConfig := &elasticache.DeleteReplicationGroupInput{}
 	if err := json.Unmarshal(stratCfg.DeleteStrategy, elasticacheDeleteConfig); err != nil {
 		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
@@ -864,9 +882,13 @@ func buildElasticacheUpdateStrategy(ctx context.Context, ec2Client EC2API, elast
 
 // verifyRedisConfig checks elasticache config, if none exist sets values to default
 func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v1alpha1.Redis, ec2Client EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput) error {
+	engine := r.GetEngine()
+	if !croType.IsSupportedRedisEngine(engine) {
+		return errorUtil.Errorf("unsupported %s engine %q", croType.EngineDisplayName(engine), engine)
+	}
 
 	elasticacheConfig.AutomaticFailoverEnabled = aws.Bool(true)
-	elasticacheConfig.Engine = aws.String("redis")
+	elasticacheConfig.Engine = aws.String(engine)
 
 	if elasticacheConfig.CacheNodeType == nil {
 		elasticacheConfig.CacheNodeType = aws.String(defaultCacheNodeType)
@@ -875,7 +897,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.ReplicationGroupDescription = aws.String(defaultDescription)
 	}
 	if elasticacheConfig.EngineVersion == nil {
-		elasticacheConfig.EngineVersion = aws.String(defaultEngineVersion)
+		elasticacheConfig.EngineVersion = aws.String(defaultEngineVersionFor(engine))
 	}
 	if elasticacheConfig.NumCacheClusters == nil {
 		elasticacheConfig.NumCacheClusters = aws.Int32(defaultNumCacheClusters)
@@ -1287,4 +1309,11 @@ func validServiceUpdateStates(status string) bool {
 		return true
 	}
 	return false
+}
+
+func defaultEngineVersionFor(engine string) string {
+	if engine == croType.EngineValkey {
+		return defaultValkeyEngineVersion
+	}
+	return defaultRedisEngineVersion
 }

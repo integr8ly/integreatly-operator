@@ -41,6 +41,12 @@ type ResourceTypeSpec struct {
 	SecretRef         *SecretRef `json:"secretRef"`
 	// Size allows defining the node size. It is only available to Redis CR. Blobstorage and Postgres CR's currently does nothing
 	Size string `json:"size,omitempty"`
+	// Engine selects the Redis or Valkey engine to provision. It is only available to Redis CR.
+	// +kubebuilder:validation:Enum=redis;valkey
+	Engine string `json:"engine,omitempty"`
+	// EngineVersion selects the Redis or Valkey engine version to provision. It is only available to Redis CR.
+	// When unset, providers apply their own defaults (e.g. redis 7.1, valkey 7.2 on AWS).
+	EngineVersion string `json:"engineVersion,omitempty"`
 	// SnapshotFrequency is how frequent a new snapshot is to be taken.
 	// Does not apply to BlobStorage
 	SnapshotFrequency Duration `json:"snapshotFrequency,omitempty"`
