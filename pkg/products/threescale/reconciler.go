@@ -1154,7 +1154,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	quotaChange := isQuotaChanged(r.installation.Status.Quota, activeQuota)
 
 	r.log.Infof("Backend redis config", map[string]interface{}{"quotaChange": quotaChange, "activeQuota": activeQuota})
-	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, r.Config.GetBackendRedisNodeSize(activeQuota, platformType), quotaChange, quotaChange, func(cr metav1.Object) error {
+	backendRedisEngine, backendRedisEngineVersion, err := resources.RedisEngineForReconcile(ctx, serverClient, backendRedisName, ns)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("failed to read existing backend redis CR: %w", err)
+	}
+	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, r.Config.GetBackendRedisNodeSize(activeQuota, platformType), backendRedisEngine, backendRedisEngineVersion, quotaChange, quotaChange, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -1166,7 +1170,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a redis instance
 	r.log.Info("Creating system redis instance")
 	systemRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, r.installation.Name)
-	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, systemRedisName, ns, systemRedisName, ns, "", false, false, func(cr metav1.Object) error {
+	systemRedisEngine, systemRedisEngineVersion, err := resources.RedisEngineForReconcile(ctx, serverClient, systemRedisName, ns)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("failed to read existing system redis CR: %w", err)
+	}
+	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, systemRedisName, ns, systemRedisName, ns, "", systemRedisEngine, systemRedisEngineVersion, false, false, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})

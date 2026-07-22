@@ -95,7 +95,7 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 }
 
 // ReconcileRedis creates or updates a redis custom resource
-func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs, size string, applyImmediately, maintenanceWindow bool, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
+func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs, size, engine, engineVersion string, applyImmediately, maintenanceWindow bool, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
 	r := &v1alpha1.Redis{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -124,6 +124,8 @@ func ReconcileRedis(ctx context.Context, client client.Client, productName, depl
 			Namespace: secretNs,
 		}
 		r.Spec.Size = size
+		r.Spec.Engine = engine
+		r.Spec.EngineVersion = engineVersion
 		r.Spec.ApplyImmediately = applyImmediately
 		r.Spec.MaintenanceWindow = maintenanceWindow
 

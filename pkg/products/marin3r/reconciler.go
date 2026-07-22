@@ -305,7 +305,11 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 	ns := r.installation.Namespace
 
 	redisName := fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name)
-	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, "", false, false, func(cr metav1.Object) error {
+	redisEngine, redisEngineVersion, err := resources.RedisEngineForReconcile(ctx, client, redisName, ns)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("failed to read existing rate limit redis CR: %w", err)
+	}
+	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, "", redisEngine, redisEngineVersion, false, false, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
