@@ -1,7 +1,6 @@
-# initial bundle must contain olm.skipRange (for 1.1.6)
+# Omit 1.1.6: midstream 1.1.7 has no replaces, so opm would prune 1.1.6 from a fresh index.
+# Installed 1.1.6 (RHOAM 1.43) still upgrades via 1.1.8 olm.skipRange; 1.1.7 via replaces.
 bundles:
-    - name: cloud-resource-operator.v1.1.6
-      image: quay.io/integreatly/cloud-resource-operator:v1.1.6-bundle
     - name: cloud-resource-operator.v1.1.7
       image: quay.io/integreatly/cloud-resource-operator:v1.1.7-bundle
     - name: cloud-resource-operator.v1.1.8
