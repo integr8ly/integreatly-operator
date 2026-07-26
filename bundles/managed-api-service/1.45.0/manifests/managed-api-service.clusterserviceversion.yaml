@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.1.0
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.45.0
     createdAt: "2026-03-09T10:25:31Z"
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.20"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
@@ -623,7 +623,7 @@ spec:
                   value: default@test.com
                 - name: QUOTA
                   value: "200"
-                image: quay.io/integreatly/managed-api-service:v1.45.0
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.45.0
                 imagePullPolicy: Always
                 livenessProbe:
                   exec:
