@@ -84,9 +84,10 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: quay.io/integreatly/cloud-resource-operator:v1.1.8
-    createdAt: "2026-01-14T13:31:09Z"
-    operators.operatorframework.io/builder: operator-sdk-v1.39.0
+    createdAt: "2026-07-16T09:15:29Z"
+    operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+    olm.skipRange: ">=1.1.6 <1.1.8"
   name: cloud-resources.v1.1.8
   namespace: placeholder
 spec:

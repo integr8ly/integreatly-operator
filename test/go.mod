@@ -179,6 +179,3 @@ replace github.com/integr8ly/integreatly-operator => ../
 
 // Required for marin3r module path mismatch
 replace github.com/3scale-ops/marin3r => github.com/3scale-sre/marin3r v0.13.2
-
-// TODO(MGDAPI-6598): remove once integr8ly/cloud-resource-operator v1.1.8 is tagged and published
-replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b

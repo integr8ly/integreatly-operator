@@ -188,6 +188,3 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202108310919
 
 // Required to fix critical CVE. But it uses go 1.21.0 !
 replace github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.27.0
-
-// TODO(MGDAPI-6598): remove once integr8ly/cloud-resource-operator v1.1.8 is tagged and published
-replace github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b

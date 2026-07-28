@@ -33,11 +33,38 @@ func NewResourceProvider(c client.Client, s *runtime.Scheme, l *logrus.Entry) *R
 	}
 }
 
+// resourceTypeSpecFromObject extracts ResourceTypeSpec from a CR Spec field.
+// Spec may be ResourceTypeSpec itself (Postgres, BlobStorage) or embed it (Redis).
+func resourceTypeSpecFromObject(o client.Object) (*croType.ResourceTypeSpec, error) {
+	specField := reflect.ValueOf(o).Elem().FieldByName("Spec")
+	if !specField.IsValid() {
+		return nil, errors.New("object has no Spec field")
+	}
+
+	rtsType := reflect.TypeOf(croType.ResourceTypeSpec{})
+	if specField.Type() == rtsType {
+		v := specField.Interface().(croType.ResourceTypeSpec)
+		return &v, nil
+	}
+
+	embedded := specField.FieldByName("ResourceTypeSpec")
+	if embedded.IsValid() && embedded.Type() == rtsType {
+		v := embedded.Interface().(croType.ResourceTypeSpec)
+		return &v, nil
+	}
+
+	rts := &croType.ResourceTypeSpec{}
+	if err := runtime.Field(reflect.ValueOf(o).Elem(), "Spec", rts); err != nil {
+		return nil, err
+	}
+	return rts, nil
+}
+
 func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o client.Object, d map[string][]byte) error {
 	obj := o.(metav1.Object)
 	secNs := obj.GetNamespace()
-	rts := &croType.ResourceTypeSpec{}
-	if err := runtime.Field(reflect.ValueOf(o).Elem(), "Spec", rts); err != nil {
+	rts, err := resourceTypeSpecFromObject(o)
+	if err != nil {
 		return errors.Wrap(err, "failed to retrieve secret reference from instance")
 	}
 	if rts.SecretRef.Namespace != "" {
@@ -49,7 +76,7 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 			Namespace: secNs,
 		},
 	}
-	_, err := controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func() error {
+	_, err = controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func() error {
 		if ownerRefErr := controllerutil.SetControllerReference(obj, sec, r.Scheme); ownerRefErr != nil {
 			if updateErr := UpdatePhase(ctx, r.Client, o, croType.PhaseFailed, "setting secret data"); updateErr != nil {
 				return updateErr

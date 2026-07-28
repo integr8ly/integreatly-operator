@@ -5,13 +5,13 @@ const (
 	EngineValkey = "valkey"
 )
 
-var SupportedRedisEngines = []string{EngineRedis, EngineValkey}
+var SupportedCacheEngines = []string{EngineRedis, EngineValkey}
 
-func IsSupportedRedisEngine(engine string) bool {
+func IsSupportedCacheEngine(engine string) bool {
 	if engine == "" {
 		return true
 	}
-	for _, supported := range SupportedRedisEngines {
+	for _, supported := range SupportedCacheEngines {
 		if engine == supported {
 			return true
 		}

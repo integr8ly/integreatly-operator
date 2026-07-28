@@ -671,7 +671,7 @@ github.com/hashicorp/go-version
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
-# github.com/integr8ly/cloud-resource-operator v1.1.8 => github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b
+# github.com/integr8ly/cloud-resource-operator v1.1.8
 ## explicit; go 1.25.0
 github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/api/integreatly/v1alpha1/types
@@ -1859,4 +1859,3 @@ sigs.k8s.io/structured-merge-diff/v6/value
 sigs.k8s.io/yaml
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.27.0
-# github.com/integr8ly/cloud-resource-operator => github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b

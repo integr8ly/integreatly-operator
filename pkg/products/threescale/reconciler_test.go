@@ -2175,10 +2175,12 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				Namespace: "test",
 			},
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
-				Name:      "test",
-				Namespace: "test",
+		Spec: crov1.RedisSpec{
+			ResourceTypeSpec: types.ResourceTypeSpec{
+				SecretRef: &types.SecretRef{
+					Name:      "test",
+					Namespace: "test",
+				},
 			},
 		},
 	}
@@ -2194,10 +2196,12 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				Namespace: "test",
 			},
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
-				Name:      "test",
-				Namespace: "test",
+		Spec: crov1.RedisSpec{
+			ResourceTypeSpec: types.ResourceTypeSpec{
+				SecretRef: &types.SecretRef{
+					Name:      "test",
+					Namespace: "test",
+				},
 			},
 		},
 	}
@@ -4436,10 +4440,12 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 				Namespace: "test",
 			},
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
-				Name:      "backend-redis-creds",
-				Namespace: "test",
+		Spec: crov1.RedisSpec{
+			ResourceTypeSpec: types.ResourceTypeSpec{
+				SecretRef: &types.SecretRef{
+					Name:      "backend-redis-creds",
+					Namespace: "test",
+				},
 			},
 		},
 	}
@@ -4456,10 +4462,12 @@ func TestReconciler_reconcileExternalDatasources_URLChange(t *testing.T) {
 				Namespace: "test",
 			},
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
-				Name:      "system-redis-creds",
-				Namespace: "test",
+		Spec: crov1.RedisSpec{
+			ResourceTypeSpec: types.ResourceTypeSpec{
+				SecretRef: &types.SecretRef{
+					Name:      "system-redis-creds",
+					Namespace: "test",
+				},
 			},
 		},
 	}
