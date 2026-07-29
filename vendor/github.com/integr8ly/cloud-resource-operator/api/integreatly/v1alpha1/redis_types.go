@@ -21,6 +21,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// RedisSpec defines the desired state of Redis.
+type RedisSpec struct {
+	types.ResourceTypeSpec `json:",inline"`
+	// Engine selects the Redis or Valkey engine to provision.
+	// +kubebuilder:validation:Enum=redis;valkey
+	Engine string `json:"engine,omitempty"`
+	// EngineVersion selects the Redis or Valkey engine version to provision.
+	// When unset, providers apply their own defaults (e.g. redis 7.1, valkey 7.2 on AWS).
+	EngineVersion string `json:"engineVersion,omitempty"`
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=redis,scope=Namespaced
@@ -30,7 +41,7 @@ type Redis struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   types.ResourceTypeSpec   `json:"spec,omitempty"`
+	Spec   RedisSpec                `json:"spec,omitempty"`
 	Status types.ResourceTypeStatus `json:"status,omitempty"`
 }
 

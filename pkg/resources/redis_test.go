@@ -42,7 +42,7 @@ func TestRedisEngineForReconcile(t *testing.T) {
 	t.Run("preserves existing redis engine", func(t *testing.T) {
 		existing := &crov1.Redis{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec: croTypes.ResourceTypeSpec{
+			Spec: crov1.RedisSpec{
 				Engine:        croTypes.EngineRedis,
 				EngineVersion: "7.1",
 			},
@@ -63,7 +63,7 @@ func TestRedisEngineForReconcile(t *testing.T) {
 	t.Run("preserves unset engine for existing installation", func(t *testing.T) {
 		existing := &crov1.Redis{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec:       croTypes.ResourceTypeSpec{},
+			Spec:       crov1.RedisSpec{},
 		}
 		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existing).Build()
 		engine, version, err := RedisEngineForReconcile(ctx, client, name, ns)
@@ -81,7 +81,7 @@ func TestRedisEngineForReconcile(t *testing.T) {
 	t.Run("preserves existing valkey engine", func(t *testing.T) {
 		existing := &crov1.Redis{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec: croTypes.ResourceTypeSpec{
+			Spec: crov1.RedisSpec{
 				Engine: croTypes.EngineValkey,
 			},
 		}

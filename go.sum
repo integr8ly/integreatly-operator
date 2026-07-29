@@ -411,6 +411,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/integr8ly/cloud-resource-operator v1.1.8 h1:1oNjkuQgrVu1D/0K2zY2jF24cko36gZAouE4/8hlTWI=
+github.com/integr8ly/cloud-resource-operator v1.1.8/go.mod h1:Grvbifoi9pjqPnklIfG6vV+BjQFo4EgAaN1VjOMriZQ=
 github.com/integr8ly/keycloak-client v0.1.14 h1:WfjOaAxk4yjG+wF80/AT8LJi1RhDAm9tUbSB+lB1sQ0=
 github.com/integr8ly/keycloak-client v0.1.14/go.mod h1:b4x7gwWAkJw7qIhTWRsD/upu5eaUKbWIosmizFGFu/E=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
@@ -600,8 +602,6 @@ github.com/tidwall/sjson v1.2.5 h1:kLy8mja+1c9jlljvWTlSazM7cKDRfJuR/bOJhcY5NcY=
 github.com/tidwall/sjson v1.2.5/go.mod h1:Fvgq9kS/6ociJEDnK0Fk1cpYF4FIW6ZF7LAe+6jwd28=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b h1:RCyRz4+dnUaY2t7ZBsX49tMjpMoIYjs6nMriJKaAb08=
-github.com/valerymo/cloud-resource-operator v0.25.1-0.20260702075541-54e9f6dec70b/go.mod h1:Grvbifoi9pjqPnklIfG6vV+BjQFo4EgAaN1VjOMriZQ=
 github.com/vbatts/tar-split v0.11.5 h1:3bHCTIheBm1qFTcgh9oPu+nNBtX+XJIupG/vacinCts=
 github.com/vbatts/tar-split v0.11.5/go.mod h1:yZbwRsSeGjusneWgA781EKej9HF8vme8okylkAeNKLk=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=

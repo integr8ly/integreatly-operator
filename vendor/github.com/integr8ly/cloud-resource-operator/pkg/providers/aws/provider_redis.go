@@ -36,7 +36,6 @@ import (
 const (
 	defaultAtRestEncryption    = true
 	defaultCacheNodeType       = "cache.t3.micro"
-	defaultDescription         = "A Redis replication group"
 	defaultRedisEngineVersion  = "7.1"
 	defaultValkeyEngineVersion = "7.2"
 	defaultEngineVersion       = defaultRedisEngineVersion
@@ -883,7 +882,7 @@ func buildElasticacheUpdateStrategy(ctx context.Context, ec2Client EC2API, elast
 // verifyRedisConfig checks elasticache config, if none exist sets values to default
 func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v1alpha1.Redis, ec2Client EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput) error {
 	engine := r.GetEngine()
-	if !croType.IsSupportedRedisEngine(engine) {
+	if !croType.IsSupportedCacheEngine(engine) {
 		return errorUtil.Errorf("unsupported %s engine %q", croType.EngineDisplayName(engine), engine)
 	}
 
@@ -894,7 +893,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.CacheNodeType = aws.String(defaultCacheNodeType)
 	}
 	if elasticacheConfig.ReplicationGroupDescription == nil {
-		elasticacheConfig.ReplicationGroupDescription = aws.String(defaultDescription)
+		elasticacheConfig.ReplicationGroupDescription = aws.String(defaultReplicationGroupDescription(engine))
 	}
 	if elasticacheConfig.EngineVersion == nil {
 		elasticacheConfig.EngineVersion = aws.String(defaultEngineVersionFor(engine))
@@ -1316,4 +1315,8 @@ func defaultEngineVersionFor(engine string) string {
 		return defaultValkeyEngineVersion
 	}
 	return defaultRedisEngineVersion
+}
+
+func defaultReplicationGroupDescription(engine string) string {
+	return fmt.Sprintf("A %s replication group", croType.EngineDisplayName(engine))
 }
