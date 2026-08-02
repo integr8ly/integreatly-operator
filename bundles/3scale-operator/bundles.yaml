@@ -19,3 +19,5 @@ bundles:
       image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.16.2
     - name: 3scale-operator.v0.13.3
       image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.16.3
+    - name: 3scale-operator.v0.13.4
+      image: registry.redhat.io/3scale-amp2/3scale-operator-bundle:2.16.4
