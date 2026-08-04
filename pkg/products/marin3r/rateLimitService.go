@@ -36,7 +36,7 @@ const (
 	multitenantDescriptorValue    = "per-mt-limit"
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
-	rateLimitImage                = "registry.redhat.io/rhcl-1/limitador-rhel9@sha256:aff28d76f9cfeefafd6b652e055bb25e1a2bf250e062e3e9b5e54db873f9eeb7"
+	rateLimitImage                = "registry.redhat.io/rhcl-1/limitador-rhel9@sha256:a233ab32e26cf2ea46c31dfc4fcaf89ce541a9351bba99182036a91f357cc2b4"
 )
 
 type RateLimitServiceReconciler struct {
