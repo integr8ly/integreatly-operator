@@ -152,12 +152,14 @@ func createRedis(ctx context.Context, client k8sclient.Client, namespace string)
 			Name:      "throw-away-redis-pod",
 			Namespace: namespace,
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
-				Name: "throw-away-redis-ref",
+		Spec: crov1alpha1.RedisSpec{
+			ResourceTypeSpec: types.ResourceTypeSpec{
+				SecretRef: &types.SecretRef{
+					Name: "throw-away-redis-ref",
+				},
+				Tier: "development",
+				Type: "workshop",
 			},
-			Tier: "development",
-			Type: "workshop",
 		},
 	}
 
