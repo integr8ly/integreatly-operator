@@ -941,3 +941,102 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_checkRedisMemoryAlertsConfig(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "rhoam",
+			Namespace: rhoamOperatorNs,
+		},
+	}
+
+	t.Run("creates default configmap when missing", func(t *testing.T) {
+		serverClient := utils.NewTestClient(scheme)
+		r := &Reconciler{
+			installation: installation,
+			log:          l.NewLogger(),
+		}
+
+		got, err := r.checkRedisMemoryAlertsConfig(context.TODO(), serverClient)
+		if err != nil {
+			t.Fatalf("checkRedisMemoryAlertsConfig() error = %v", err)
+		}
+		if got != integreatlyv1alpha1.PhaseCompleted {
+			t.Fatalf("checkRedisMemoryAlertsConfig() got = %v, want %v", got, integreatlyv1alpha1.PhaseCompleted)
+		}
+
+		cm := &corev1.ConfigMap{}
+		if err := serverClient.Get(context.TODO(), types.NamespacedName{Name: resources.RedisMemoryAlertsConfigMapName, Namespace: rhoamOperatorNs}, cm); err != nil {
+			t.Fatalf("expected configmap to be created: %v", err)
+		}
+		raw, ok := cm.Data[resources.RedisMemoryAlertsConfigMapKey]
+		if !ok || raw == "" {
+			t.Fatal("expected alerts key to be populated")
+		}
+		cfg, err := resources.GetRedisMemoryAlertsConfig(context.TODO(), serverClient, rhoamOperatorNs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.HighUsage.Threshold != 80 {
+			t.Errorf("default threshold = %d, want 80", cfg.HighUsage.Threshold)
+		}
+		if cfg.MaxIn4Hours.PredictHours != 5 {
+			t.Errorf("default predictHours = %d, want 5", cfg.MaxIn4Hours.PredictHours)
+		}
+		if cfg.MaxIn4Hours.UsageThreshold != 75 {
+			t.Errorf("default usageThreshold = %d, want 75", cfg.MaxIn4Hours.UsageThreshold)
+		}
+	})
+
+	t.Run("preserves existing customer config", func(t *testing.T) {
+		custom := `{"RedisMemoryUsageHigh":{"threshold":95,"severity":"warning","for":"1h"}}`
+		serverClient := utils.NewTestClient(scheme, &corev1.ConfigMap{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      resources.RedisMemoryAlertsConfigMapName,
+				Namespace: rhoamOperatorNs,
+			},
+			Data: map[string]string{
+				resources.RedisMemoryAlertsConfigMapKey: custom,
+			},
+		})
+		r := &Reconciler{
+			installation: installation,
+			log:          l.NewLogger(),
+		}
+
+		if _, err := r.checkRedisMemoryAlertsConfig(context.TODO(), serverClient); err != nil {
+			t.Fatalf("checkRedisMemoryAlertsConfig() error = %v", err)
+		}
+
+		cm := &corev1.ConfigMap{}
+		if err := serverClient.Get(context.TODO(), types.NamespacedName{Name: resources.RedisMemoryAlertsConfigMapName, Namespace: rhoamOperatorNs}, cm); err != nil {
+			t.Fatal(err)
+		}
+		if cm.Data[resources.RedisMemoryAlertsConfigMapKey] != custom {
+			t.Errorf("customer config was overwritten: %s", cm.Data[resources.RedisMemoryAlertsConfigMapKey])
+		}
+	})
+
+	t.Run("returns in progress when client get fails", func(t *testing.T) {
+		mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+		mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+			return fmt.Errorf("generic error")
+		}
+		r := &Reconciler{
+			installation: installation,
+			log:          l.NewLogger(),
+		}
+		got, err := r.checkRedisMemoryAlertsConfig(context.TODO(), mockClient)
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if got != integreatlyv1alpha1.PhaseInProgress {
+			t.Fatalf("got = %v, want %v", got, integreatlyv1alpha1.PhaseInProgress)
+		}
+	})
+}
