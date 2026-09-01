@@ -33,7 +33,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, nam
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", namespace),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='grafana-service', namespace='%s'})", namespace)),
+						Expr:   intstr.FromString(resources.NoReadyServiceEndpointsExpr(namespace, "grafana-service")),
 						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},

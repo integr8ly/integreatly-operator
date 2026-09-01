@@ -35,7 +35,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorMetricsServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{namespace='%s', endpoint='operator-metrics-service'})", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(resources.NoReadyServiceEndpointsExpr(r.Config.GetOperatorNamespace(), "operator-metrics-service")),
 						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					}, {
@@ -44,7 +44,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{endpoint='rhmi-registry-cs', namespace='%s'})", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(resources.NoReadyServiceEndpointsExpr(r.Config.GetOperatorNamespace(), "rhmi-registry-cs")),
 						For:    resources.DurationPtr("5m"),
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					}, {
