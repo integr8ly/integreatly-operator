@@ -146,6 +146,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
 
+	phase, err = r.checkRedisMemoryAlertsConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check redis memory alert config settings", err)
+		return phase, errors.Wrap(err, "failed to check redis memory alert config settings")
+	}
+
 	if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
 		installation.Status.LastError = err.Error()
@@ -355,6 +361,39 @@ func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClien
 
 		alertsConfig.Data["alerts"] = string(defaultConfigJSON)
 
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkRedisMemoryAlertsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	alertsConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      resources.RedisMemoryAlertsConfigMapName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, alertsConfig, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(alertsConfig, r.installation)
+
+		if alertsConfig.Data == nil {
+			alertsConfig.Data = map[string]string{}
+		}
+
+		if _, ok := alertsConfig.Data[resources.RedisMemoryAlertsConfigMapKey]; ok {
+			return nil
+		}
+
+		defaultConfigJSON, err := json.MarshalIndent(resources.DefaultRedisMemoryAlertsConfig(), "", "  ")
+		if err != nil {
+			return err
+		}
+
+		alertsConfig.Data[resources.RedisMemoryAlertsConfigMapKey] = string(defaultConfigJSON)
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err

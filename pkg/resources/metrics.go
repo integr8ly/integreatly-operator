@@ -576,69 +576,90 @@ func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 	return pr, nil
 }
 
-// CreateRedisMemoryUsageHighAlert creates a PrometheusRule alert to watch for High Memory usage
-// of a Redis cache
+const redisMemoryMetricsJob = "operator-metrics-service"
+
+// redisMemoryUsageHighPending is a short debounce so a single eval blip does not
+// flap the alert. The real persistence check is avg_over_time over cfg.For.
+const redisMemoryUsageHighPending = alertFor5Mins
+
+func redisMemoryUsageHighExpr(threshold int, window string) string {
+	return fmt.Sprintf("avg_over_time(cro_redis_memory_usage_percentage_average[%s]) > %d", window, threshold)
+}
+
+func redisMemoryPredictHoursExpr(job, lookback string, predictHours, usageThreshold int) string {
+	return fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[%s:1m], %d * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > %d)", job, lookback, predictHours, job, usageThreshold)
+}
+
+func redisMemoryPredictDaysExpr(job, lookback string, predictDays, usageThreshold int) string {
+	return fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[%s:1m], %d * 24 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > %d)", job, lookback, predictDays, job, usageThreshold)
+}
+
+// createRedisMemoryUsageAlerts reconciles Redis memory PrometheusRules from the
+// redis-memory-alerts ConfigMap. RedisMemoryUsageHigh uses avg_over_time so
+// missed scrapes do not reset a long pending timer; MaxIn4Hours / MaxIn4Days
+// use predict_linear so paging tracks whether usage will hit 100% in the window.
 func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) error {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
 		return nil
 	}
 	productName := cr.Labels["productName"]
-
-	alertName := "RedisMemoryUsageHigh"
-	ruleName := "redis-memory-usage-high"
-	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 80 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
-	labels := map[string]string{
-		"severity":    "critical",
-		"productName": productName,
-	}
-
-	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
-
 	ruleNs := config.GetOboNamespace(inst.Namespace)
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
+
+	cfg, err := GetRedisMemoryAlertsConfig(ctx, client, inst.Namespace)
 	if err != nil {
+		return fmt.Errorf("failed to get redis memory alerts config: %w", err)
+	}
+
+	if err := reconcileRedisMemoryUsageHighAlert(ctx, client, ruleNs, productName, cfg.HighUsage); err != nil {
 		return err
 	}
-
-	// job to check time that the operator metrics are exposed
-	job := "operator-metrics-service"
-
-	alertName = "RedisMemoryUsageMaxIn4Hours"
-	ruleName = "redis-memory-usage-will-max-in-4-hours"
-	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
-	labels = map[string]string{
-		"severity":    "critical",
-		"productName": productName,
-	}
-	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
-	//    * [1h] - one hour data points
-	//    * , 4 * 3600 - multiplying data points by 4 hours
-	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[1h:1m], 5 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
-
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
-	if err != nil {
+	if err := reconcileRedisMemoryPredictHoursAlert(ctx, client, ruleNs, productName, cfg.MaxIn4Hours); err != nil {
 		return err
 	}
-
-	alertName = "RedisMemoryUsageMaxIn4Days"
-	ruleName = "redis-memory-usage-max-fill-in-4-days"
-	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
-	labels = map[string]string{
-		"severity":    "critical",
-		"productName": productName,
-	}
-	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
-	//    * [6h] - six hour data points
-	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
-	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[6h:1m], 4 * 24 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
-
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor30Mins, alertExp, labels)
-	if err != nil {
+	if err := reconcileRedisMemoryPredictDaysAlert(ctx, client, ruleNs, productName, cfg.MaxIn4Days); err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func reconcileRedisMemoryUsageHighAlert(ctx context.Context, client k8sclient.Client, ruleNs, productName string, cfg RedisMemoryUsageHighConfig) error {
+	ruleName := "redis-memory-usage-high"
+	alertName := "RedisMemoryUsageHigh"
+	alertDescription := fmt.Sprintf("Redis Memory for instance {{ $labels.instanceID }} averaged %d percent or higher over the last %s. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}", cfg.Threshold, cfg.For)
+	labels := map[string]string{
+		"severity":    cfg.Severity,
+		"productName": productName,
+	}
+	alertExp := intstr.FromString(redisMemoryUsageHighExpr(cfg.Threshold, cfg.For))
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, redisMemoryUsageHighPending, alertExp, labels)
+	return err
+}
+
+func reconcileRedisMemoryPredictHoursAlert(ctx context.Context, client k8sclient.Client, ruleNs, productName string, cfg RedisMemoryPredictConfig) error {
+	ruleName := "redis-memory-usage-will-max-in-4-hours"
+	alertName := "RedisMemoryUsageMaxIn4Hours"
+	alertDescription := fmt.Sprintf("Redis Memory Usage is predicted to reach 100 percent within %d hours for instance {{ $labels.instanceID }} (current usage above %d percent). Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}", cfg.PredictHours, cfg.UsageThreshold)
+	labels := map[string]string{
+		"severity":    cfg.Severity,
+		"productName": productName,
+	}
+	alertExp := intstr.FromString(redisMemoryPredictHoursExpr(redisMemoryMetricsJob, cfg.Lookback, cfg.PredictHours, cfg.UsageThreshold))
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, cfg.For, alertExp, labels)
+	return err
+}
+
+func reconcileRedisMemoryPredictDaysAlert(ctx context.Context, client k8sclient.Client, ruleNs, productName string, cfg RedisMemoryPredictConfig) error {
+	ruleName := "redis-memory-usage-max-fill-in-4-days"
+	alertName := "RedisMemoryUsageMaxIn4Days"
+	alertDescription := fmt.Sprintf("Redis Memory Usage is predicted to reach 100 percent within %d days for instance {{ $labels.instanceID }} (current usage above %d percent). Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}", cfg.PredictDays, cfg.UsageThreshold)
+	labels := map[string]string{
+		"severity":    cfg.Severity,
+		"productName": productName,
+	}
+	alertExp := intstr.FromString(redisMemoryPredictDaysExpr(redisMemoryMetricsJob, cfg.Lookback, cfg.PredictDays, cfg.UsageThreshold))
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, cfg.For, alertExp, labels)
+	return err
 }
 
 // createRedisResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Redis CR state
