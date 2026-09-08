@@ -1,0 +1,12 @@
+# Based on SLSRE team pattern (addon-operator) + splunk-forwarder-operator baseline
+inheritance: true
+reviews:
+  path_filters:
+    # Exclude build artifacts and dependencies
+    - "!build/**"
+    - "!.venv/**"
+    - "!vendor/**"
+
+    # Exclude test fixtures
+    - "!**/testdata/**"
+    - "!**/.test-fixtures/**"
