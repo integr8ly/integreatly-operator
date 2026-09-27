@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -489,7 +488,7 @@ func changeQuota(t TestingTB, c k8sclient.Client, quotaParam, quotaName string) 
 
 	if hiveManaged {
 		t.Log("quota is hive managed, updating via ocm")
-		if err := changeQuotaViaOCM(t, quotaParam); err != nil {
+		if err := changeQuotaViaOCM(t, c, quotaParam); err != nil {
 			return err
 		}
 	} else {
@@ -532,30 +531,22 @@ func changeQuota(t TestingTB, c k8sclient.Client, quotaParam, quotaName string) 
 	return nil
 }
 
-func changeQuotaViaOCM(t TestingTB, quotaParam string) error {
-	token := os.Getenv("OCM_TOKEN")
-	if token == "" {
-		return fmt.Errorf("OCM_TOKEN must be provided to update quota addon param")
-	}
-
-	clusterId := os.Getenv("CLUSTER_ID")
-	if clusterId == "" {
-		return fmt.Errorf("CLUSTER_ID must be provided to update quota addon param")
-	}
-
-	// Create the connection, and remember to close it:
-	connection, err := sdk.NewConnectionBuilder().
-		URL("https://api.stage.openshift.com").
-		Tokens(token).
-		Build()
+func changeQuotaViaOCM(t TestingTB, c k8sclient.Client, quotaParam string) error {
+	connection, err := buildOCMConnection()
 	if err != nil {
-		return fmt.Errorf("can't build connection: %v\n", err)
+		return err
 	}
 	defer func(connection *sdk.Connection) {
 		if err := connection.Close(); err != nil {
 			t.Fatal(err)
 		}
 	}(connection)
+
+	clusterId, err := resolveOCMClusterID(c, connection)
+	if err != nil {
+		return err
+	}
+	t.Logf("using OCM cluster id %s", clusterId)
 
 	// Get the client for the resource that manages the collection of clusters:
 	collection := connection.ClustersMgmt().V1().Clusters()
