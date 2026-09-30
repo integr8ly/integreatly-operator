@@ -8,10 +8,10 @@ ratelimit:
     url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.17-1781604724"
 limitador:
   - name: marin3r-limitador
-    url: "registry.redhat.io/rhcl-1/limitador-rhel9@sha256:a233ab32e26cf2ea46c31dfc4fcaf89ce541a9351bba99182036a91f357cc2b4"
+    url: "registry.redhat.io/rhcl-1/limitador-rhel9@sha256:793a38ce1b5690b99bc20fb7fca3304727d5fb21fcf440ab88f3e7af5778a751"
 grafana:
   - name: grafana
-    url: "registry.redhat.io/rhel9/grafana:9.8-1785444441"
+    url: "registry.redhat.io/rhel9/grafana:9.8-1790172953"
 grafana-ose-oauth-proxy:
   - name: grafana-ose-oauth-proxy
-    url: "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.16.0-202607171822.p2.g565f7ed.assembly.stream.el9"
+    url: "registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.16.0-202609140237.p2.gd17d717.assembly.stream.el9"
