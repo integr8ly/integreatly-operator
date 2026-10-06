@@ -70,13 +70,13 @@ metadata:
           "marin3r.v0.13.4": "quay.io/3scale-sre/marin3r:v0.13.4"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.12-opr-005": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b",
-          "sso7-rhel8-operator-1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1d3048c0a324abbd8d47d9dffb42030e9cb4803e263a613451ba1f37424c427b",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:211703d9aada0596060cbe688d86727e7fe52b70e4ee7149b057d89aa6d13b2e",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:2e63f15a19d60447d9dfd11b0d04ba634932a9c43e63773051069cdc1f5ad504"
+          "rhsso-operator.7.6.13-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1f2f43f41a5b52423a3797b530356938ed131a208a36d82581da7f23cfc42662",
+          "sso7-rhel8-operator-1f2f43f41a5b52423a3797b530356938ed131a208a36d82581da7f23cfc42662-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1f2f43f41a5b52423a3797b530356938ed131a208a36d82581da7f23cfc42662",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:1f2f43f41a5b52423a3797b530356938ed131a208a36d82581da7f23cfc42662",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:838a10b2a2107e9961b3fc34ad1793346dd429380cbdb2ecf204c9c0993074fa",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:838a10b2a2107e9961b3fc34ad1793346dd429380cbdb2ecf204c9c0993074fa",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:ead9b9d4e2f12260eaa8da61c8a7dfab52bcc7af0b4a145e90c16f903c85ce9c",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:ead9b9d4e2f12260eaa8da61c8a7dfab52bcc7af0b4a145e90c16f903c85ce9c"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel9:2.6.17-1781604724"
