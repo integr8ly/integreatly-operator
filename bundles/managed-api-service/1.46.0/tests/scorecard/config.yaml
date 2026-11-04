@@ -1,0 +1,97 @@
+apiVersion: scorecard.operatorframework.io/v1alpha3
+kind: Configuration
+metadata:
+  name: config
+serviceaccount: rhoam-test-runner
+stages:
+- parallel: true
+  tests:
+  - entrypoint:
+    - scorecard-test
+    - basic-check-spec
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: basic
+      test: basic-check-spec-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - scorecard-test
+    - olm-bundle-validation
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: olm
+      test: olm-bundle-validation-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - scorecard-test
+    - olm-crds-have-validation
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: olm
+      test: olm-crds-have-validation-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - scorecard-test
+    - olm-crds-have-resources
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: olm
+      test: olm-crds-have-resources-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - scorecard-test
+    - olm-spec-descriptors
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: olm
+      test: olm-spec-descriptors-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - scorecard-test
+    - olm-status-descriptors
+    image: quay.io/operator-framework/scorecard-test:v1.2.0
+    labels:
+      suite: olm
+      test: olm-status-descriptors-test
+    storage:
+      spec:
+        mountPath: {}
+  - entrypoint:
+    - entrypoint
+    - 01-happy-path
+    image: quay.io/integreatly/scorecard-test-kuttl:master
+    labels:
+      cluster-product: ocp
+      cluster-size: small
+      phase: msp-main
+      test: happy-path
+    storage:
+      spec:
+        mountPath:
+          path: logs/artifacts
+  - entrypoint:
+    - entrypoint
+    - 02-scalability
+    image: quay.io/integreatly/scorecard-test-kuttl:master
+    labels:
+      cluster-product: ocp
+      cluster-size: medium
+      phase: msp-main
+      test: scalability
+    storage:
+      spec:
+        mountPath:
+          path: logs/artifacts
+storage:
+  spec:
+    mountPath: {}
