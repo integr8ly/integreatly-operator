@@ -284,7 +284,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					{
 						Alert: "ThreeScaleZyncPodAvailability",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlThreeScaleZyncPodAvailability,
 							"message": fmt.Sprintf("3Scale Zync has no pods in a ready state. Expected number of pods for zync: %d, and for zync-que: %d.", r.Config.GetReplicasConfig(r.installation)["zyncApp"], r.Config.GetReplicasConfig(r.installation)["zyncQue"]),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync.*', pod!~'zync-database-.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
@@ -294,7 +294,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					{
 						Alert: "ThreeScaleZyncDatabasePodAvailability",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlThreeScaleZyncDatabasePodAvailability,
 							"message": "3Scale Zync-database has no pods in a ready state. Expected a minimum of 1 pod.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(kube_pod_status_ready{condition='true', namespace='%[1]v', pod=~'zync-database.*'} * on(pod, namespace) group_left() kube_pod_status_phase{phase='Running'}) < 1", r.Config.GetNamespace())),
