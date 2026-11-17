@@ -41,6 +41,8 @@ const (
 	SopUrlThreeScaleAdminUIBBT                                 = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleAdminUIBBT.asciidoc"
 	SopUrlThreeScaleDeveloperUIBBT                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleDeveloperUIBBT.asciidoc"
 	SopUrlThreeScaleSystemAdminUIBBT                           = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleSystemAdminUIBBT.asciidoc"
+	SopUrlThreeScaleZyncPodAvailability                        = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleZyncPodAvailability.asciidoc"
+	SopUrlThreeScaleZyncDatabasePodAvailability                = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleZyncDatabasePodAvailability.asciidoc"
 	SopUrlPodDistributionIncorrect                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/multi-az/pod_distribution.md"
 	SopUrlSloRhssoAvailabilityAlert                            = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/SloRhssoAvailabilityAlert.asciidoc"
 	SopUrlSloUserSsoAvailabilityAlert                          = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/SloUserSsoAvailabilityAlert.asciidoc"
