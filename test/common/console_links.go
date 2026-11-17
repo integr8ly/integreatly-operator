@@ -241,7 +241,7 @@ func isBroadAppLauncherSectionSelector(sel string) bool {
 func sectionSelectorsForVersion(clusterVersion string) []string {
 	match, _ := regexp.MatchString("4\\.1[567]\\.", clusterVersion)
 	match1, _ := regexp.MatchString("4\\.18\\.", clusterVersion)
-	match2, _ := regexp.MatchString("4\\.19\\.|4\\.20\\.|4\\.21\\.", clusterVersion)
+	match2, _ := regexp.MatchString("4\\.19\\.|4\\.20\\.|4\\.21\\.|4\\.22\\.", clusterVersion)
 
 	switch {
 	case match:
