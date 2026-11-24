@@ -861,7 +861,7 @@ func compareSMTPSecrets(inst *rhmiv1alpha1.RHMI, client k8sclient.Client, rhoamS
 	}
 
 	if !pass {
-		return fmt.Errorf(message)
+		return fmt.Errorf("%s", message)
 	}
 
 	return nil
