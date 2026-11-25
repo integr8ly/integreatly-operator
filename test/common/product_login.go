@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -79,11 +78,14 @@ func loginToGrafanaActions(t TestingTB, grafanaConsoleUrl, userName string, asse
 
 	actions := []chromedp.Action{
 		chromedp.Navigate(grafanaConsoleUrl),
+		chromedp.WaitReady(`body`),
+		chromedp.WaitVisible(`button`),
 		chromedp.Click(`button`), // Click "login with openshift" button
 	}
 
 	actions = append(actions, chromeDPLoginIDPActions(userName)...)
 	actions = append(actions, chromedp.Sleep(5*time.Second), // Wait for redirect
+		chromedp.WaitReady(`body`),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var html string
 			if err := chromedp.OuterHTML(`html`, &html).Do(ctx); err != nil {
@@ -205,19 +207,22 @@ func loginToUserSSOActions(t TestingTB, userSSOConsoleUrl string, userName strin
 	}
 
 	actions = append(actions, chromeDPLoginIDPActions(userName)...)
-	actions = append(actions, chromedp.WaitVisible(`div[data-ng-controller="RealmTabCtrl"]`), // Wait to allow page to redirect to realm console
+	// Same settle + admin-UI detection as B08B: RHSSO/Keycloak may serve Angular or React admin.
+	actions = append(actions,
+		chromedp.Sleep(5*time.Second),
+		chromedp.WaitReady(`body`),
+		waitForKeycloakAdminUI(t),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			node, err := dom.GetDocument().Do(ctx)
-			if err != nil {
+			var location string
+			if err := chromedp.Location(&location).Do(ctx); err != nil {
 				return err
 			}
-
-			var successfulLoginUrl = fmt.Sprintf("%s/master/console/#/realms/master", userSSOConsoleUrl)
-			if node.BaseURL != successfulLoginUrl {
-				return fmt.Errorf("failed to sign to User SSO for user: %s", userName)
+			// Accept either classic Angular admin URL (.../admin/master/console/#/realms/master)
+			// or newer admin console paths that still land under /admin after IDP login.
+			if !strings.Contains(location, "/admin") {
+				return fmt.Errorf("failed to sign into User SSO for user %s: unexpected location %s", userName, location)
 			}
-
-			t.Logf("User %s successfully signed into User SSO console", userName)
+			t.Logf("User %s successfully signed into User SSO console (%s)", userName, location)
 			return nil
 		}),
 	)
@@ -230,6 +235,7 @@ func loginToRHSSOActions(t TestingTB, rhssoConsoleUrl string, userName string) [
 
 	return []chromedp.Action{
 		chromedp.Navigate(rhssoConsoleUrl),
+		chromedp.WaitReady(`body`),
 		chromedp.WaitVisible(`#kc-page-title`), // Wait for redirect to kc login page
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
 		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
