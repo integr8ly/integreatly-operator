@@ -190,8 +190,8 @@ func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string
 
 	return []chromedp.Action{
 		chromedp.Navigate(userSSOConsoleUrl),
-		chromedp.WaitVisible(`html[data-test-id="login"]`), // Wait to allow page to redirect to oauth page
-		chromedp.Click(`a[title="Log in with testing-idp"]`),
+		chromeDPWaitForLoginOrTestingIDP(),
+		chromeDPClickTestingIDP(),
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
 		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
@@ -208,11 +208,7 @@ func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string
 		clickCreateRealmSubmitButton(t),
 		chromedp.Sleep(5 * time.Second),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			html, err := chromeDPGetHtml(ctx)
-			if err != nil {
-				return err
-			}
-			logger.Infof("Test passed as user: %s was able to create a Realm. HTML: %s", userName, html)
+			logger.Infof("Test passed as user: %s was able to create a Realm", userName)
 			return nil
 		}),
 	}
