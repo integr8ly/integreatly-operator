@@ -87,15 +87,13 @@ func loginToGrafanaActions(t TestingTB, grafanaConsoleUrl, userName string, asse
 	actions = append(actions, chromedp.Sleep(5*time.Second), // Wait for redirect
 		chromedp.WaitReady(`body`),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			var html string
-			if err := chromedp.OuterHTML(`html`, &html).Do(ctx); err != nil {
+			html, err := chromeDPGetHtml(ctx)
+			if err != nil {
 				return err
 			}
-
 			if !strings.Contains(html, "Authorize Access") { // Permissions already accepted
 				return nil
 			}
-
 			return chromedp.Click(`input[name='approve']`).Do(ctx) // Approve permissions
 		}),
 		assertAction)
@@ -268,10 +266,70 @@ func chromeDPGetHtml(ctx context.Context) (string, error) {
 
 func chromeDPLoginIDPActions(userName string) []chromedp.Action {
 	return []chromedp.Action{
-		chromedp.WaitVisible(`html[data-test-id="login"]`), // Wait to allow page to redirect to oauth page
-		chromedp.Click(`a[title="Log in with testing-idp"]`),
+		chromeDPWaitForLoginOrTestingIDP(),
+		chromeDPClickTestingIDP(),
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
 		chromedp.SendKeys(`//input[@name="password"]`, TestingIdpPassword),
 		chromedp.Submit(`#kc-form-login`),
+	}
+}
+
+// chromeDPWaitForLoginOrTestingIDP waits for the OpenShift IDP picker or the
+// Keycloak testing-idp form (auto-redirect when testing-idp is the only IDP).
+func chromeDPWaitForLoginOrTestingIDP() chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		deadline := time.Now().Add(time.Minute)
+		for time.Now().Before(deadline) {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if chromeDPAlreadyOnTestingIDP(ctx) {
+				return nil
+			}
+			var onPicker bool
+			_ = chromedp.Evaluate(`!!document.querySelector('html[data-test-id="login"]')`, &onPicker).Do(ctx)
+			if onPicker {
+				return nil
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		return fmt.Errorf("timed out waiting for OpenShift login or Keycloak testing-idp form")
+	}
+}
+
+func chromeDPAlreadyOnTestingIDP(ctx context.Context) bool {
+	var location string
+	_ = chromedp.Location(&location).Do(ctx)
+	if strings.Contains(location, "/realms/testing-idp/") {
+		return true
+	}
+	var onForm bool
+	_ = chromedp.Evaluate(`!!document.querySelector('#kc-form-login')`, &onForm).Do(ctx)
+	return onForm
+}
+
+// chromeDPClickTestingIDP clicks testing-idp on the OpenShift login page.
+// No-op if OpenShift already redirected to the Keycloak testing-idp form.
+func chromeDPClickTestingIDP() chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if chromeDPAlreadyOnTestingIDP(ctx) {
+				return nil
+			}
+			for _, sel := range []string{`a[href*="idp=testing-idp"]`, `a[title*="testing-idp"]`} {
+				subCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				err := chromedp.Click(sel).Do(subCtx)
+				cancel()
+				if err == nil {
+					return nil
+				}
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		return fmt.Errorf("could not click testing-idp on OpenShift login page")
 	}
 }
